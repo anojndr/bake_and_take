@@ -14,6 +14,19 @@ define('SITE_NAME', 'Bake & Take');
 define('SITE_URL', 'http://localhost/bake_and_take');
 define('SITE_EMAIL', 'hello@bakeandtake.com');
 
+// Email Configuration
+define('SMTP_HOST', 'smtp.gmail.com');
+define('SMTP_PORT', 587);
+define('SMTP_FROM_NAME', 'Bake & Take');
+
+// Load secrets
+if (file_exists(__DIR__ . '/secrets.php')) {
+    require_once __DIR__ . '/secrets.php';
+} else {
+    define('SMTP_USER', '');
+    define('SMTP_PASS', '');
+}
+
 // Timezone
 date_default_timezone_set('America/New_York');
 

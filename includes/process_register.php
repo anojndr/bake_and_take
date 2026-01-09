@@ -61,6 +61,18 @@ try {
     $_SESSION['user_email'] = $email;
     $_SESSION['user_name'] = $firstName . ' ' . $lastName;
     
+    // Send Welcome Email
+    require_once 'mailer.php';
+    $welcomeBody = "
+        <h2>Welcome to Bake & Take!</h2>
+        <p>Hi {$firstName},</p>
+        <p>Thank you for creating an account with us. We are excited to have you on board!</p>
+        <p>Explore our delicious selection of breads, pastries, and cakes.</p>
+        <br>
+        <p>Best regards,<br>Bake & Take Team</p>
+    ";
+    sendMail($email, "Welcome to Bake & Take", $welcomeBody);
+    
     redirect('../index.php', 'Account created successfully! Welcome to Bake & Take.', 'success');
 } catch (PDOException $e) {
     redirect('../index.php?page=register', 'Registration failed. Please try again.', 'error');

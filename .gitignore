@@ -75,6 +75,7 @@ debug.log
 # Local configuration
 config.local.php
 local.php
+includes/secrets.php
 
 # Backup files
 *.bak

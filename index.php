@@ -56,7 +56,8 @@ if (!in_array($page, $allowedPages)) {
                 <div class="nav-actions">
                     <a href="index.php?page=cart" class="btn btn-cart me-2" id="cartBtn">
                         <i class="bi bi-cart3"></i>
-                        <span class="cart-count" id="cartCount">0</span>
+                        <?php $cartCount = getCartItemCount(); ?>
+                        <span class="cart-count" id="cartCount" style="display: <?php echo $cartCount > 0 ? 'flex' : 'none'; ?>"><?php echo $cartCount; ?></span>
                     </a>
                     <?php if (isset($_SESSION['user_id'])): ?>
                         <div class="dropdown">

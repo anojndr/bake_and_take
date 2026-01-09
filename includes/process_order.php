@@ -129,6 +129,45 @@ if ($pdo) {
             'order_id' => $orderId,
             'total' => $total
         ];
+
+        // Send Order Confirmation Email
+        require_once 'mailer.php';
+        $orderSubject = "Bake & Take - Order Confirmation #{$orderNumber}";
+        $orderBody = "
+            <h2>Thank you for your order!</h2>
+            <p>Hi {$orderData['first_name']},</p>
+            <p>Your order <strong>#{$orderNumber}</strong> has been received and is being processed.</p>
+            <p><strong>Total:</strong> $" . number_format($total, 2) . "</p>
+            <br>
+            <h3>Order Details</h3>
+            <ul>
+        ";
+        
+        foreach ($cartData as $item) {
+            $orderBody .= "<li>{$item['quantity']}x {$item['name']} - $" . number_format($item['price'] * $item['quantity'], 2) . "</li>";
+        }
+        
+        $orderBody .= "
+            </ul>
+            <p>We will notify you when your order is ready.</p>
+            <br>
+            <p>Best regards,<br>Bake & Take Team</p>
+        ";
+        
+        // Send email to Customer
+        sendMail($orderData['email'], $orderSubject, $orderBody);
+
+        // Send email to Admin
+        $adminSubject = "New Order #{$orderNumber}";
+        $adminBody = "
+            <h2>New Order Received</h2>
+            <p><strong>Order #:</strong> {$orderNumber}</p>
+            <p><strong>Customer:</strong> {$orderData['first_name']} {$orderData['last_name']}</p>
+            <p><strong>Email:</strong> {$orderData['email']}</p>
+            <p><strong>Total:</strong> $" . number_format($total, 2) . "</p>
+            <a href='" . SITE_URL . "/admin/orders.php?id={$orderId}'>View Order</a>
+        ";
+        sendMail(SMTP_USER, $adminSubject, $adminBody);
         
     } catch (PDOException $e) {
         $pdo->rollBack();

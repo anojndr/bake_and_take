@@ -281,7 +281,32 @@ function getCartTotal() {
     return $total;
 }
 
+function getDatabaseCartCount($userId) {
+    global $pdo;
+    if (!$pdo) return 0;
+    
+    // Get cart ID
+    $stmt = $pdo->prepare("SELECT id FROM cart WHERE user_id = ?");
+    $stmt->execute([$userId]);
+    $cart = $stmt->fetch();
+    
+    if (!$cart) return 0;
+    
+    $cartId = $cart['id'];
+    
+    // Get count
+    $stmt = $pdo->prepare("SELECT SUM(quantity) as count FROM cart_items WHERE cart_id = ?");
+    $stmt->execute([$cartId]);
+    $result = $stmt->fetch();
+    
+    return (int)($result['count'] ?? 0);
+}
+
 function getCartItemCount() {
+    if (isLoggedIn()) {
+        return getDatabaseCartCount($_SESSION['user_id']);
+    }
+
     $count = 0;
     foreach (getCart() as $item) {
         $count += $item['quantity'];
