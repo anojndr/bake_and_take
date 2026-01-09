@@ -51,7 +51,7 @@ debug.log
 *.sql
 *.sqlite
 *.db
-/database/*.sql
+!/database/*.sql
 
 # Session files
 /sessions/

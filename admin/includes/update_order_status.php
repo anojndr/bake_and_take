@@ -35,44 +35,90 @@ if (!$pdo) {
 }
 
 try {
+    // Get current order data before update
+    $orderStmt = $pdo->prepare("SELECT * FROM orders WHERE id = ?");
+    $orderStmt->execute([$orderId]);
+    $order = $orderStmt->fetch();
+    
+    if (!$order) {
+        echo json_encode(['success' => false, 'message' => 'Order not found']);
+        exit;
+    }
+    
+    $oldStatus = $order['status'];
+    
+    // Update the order status
     $stmt = $pdo->prepare("UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?");
     $stmt->execute([$status, $orderId]);
     
     if ($stmt->rowCount() > 0) {
         
-        // If status is 'ready', send email notification
+        // Prepare order data for notifications
+        $notifyData = [
+            'order_id' => $orderId,
+            'order_number' => $order['order_number'],
+            'first_name' => $order['first_name'],
+            'email' => $order['email'],
+            'phone' => $order['phone'],
+            'user_id' => $order['user_id']
+        ];
+        
+        // Send email notification for 'ready' status
         if ($status === 'ready') {
-            // Fetch order details
-            $orderStmt = $pdo->prepare("SELECT email, first_name, order_number FROM orders WHERE id = ?");
-            $orderStmt->execute([$orderId]);
-            $order = $orderStmt->fetch();
-
-            if ($order) {
-                require_once '../../includes/mailer.php';
-                
-                $firstName = $order['first_name'];
-                $email = $order['email'];
-                $orderNumber = $order['order_number'];
-                
-                $subject = "Your Order #{$orderNumber} is Ready!";
-                $body = "
-                    <h2>Good news!</h2>
-                    <p>Hi {$firstName},</p>
-                    <p>Your order <strong>#{$orderNumber}</strong> is fresh out of the oven and ready for pickup.</p>
-                    <p>Please come by our store to collect your delicious treats.</p>
-                    <br>
-                    <p>See you soon!<br>Bake & Take Team</p>
-                ";
-                
-                sendMail($email, $subject, $body);
+            require_once '../../includes/mailer.php';
+            
+            $subject = "Your Order #{$order['order_number']} is Ready!";
+            $body = "
+                <h2>Good news!</h2>
+                <p>Hi {$order['first_name']},</p>
+                <p>Your order <strong>#{$order['order_number']}</strong> is fresh out of the oven and ready for pickup.</p>
+                <p>Please come by our store to collect your delicious treats.</p>
+                <br>
+                <p>See you soon!<br>Bake & Take Team</p>
+            ";
+            
+            sendMail($order['email'], $subject, $body);
+        }
+        
+        // Send SMS notifications for status changes
+        require_once '../../includes/sms_service.php';
+        
+        // Only send SMS if status actually changed
+        if ($oldStatus !== $status) {
+            switch ($status) {
+                case 'confirmed':
+                    // Send confirmation SMS
+                    $message = SMS_SENDER_NAME . ": Great news {$notifyData['first_name']}! Your order #{$notifyData['order_number']} has been confirmed and will be prepared shortly.";
+                    sendSMS($notifyData['phone'], $message, $orderId, $notifyData['user_id']);
+                    break;
+                    
+                case 'preparing':
+                    $message = SMS_SENDER_NAME . ": {$notifyData['first_name']}, your order #{$notifyData['order_number']} is now being prepared. We'll notify you when it's ready!";
+                    sendSMS($notifyData['phone'], $message, $orderId, $notifyData['user_id']);
+                    break;
+                    
+                case 'ready':
+                    sendOrderReadySMS($notifyData);
+                    break;
+                    
+                case 'delivered':
+                    $message = SMS_SENDER_NAME . ": Thank you for picking up your order #{$notifyData['order_number']}! We hope you enjoy your treats. See you again soon!";
+                    sendSMS($notifyData['phone'], $message, $orderId, $notifyData['user_id']);
+                    break;
+                    
+                case 'cancelled':
+                    $message = SMS_SENDER_NAME . ": Your order #{$notifyData['order_number']} has been cancelled. If you have questions, please contact us.";
+                    sendSMS($notifyData['phone'], $message, $orderId, $notifyData['user_id']);
+                    break;
             }
         }
 
         echo json_encode(['success' => true, 'message' => 'Order status updated']);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Order not found']);
+        echo json_encode(['success' => false, 'message' => 'No changes made']);
     }
 } catch (PDOException $e) {
+    error_log("Order status update error: " . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'Database error']);
 }
 ?>

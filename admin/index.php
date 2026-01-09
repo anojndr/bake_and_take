@@ -10,7 +10,7 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 }
 
 $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
-$allowedPages = ['dashboard', 'orders', 'products', 'categories', 'users', 'messages'];
+$allowedPages = ['dashboard', 'orders', 'products', 'categories', 'users', 'messages', 'sms'];
 
 if (!in_array($page, $allowedPages)) {
     $page = 'dashboard';
@@ -126,6 +126,10 @@ if ($pdo) {
                 <a href="index.php?page=messages" class="nav-link <?php echo $page === 'messages' ? 'active' : ''; ?>">
                     <i class="bi bi-envelope"></i>
                     <span>Messages</span>
+                </a>
+                <a href="index.php?page=sms" class="nav-link <?php echo $page === 'sms' ? 'active' : ''; ?>">
+                    <i class="bi bi-phone"></i>
+                    <span>SMS Gateway</span>
                 </a>
             </div>
         </nav>

@@ -167,6 +167,18 @@ if ($pdo) {
             <a href='" . SITE_URL . "/admin/orders.php?id={$orderId}'>View Order</a>
         ";
         sendMail(SMTP_USER, $adminSubject, $adminBody);
+
+        // Send SMS Order Confirmation
+        require_once 'sms_service.php';
+        $smsOrderData = [
+            'first_name' => $orderData['first_name'],
+            'phone' => $orderData['phone'],
+            'order_number' => $orderNumber,
+            'total' => $total,
+            'order_id' => $orderId,
+            'user_id' => $userId
+        ];
+        sendOrderConfirmationSMS($smsOrderData);
         
     } catch (PDOException $e) {
         $pdo->rollBack();
