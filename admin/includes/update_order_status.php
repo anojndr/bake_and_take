@@ -39,6 +39,35 @@ try {
     $stmt->execute([$status, $orderId]);
     
     if ($stmt->rowCount() > 0) {
+        
+        // If status is 'ready', send email notification
+        if ($status === 'ready') {
+            // Fetch order details
+            $orderStmt = $pdo->prepare("SELECT email, first_name, order_number FROM orders WHERE id = ?");
+            $orderStmt->execute([$orderId]);
+            $order = $orderStmt->fetch();
+
+            if ($order) {
+                require_once '../../includes/mailer.php';
+                
+                $firstName = $order['first_name'];
+                $email = $order['email'];
+                $orderNumber = $order['order_number'];
+                
+                $subject = "Your Order #{$orderNumber} is Ready!";
+                $body = "
+                    <h2>Good news!</h2>
+                    <p>Hi {$firstName},</p>
+                    <p>Your order <strong>#{$orderNumber}</strong> is fresh out of the oven and ready for pickup.</p>
+                    <p>Please come by our store to collect your delicious treats.</p>
+                    <br>
+                    <p>See you soon!<br>Bake & Take Team</p>
+                ";
+                
+                sendMail($email, $subject, $body);
+            }
+        }
+
         echo json_encode(['success' => true, 'message' => 'Order status updated']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Order not found']);
