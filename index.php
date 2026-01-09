@@ -4,7 +4,7 @@ require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
 $page = isset($_GET['page']) ? $_GET['page'] : 'home';
-$allowedPages = ['home', 'menu', 'about', 'contact', 'cart', 'checkout', 'login', 'register', 'order-success'];
+$allowedPages = ['home', 'menu', 'about', 'contact', 'cart', 'checkout', 'login', 'register', 'order-success', 'orders'];
 
 if (!in_array($page, $allowedPages)) {
     $page = 'home';

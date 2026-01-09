@@ -20,6 +20,7 @@
             <div class="col-lg-8">
                 <form id="checkoutForm" action="includes/process_order.php" method="POST">
                     <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                    <input type="hidden" name="cart_data" id="cartDataInput" value="">
                     
                     <!-- Contact Information -->
                     <div class="checkout-card mb-4">
@@ -320,7 +321,21 @@ document.addEventListener('DOMContentLoaded', function() {
             updateCheckoutSummary();
         });
     });
+    
+    // Handle form submission - add cart data
+    document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+        const cart = getCart();
+        if (cart.length === 0) {
+            e.preventDefault();
+            alert('Your cart is empty!');
+            window.location.href = 'index.php?page=cart';
+            return false;
+        }
+        // Populate the hidden cart_data field with cart JSON
+        document.getElementById('cartDataInput').value = JSON.stringify(cart);
+    });
 });
+
 
 function renderCheckoutItems() {
     const cart = getCart();

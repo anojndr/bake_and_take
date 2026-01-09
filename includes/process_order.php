@@ -11,6 +11,17 @@ if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
     redirect('../index.php?page=checkout', 'Invalid request. Please try again.', 'error');
 }
 
+// Get cart data from POST (sent as JSON)
+$cartData = [];
+if (isset($_POST['cart_data'])) {
+    $cartData = json_decode($_POST['cart_data'], true);
+}
+
+// Validate cart is not empty
+if (empty($cartData)) {
+    redirect('../index.php?page=cart', 'Your cart is empty.', 'error');
+}
+
 // Collect order data
 $orderData = [
     'first_name' => sanitize($_POST['first_name'] ?? ''),
@@ -42,15 +53,95 @@ if (!isValidEmail($orderData['email'])) {
     redirect('../index.php?page=checkout', 'Please enter a valid email address.', 'error');
 }
 
-// In production, you would:
-// 1. Process payment
-// 2. Save order to database
-// 3. Send confirmation email
-// 4. Clear cart
+// Calculate totals
+$subtotal = 0;
+foreach ($cartData as $item) {
+    $subtotal += floatval($item['price']) * intval($item['quantity']);
+}
 
-// Generate order number
-$orderNumber = strtoupper(substr(md5(time() . rand()), 0, 8));
-$_SESSION['last_order'] = $orderNumber;
+$deliveryFee = $orderData['delivery_method'] === 'delivery' ? 5.00 : 0.00;
+$tax = $subtotal * 0.08;
+$total = $subtotal + $deliveryFee + $tax;
+
+// Generate unique order number
+$orderNumber = strtoupper(substr(md5(uniqid(rand(), true)), 0, 8));
+
+// Save to database
+if ($pdo) {
+    try {
+        $pdo->beginTransaction();
+        
+        // Insert order
+        $stmt = $pdo->prepare("
+            INSERT INTO orders (
+                user_id, order_number, first_name, last_name, email, phone,
+                delivery_method, address, city, state, zip, instructions,
+                subtotal, delivery_fee, tax, total, status, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+        ");
+        
+        $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+        
+        $stmt->execute([
+            $userId,
+            $orderNumber,
+            $orderData['first_name'],
+            $orderData['last_name'],
+            $orderData['email'],
+            $orderData['phone'],
+            $orderData['delivery_method'],
+            $orderData['address'],
+            $orderData['city'],
+            $orderData['state'],
+            $orderData['zip'],
+            $orderData['instructions'],
+            $subtotal,
+            $deliveryFee,
+            $tax,
+            $total
+        ]);
+        
+        $orderId = $pdo->lastInsertId();
+        
+        // Insert order items
+        $itemStmt = $pdo->prepare("
+            INSERT INTO order_items (order_id, product_id, product_name, quantity, price, total)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ");
+        
+        foreach ($cartData as $item) {
+            $itemTotal = floatval($item['price']) * intval($item['quantity']);
+            $itemStmt->execute([
+                $orderId,
+                isset($item['id']) ? intval($item['id']) : null,
+                $item['name'],
+                intval($item['quantity']),
+                floatval($item['price']),
+                $itemTotal
+            ]);
+        }
+        
+        $pdo->commit();
+        
+        // Store order info in session for success page
+        $_SESSION['last_order'] = [
+            'order_number' => $orderNumber,
+            'order_id' => $orderId,
+            'total' => $total
+        ];
+        
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        error_log("Order processing error: " . $e->getMessage());
+        redirect('../index.php?page=checkout', 'An error occurred while processing your order. Please try again.', 'error');
+    }
+} else {
+    // No database - just store in session for demo
+    $_SESSION['last_order'] = [
+        'order_number' => $orderNumber,
+        'total' => $total
+    ];
+}
 
 redirect('../index.php?page=order-success');
 ?>
