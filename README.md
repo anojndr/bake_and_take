@@ -89,7 +89,7 @@ bake_and_take/
 - Client-side cart management using localStorage
 - Real-time cart updates without page reload
 - Quantity controls and item removal
-- Automatic tax and delivery fee calculation
+- Automatic tax calculation
 
 ### User Authentication
 - Secure login and registration forms

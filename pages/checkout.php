@@ -21,6 +21,7 @@
                 <form id="checkoutForm" action="includes/process_order.php" method="POST">
                     <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                     <input type="hidden" name="cart_data" id="cartDataInput" value="">
+                    <input type="hidden" name="delivery_method" value="pickup">
                     
                     <!-- Contact Information -->
                     <div class="checkout-card mb-4">
@@ -45,25 +46,14 @@
                         </div>
                     </div>
                     
-                    <!-- Delivery Options -->
+                    <!-- Pickup Information -->
                     <div class="checkout-card mb-4">
-                        <h4><i class="bi bi-truck me-2"></i>Delivery Method</h4>
+                        <h4><i class="bi bi-shop me-2"></i>Pickup Details</h4>
                         <div class="delivery-options">
                             <label class="delivery-option">
-                                <input type="radio" name="delivery_method" value="delivery" checked>
-                                <div class="option-content">
-                                    <div class="option-icon"><i class="bi bi-truck"></i></div>
-                                    <div class="option-details">
-                                        <strong>Home Delivery</strong>
-                                        <span>Delivered to your door • $5.00</span>
-                                    </div>
-                                    <div class="option-price">$5.00</div>
-                                </div>
-                            </label>
-                            <label class="delivery-option">
-                                <input type="radio" name="delivery_method" value="pickup">
-                                <div class="option-content">
-                                    <div class="option-icon"><i class="bi bi-shop"></i></div>
+                                <input type="radio" checked disabled>
+                                <div class="option-content" style="border-color: var(--primary); background: var(--accent);">
+                                    <div class="option-icon" style="background: var(--primary); color: var(--white);"><i class="bi bi-shop"></i></div>
                                     <div class="option-details">
                                         <strong>Store Pickup</strong>
                                         <span>Pick up at our bakery • Free</span>
@@ -72,32 +62,9 @@
                                 </div>
                             </label>
                         </div>
-                    </div>
-                    
-                    <!-- Delivery Address -->
-                    <div class="checkout-card mb-4" id="addressSection">
-                        <h4><i class="bi bi-geo-alt me-2"></i>Delivery Address</h4>
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="form-label">Street Address *</label>
-                                <input type="text" class="form-control form-control-custom" name="address" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">City *</label>
-                                <input type="text" class="form-control form-control-custom" name="city" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">State *</label>
-                                <input type="text" class="form-control form-control-custom" name="state" required>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">ZIP *</label>
-                                <input type="text" class="form-control form-control-custom" name="zip" required>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Delivery Instructions (Optional)</label>
-                                <textarea class="form-control form-control-custom" name="instructions" rows="2" placeholder="e.g., Ring doorbell, leave at door"></textarea>
-                            </div>
+                        <div class="mt-3">
+                            <p class="mb-1"><i class="bi bi-geo-alt-fill text-primary me-2"></i><strong>PUP Sto. Tomas Branch</strong></p>
+                            <p class="text-muted ms-4 small">Sto. Tomas, Batangas</p>
                         </div>
                     </div>
                     
@@ -144,10 +111,6 @@
                         <span id="checkoutSubtotal">$0.00</span>
                     </div>
                     <div class="summary-row">
-                        <span>Delivery</span>
-                        <span id="checkoutDelivery">$5.00</span>
-                    </div>
-                    <div class="summary-row">
                         <span>Tax (8%)</span>
                         <span id="checkoutTax">$0.00</span>
                     </div>
@@ -189,7 +152,7 @@
 .delivery-options { display: flex; flex-direction: column; gap: 1rem; }
 
 .delivery-option {
-    cursor: pointer;
+    cursor: default;
 }
 
 .delivery-option input { display: none; }
@@ -204,11 +167,6 @@
     transition: var(--transition);
 }
 
-.delivery-option input:checked + .option-content {
-    border-color: var(--primary);
-    background: var(--accent);
-}
-
 .option-icon {
     width: 50px;
     height: 50px;
@@ -219,11 +177,6 @@
     justify-content: center;
     font-size: 1.25rem;
     color: var(--secondary);
-}
-
-.delivery-option input:checked + .option-content .option-icon {
-    background: var(--primary);
-    color: var(--white);
 }
 
 .option-details { flex: 1; }
@@ -311,17 +264,6 @@ document.addEventListener('DOMContentLoaded', function() {
         renderCheckoutItems();
     }, 50);
     
-    // Toggle address section based on delivery method
-    document.querySelectorAll('input[name="delivery_method"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            const addressSection = document.getElementById('addressSection');
-            const isDelivery = this.value === 'delivery';
-            addressSection.style.display = isDelivery ? 'block' : 'none';
-            addressSection.querySelectorAll('input').forEach(inp => inp.required = isDelivery);
-            updateCheckoutSummary();
-        });
-    });
-    
     // Handle form submission - add cart data
     document.getElementById('checkoutForm').addEventListener('submit', function(e) {
         const cart = getCart();
@@ -362,13 +304,10 @@ function renderCheckoutItems() {
 
 function updateCheckoutSummary() {
     const subtotal = getCartTotal();
-    const isDelivery = document.querySelector('input[name="delivery_method"]:checked')?.value === 'delivery';
-    const delivery = isDelivery ? 5 : 0;
     const tax = subtotal * 0.08;
-    const total = subtotal + delivery + tax;
+    const total = subtotal + tax;
     
     document.getElementById('checkoutSubtotal').textContent = '$' + subtotal.toFixed(2);
-    document.getElementById('checkoutDelivery').textContent = delivery > 0 ? '$' + delivery.toFixed(2) : 'Free';
     document.getElementById('checkoutTax').textContent = '$' + tax.toFixed(2);
     document.getElementById('checkoutTotal').textContent = '$' + total.toFixed(2);
 }

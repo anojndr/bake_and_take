@@ -28,20 +28,17 @@ $orderData = [
     'last_name' => sanitize($_POST['last_name'] ?? ''),
     'email' => sanitize($_POST['email'] ?? ''),
     'phone' => sanitize($_POST['phone'] ?? ''),
-    'delivery_method' => sanitize($_POST['delivery_method'] ?? 'delivery'),
-    'address' => sanitize($_POST['address'] ?? ''),
-    'city' => sanitize($_POST['city'] ?? ''),
-    'state' => sanitize($_POST['state'] ?? ''),
-    'zip' => sanitize($_POST['zip'] ?? ''),
+    'delivery_method' => 'pickup', // Force pickup
+    'address' => '',
+    'city' => '',
+    'state' => '',
+    'zip' => '',
     'instructions' => sanitize($_POST['instructions'] ?? ''),
     'order_date' => date('Y-m-d H:i:s')
 ];
 
 // Validate required fields
 $required = ['first_name', 'last_name', 'email', 'phone'];
-if ($orderData['delivery_method'] === 'delivery') {
-    $required = array_merge($required, ['address', 'city', 'state', 'zip']);
-}
 
 foreach ($required as $field) {
     if (empty($orderData[$field])) {
@@ -59,7 +56,7 @@ foreach ($cartData as $item) {
     $subtotal += floatval($item['price']) * intval($item['quantity']);
 }
 
-$deliveryFee = $orderData['delivery_method'] === 'delivery' ? 5.00 : 0.00;
+$deliveryFee = 0.00;
 $tax = $subtotal * 0.08;
 $total = $subtotal + $deliveryFee + $tax;
 
@@ -137,6 +134,7 @@ if ($pdo) {
             <h2>Thank you for your order!</h2>
             <p>Hi {$orderData['first_name']},</p>
             <p>Your order <strong>#{$orderNumber}</strong> has been received and is being processed.</p>
+            <p>It will be ready for pickup at our store.</p>
             <p><strong>Total:</strong> $" . number_format($total, 2) . "</p>
             <br>
             <h3>Order Details</h3>
@@ -149,7 +147,7 @@ if ($pdo) {
         
         $orderBody .= "
             </ul>
-            <p>We will notify you when your order is ready.</p>
+            <p>We will notify you when your order is ready for pickup.</p>
             <br>
             <p>Best regards,<br>Bake & Take Team</p>
         ";
@@ -162,6 +160,7 @@ if ($pdo) {
         $adminBody = "
             <h2>New Order Received</h2>
             <p><strong>Order #:</strong> {$orderNumber}</p>
+            <p><strong>Method:</strong> Pickup</p>
             <p><strong>Customer:</strong> {$orderData['first_name']} {$orderData['last_name']}</p>
             <p><strong>Email:</strong> {$orderData['email']}</p>
             <p><strong>Total:</strong> $" . number_format($total, 2) . "</p>

@@ -84,7 +84,7 @@ $statusOptions = ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'ca
                         <th>Email</th>
                         <th>Items</th>
                         <th>Total</th>
-                        <th>Delivery</th>
+                        <th>Method</th>
                         <th>Status</th>
                         <th>Date</th>
                         <th>Actions</th>
@@ -169,7 +169,7 @@ $statusOptions = ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'ca
                         <p class="mb-0"><?php echo sanitize($order['phone']); ?></p>
                     </div>
                     <div class="col-md-6">
-                        <h6 style="color: var(--admin-text-muted);">Delivery Details</h6>
+                        <h6 style="color: var(--admin-text-muted);">Order Method</h6>
                         <p class="mb-1"><strong><?php echo ucfirst($order['delivery_method']); ?></strong></p>
                         <?php if ($order['delivery_method'] === 'delivery' && $order['address']): ?>
                         <p class="mb-0">

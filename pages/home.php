@@ -4,7 +4,7 @@
         <div class="row align-items-center">
             <div class="col-lg-6">
                 <div class="hero-content">
-                    <h1>Freshly Baked <span>Happiness</span> Delivered Daily</h1>
+                    <h1>Freshly Baked <span>Happiness</span> Made Daily</h1>
                     <p>Experience the art of artisan baking. From crusty sourdoughs to delicate pastries, every bite tells a story of passion and tradition.</p>
                     <div class="hero-buttons">
                         <a href="index.php?page=menu" class="btn btn-hero btn-hero-primary">
@@ -127,10 +127,10 @@
             <div class="col-md-6 col-lg-3">
                 <div class="feature-card">
                     <div class="feature-icon">
-                        <i class="bi bi-truck"></i>
+                        <i class="bi bi-shop"></i>
                     </div>
-                    <h4>Fast Delivery</h4>
-                    <p>Same-day delivery for orders placed before 2 PM</p>
+                    <h4>Easy Pickup</h4>
+                    <p>Order online and pick up at your convenience from our store</p>
                 </div>
             </div>
             <div class="col-md-6 col-lg-3">
@@ -183,7 +183,7 @@
                         <i class="bi bi-star-fill"></i>
                         <i class="bi bi-star-fill"></i>
                     </div>
-                    <p class="testimonial-content">"Ordered a birthday cake and it exceeded all expectations. Beautiful, delicious, and the delivery was perfect!"</p>
+                    <p class="testimonial-content">"Ordered a birthday cake and it exceeded all expectations. Beautiful, delicious, and the service was perfect!"</p>
                     <div class="testimonial-author">
                         <div class="testimonial-avatar">JC</div>
                         <div>
