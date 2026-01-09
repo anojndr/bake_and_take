@@ -10,8 +10,27 @@
     </div>
 </header>
 
+<?php if (!isset($_SESSION['user_id'])): ?>
+<!-- Login Required Section -->
+<section class="section">
+    <div class="container text-center py-5">
+        <i class="bi bi-person-lock" style="font-size: 5rem; color: var(--text-light);"></i>
+        <h3 class="mt-4">Login Required</h3>
+        <p class="text-muted mb-4">Please login to view your shopping cart and complete your order.</p>
+        <div class="d-flex justify-content-center gap-3">
+            <a href="index.php?page=login" class="btn btn-hero btn-hero-primary px-5">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Login
+            </a>
+            <a href="index.php?page=register" class="btn btn-hero btn-hero-secondary px-5">
+                <i class="bi bi-person-plus me-2"></i>Register
+            </a>
+        </div>
+    </div>
+</section>
+<?php else: ?>
 <!-- Cart Section -->
 <section class="section cart-section">
+
     <div class="container">
         <!-- Empty Cart Message - Centered -->
         <div class="empty-cart text-center py-5" id="emptyCart" style="display: none;">
@@ -231,35 +250,22 @@
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Wait for main.js to initialize the cart from localStorage
-    // Use a small timeout to ensure initCart() in main.js has run first
-    setTimeout(function() {
-        // Re-initialize cart from localStorage to ensure we have the latest data
-        const savedCart = localStorage.getItem('bakeAndTakeCart');
-        if (savedCart) {
-            try {
-                const parsedCart = JSON.parse(savedCart);
-                // Update the global cart variable if it exists
-                if (typeof cart !== 'undefined') {
-                    cart.length = 0;
-                    parsedCart.forEach(item => cart.push(item));
-                }
-            } catch (e) {
-                console.error('Error parsing cart from localStorage:', e);
-            }
-        }
+document.addEventListener('DOMContentLoaded', async function() {
+    // Wait for main.js initCart to complete, then render
+    // Use a small delay to ensure the async initCart has finished
+    setTimeout(async function() {
+        await initCart();
         renderCartPage();
-    }, 50);
+    }, 100);
 });
 
 function renderCartPage() {
-    const cart = getCart();
+    const cartItems = getCart();
     const container = document.getElementById('cartItemsContainer');
     const emptyCart = document.getElementById('emptyCart');
     const cartContentRow = document.getElementById('cartContentRow');
     
-    if (cart.length === 0) {
+    if (cartItems.length === 0) {
         container.innerHTML = '';
         emptyCart.style.display = 'block';
         cartContentRow.style.display = 'none';
@@ -269,7 +275,7 @@ function renderCartPage() {
     emptyCart.style.display = 'none';
     cartContentRow.style.display = 'flex';
     
-    container.innerHTML = cart.map(item => `
+    container.innerHTML = cartItems.map(item => `
         <div class="cart-item" data-id="${item.id}">
             <img src="${item.image}" alt="${item.name}" class="cart-item-image" 
                  onerror="this.src='assets/images/placeholder.jpg'">
@@ -297,13 +303,13 @@ function renderCartPage() {
     updateSummary();
 }
 
-function updateCartItem(id, quantity) {
-    updateQuantity(id, quantity);
+async function updateCartItem(id, quantity) {
+    await updateQuantity(id, quantity);
     renderCartPage();
 }
 
-function removeCartItem(id) {
-    removeFromCart(id);
+async function removeCartItem(id) {
+    await removeFromCart(id);
     renderCartPage();
     showNotification('Item removed from cart', 'info');
 }
@@ -320,3 +326,6 @@ function updateSummary() {
     document.getElementById('total').textContent = '$' + total.toFixed(2);
 }
 </script>
+
+<?php endif; ?>
+

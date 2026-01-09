@@ -2,83 +2,149 @@
  * Bake & Take - Main JavaScript
  */
 
-document.addEventListener('DOMContentLoaded', function() {
-    
+document.addEventListener('DOMContentLoaded', function () {
+
     // Initialize cart from localStorage
     initCart();
-    
+
     // Navbar scroll effect
     initNavbarScroll();
-    
+
     // Initialize product interactions
     initProductCards();
-    
+
     // Initialize quantity controls
     initQuantityControls();
-    
+
     // Initialize animations
     initScrollAnimations();
-    
+
 });
 
 /**
- * Cart Management
+ * Cart Management - Database-backed only (Requires Login)
  */
 let cart = [];
+let isLoggedIn = false;
 
-function initCart() {
-    const savedCart = localStorage.getItem('bakeAndTakeCart');
-    if (savedCart) {
-        cart = JSON.parse(savedCart);
+async function initCart() {
+    try {
+        const response = await fetch('includes/cart_api.php?action=get');
+        const data = await response.json();
+
+        if (data.success) {
+            isLoggedIn = data.loggedIn;
+            if (data.loggedIn && data.items) {
+                cart = data.items;
+            } else {
+                cart = [];
+            }
+        }
+    } catch (error) {
+        console.error('Error loading cart:', error);
+        cart = [];
     }
     updateCartUI();
 }
 
-function addToCart(productId, productName, productPrice, productImage) {
-    const existingItem = cart.find(item => item.id === productId);
-    
-    if (existingItem) {
-        existingItem.quantity += 1;
-    } else {
-        cart.push({
-            id: productId,
-            name: productName,
-            price: productPrice,
-            image: productImage,
-            quantity: 1
+async function addToCart(productId, productName, productPrice, productImage) {
+    if (!isLoggedIn) {
+        showNotification('Please login to add items to cart', 'info');
+        setTimeout(() => {
+            window.location.href = 'index.php?page=login';
+        }, 1000);
+        return;
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('action', 'add');
+        formData.append('product_id', productId);
+        formData.append('quantity', 1);
+
+        const response = await fetch('includes/cart_api.php', {
+            method: 'POST',
+            body: formData
         });
+        const data = await response.json();
+
+        if (data.requireLogin) {
+            showNotification('Please login to add items to cart', 'info');
+            window.location.href = 'index.php?page=login';
+            return;
+        }
+
+        if (data.success) {
+            // Refresh cart from server
+            await initCart();
+            showNotification(`${productName} added to cart!`, 'success');
+            animateCartIcon();
+        } else {
+            showNotification(data.message || 'Error adding to cart', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding to cart:', error);
+        showNotification('Error adding to cart', 'error');
     }
-    
-    saveCart();
-    updateCartUI();
-    showNotification(`${productName} added to cart!`, 'success');
-    animateCartIcon();
 }
 
-function removeFromCart(productId) {
-    cart = cart.filter(item => item.id !== productId);
-    saveCart();
-    updateCartUI();
+async function removeFromCart(productId) {
+    if (!isLoggedIn) return;
+
+    try {
+        const formData = new FormData();
+        formData.append('action', 'remove');
+        formData.append('product_id', productId);
+
+        const response = await fetch('includes/cart_api.php', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            await initCart();
+        }
+    } catch (error) {
+        console.error('Error removing from cart:', error);
+    }
+
     if (typeof renderCartPage === 'function') {
         renderCartPage();
     }
 }
 
-function updateQuantity(productId, newQuantity) {
-    const item = cart.find(item => item.id === productId);
-    if (item) {
-        if (newQuantity <= 0) {
-            removeFromCart(productId);
-        } else {
-            item.quantity = newQuantity;
-            saveCart();
-            updateCartUI();
+async function updateQuantity(productId, newQuantity) {
+    if (!isLoggedIn) return;
+
+    if (newQuantity <= 0) {
+        await removeFromCart(productId);
+        return;
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('action', 'update');
+        formData.append('product_id', productId);
+        formData.append('quantity', newQuantity);
+
+        const response = await fetch('includes/cart_api.php', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            await initCart();
         }
+    } catch (error) {
+        console.error('Error updating quantity:', error);
     }
 }
 
-function saveCart() {
-    localStorage.setItem('bakeAndTakeCart', JSON.stringify(cart));
+// Helper to remove local cart data from previous guest sessions
+function clearLocalCart() {
+    localStorage.removeItem('bakeAndTakeCart');
 }
 
 function getCart() {
@@ -93,20 +159,38 @@ function getCartItemCount() {
     return cart.reduce((count, item) => count + item.quantity, 0);
 }
 
-function clearCart() {
+async function clearCart() {
+    if (isLoggedIn) {
+        try {
+            const formData = new FormData();
+            formData.append('action', 'clear');
+
+            await fetch('includes/cart_api.php', {
+                method: 'POST',
+                body: formData
+            });
+        } catch (error) {
+            console.error('Error clearing cart:', error);
+        }
+    }
+
     cart = [];
-    saveCart();
     updateCartUI();
 }
 
 function updateCartUI() {
     const cartCountElements = document.querySelectorAll('#cartCount, .cart-count');
     const count = getCartItemCount();
-    
+
     cartCountElements.forEach(el => {
         el.textContent = count;
         el.style.display = count > 0 ? 'flex' : 'none';
     });
+
+    // Clear legacy localStorage data if it exists
+    if (localStorage.getItem('bakeAndTakeCart')) {
+        clearLocalCart();
+    }
 }
 
 function animateCartIcon() {
@@ -122,7 +206,7 @@ function animateCartIcon() {
  */
 function initNavbarScroll() {
     const navbar = document.getElementById('mainNav');
-    
+
     function handleScroll() {
         if (window.scrollY > 50) {
             navbar.classList.add('scrolled');
@@ -130,7 +214,7 @@ function initNavbarScroll() {
             navbar.classList.remove('scrolled');
         }
     }
-    
+
     window.addEventListener('scroll', handleScroll);
     handleScroll();
 }
@@ -140,15 +224,15 @@ function initNavbarScroll() {
  */
 function initProductCards() {
     document.querySelectorAll('.btn-add-cart').forEach(btn => {
-        btn.addEventListener('click', function(e) {
+        btn.addEventListener('click', function (e) {
             e.preventDefault();
-            
+
             const card = this.closest('.product-card');
             const id = parseInt(card.dataset.productId);
             const name = card.dataset.productName;
             const price = parseFloat(card.dataset.productPrice);
             const image = card.dataset.productImage;
-            
+
             addToCart(id, name, price, image);
         });
     });
@@ -162,7 +246,7 @@ function initQuantityControls() {
         const minusBtn = control.querySelector('.quantity-minus');
         const plusBtn = control.querySelector('.quantity-plus');
         const input = control.querySelector('.quantity-input');
-        
+
         if (minusBtn) {
             minusBtn.addEventListener('click', () => {
                 const currentVal = parseInt(input.value) || 1;
@@ -172,7 +256,7 @@ function initQuantityControls() {
                 }
             });
         }
-        
+
         if (plusBtn) {
             plusBtn.addEventListener('click', () => {
                 const currentVal = parseInt(input.value) || 1;
@@ -191,7 +275,7 @@ function initScrollAnimations() {
         threshold: 0.1,
         rootMargin: '0px 0px -50px 0px'
     };
-    
+
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -200,7 +284,7 @@ function initScrollAnimations() {
             }
         });
     }, observerOptions);
-    
+
     document.querySelectorAll('.product-card, .category-card, .feature-card, .testimonial-card').forEach(el => {
         el.classList.add('animate-on-scroll');
         observer.observe(el);
@@ -217,7 +301,7 @@ function showNotification(message, type = 'info') {
         <i class="bi ${type === 'success' ? 'bi-check-circle' : 'bi-info-circle'}"></i>
         <span>${message}</span>
     `;
-    
+
     // Add styles dynamically if not present
     if (!document.querySelector('#notification-styles')) {
         const styles = document.createElement('style');
@@ -265,9 +349,9 @@ function showNotification(message, type = 'info') {
         `;
         document.head.appendChild(styles);
     }
-    
+
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
         notification.style.animation = 'slideOut 0.3s ease-out forwards';
         setTimeout(() => notification.remove(), 300);
@@ -280,7 +364,7 @@ function showNotification(message, type = 'info') {
 function validateForm(formId) {
     const form = document.getElementById(formId);
     let isValid = true;
-    
+
     form.querySelectorAll('[required]').forEach(input => {
         if (!input.value.trim()) {
             isValid = false;
@@ -289,7 +373,7 @@ function validateForm(formId) {
             input.classList.remove('is-invalid');
         }
     });
-    
+
     const emailInputs = form.querySelectorAll('input[type="email"]');
     emailInputs.forEach(input => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -298,7 +382,7 @@ function validateForm(formId) {
             input.classList.add('is-invalid');
         }
     });
-    
+
     return isValid;
 }
 
@@ -306,7 +390,7 @@ function validateForm(formId) {
  * Smooth Scroll
  */
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function(e) {
+    anchor.addEventListener('click', function (e) {
         const targetId = this.getAttribute('href');
         if (targetId !== '#') {
             e.preventDefault();

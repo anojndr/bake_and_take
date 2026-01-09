@@ -26,7 +26,7 @@ if (!in_array($page, $allowedPages)) {
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
-    <link href="assets/css/style.css" rel="stylesheet">
+    <link href="assets/css/style.css?v=<?php echo time(); ?>" rel="stylesheet">
 </head>
 <body>
     <!-- Navigation -->
