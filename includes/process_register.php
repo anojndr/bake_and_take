@@ -34,11 +34,35 @@ if ($password !== $confirmPassword) {
     redirect('../index.php?page=register', 'Passwords do not match.', 'error');
 }
 
-// In production, save to database with hashed password
-// For demo, auto-login
-$_SESSION['user_id'] = 1;
-$_SESSION['user_email'] = $email;
-$_SESSION['user_name'] = $firstName . ' ' . $lastName;
+// Check if database connection exists
+if (!$pdo) {
+    redirect('../index.php?page=register', 'Database connection error. Please try again later.', 'error');
+}
 
-redirect('../index.php', 'Account created successfully! Welcome to Bake & Take.', 'success');
+// Check if email already exists
+$stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+$stmt->execute([$email]);
+if ($stmt->fetch()) {
+    redirect('../index.php?page=register', 'An account with this email already exists. Please login instead.', 'error');
+}
+
+// Hash the password
+$hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
+// Insert user into database
+try {
+    $stmt = $pdo->prepare("INSERT INTO users (first_name, last_name, email, password) VALUES (?, ?, ?, ?)");
+    $stmt->execute([$firstName, $lastName, $email, $hashedPassword]);
+    
+    $userId = $pdo->lastInsertId();
+    
+    // Auto-login after registration
+    $_SESSION['user_id'] = $userId;
+    $_SESSION['user_email'] = $email;
+    $_SESSION['user_name'] = $firstName . ' ' . $lastName;
+    
+    redirect('../index.php', 'Account created successfully! Welcome to Bake & Take.', 'success');
+} catch (PDOException $e) {
+    redirect('../index.php?page=register', 'Registration failed. Please try again.', 'error');
+}
 ?>
