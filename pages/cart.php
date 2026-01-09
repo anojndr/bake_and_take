@@ -13,20 +13,21 @@
 <!-- Cart Section -->
 <section class="section cart-section">
     <div class="container">
-        <div class="row g-4">
+        <!-- Empty Cart Message - Centered -->
+        <div class="empty-cart text-center py-5" id="emptyCart" style="display: none;">
+            <i class="bi bi-cart-x" style="font-size: 5rem; color: var(--text-light);"></i>
+            <h3 class="mt-3">Your cart is empty</h3>
+            <p class="text-muted mb-4">Looks like you haven't added any items yet</p>
+            <a href="index.php?page=menu" class="btn btn-hero btn-hero-primary">
+                <i class="bi bi-basket me-2"></i> Browse Menu
+            </a>
+        </div>
+        
+        <div class="row g-4" id="cartContentRow">
             <!-- Cart Items -->
             <div class="col-lg-8">
                 <div class="cart-items-container" id="cartItemsContainer">
                     <!-- Cart items will be rendered by JavaScript -->
-                </div>
-                
-                <div class="empty-cart text-center py-5" id="emptyCart" style="display: none;">
-                    <i class="bi bi-cart-x" style="font-size: 5rem; color: var(--text-light);"></i>
-                    <h3 class="mt-3">Your cart is empty</h3>
-                    <p class="text-muted mb-4">Looks like you haven't added any items yet</p>
-                    <a href="index.php?page=menu" class="btn btn-hero btn-hero-primary">
-                        <i class="bi bi-basket me-2"></i> Browse Menu
-                    </a>
                 </div>
             </div>
             
@@ -256,17 +257,17 @@ function renderCartPage() {
     const cart = getCart();
     const container = document.getElementById('cartItemsContainer');
     const emptyCart = document.getElementById('emptyCart');
-    const cartSummary = document.getElementById('cartSummary');
+    const cartContentRow = document.getElementById('cartContentRow');
     
     if (cart.length === 0) {
         container.innerHTML = '';
         emptyCart.style.display = 'block';
-        cartSummary.style.display = 'none';
+        cartContentRow.style.display = 'none';
         return;
     }
     
     emptyCart.style.display = 'none';
-    cartSummary.style.display = 'block';
+    cartContentRow.style.display = 'flex';
     
     container.innerHTML = cart.map(item => `
         <div class="cart-item" data-id="${item.id}">
