@@ -1,0 +1,92 @@
+# =========================
+# PHP Project .gitignore
+# =========================
+
+# Composer dependencies
+/vendor/
+composer.lock
+
+# Environment files (contain sensitive data)
+.env
+.env.local
+.env.*.local
+*.env
+
+# IDE and editor files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Logs and debug files
+*.log
+logs/
+/log/
+error_log
+debug.log
+
+# Cache and temp files
+/cache/
+*.cache
+/tmp/
+/temp/
+*.tmp
+
+# Database files
+*.sql
+*.sqlite
+*.db
+/database/*.sql
+
+# Session files
+/sessions/
+
+# Upload directories (may contain user content)
+/uploads/
+/upload/
+
+# Build artifacts
+/build/
+/dist/
+
+# PHP specific
+*.phar
+
+# PHPUnit
+/phpunit.xml
+.phpunit.result.cache
+/coverage/
+
+# Local configuration
+config.local.php
+local.php
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Node modules (if using npm for frontend)
+node_modules/
+package-lock.json
+yarn.lock
+
+# SASS/CSS cache
+.sass-cache/
+*.css.map
+
