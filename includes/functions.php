@@ -1,6 +1,7 @@
 <?php
 /**
  * Bake & Take - Helper Functions
+ * Updated to fetch data from MySQL database
  */
 
 function sanitize($input) {
@@ -11,64 +12,276 @@ function formatPrice($price) {
     return '$' . number_format($price, 2);
 }
 
+/**
+ * Get all products from database
+ */
+function getAllProducts() {
+    global $pdo, $PRODUCTS;
+    
+    if ($pdo) {
+        try {
+            $stmt = $pdo->query("
+                SELECT p.*, c.slug as category 
+                FROM products p 
+                LEFT JOIN categories c ON p.category_id = c.id 
+                WHERE p.active = 1 
+                ORDER BY p.featured DESC, p.name ASC
+            ");
+            $products = $stmt->fetchAll();
+            
+            // Convert 'featured' to boolean for consistency
+            foreach ($products as &$product) {
+                $product['featured'] = (bool) $product['featured'];
+            }
+            
+            return $products;
+        } catch (PDOException $e) {
+            // Fallback to static array if query fails
+            return $PRODUCTS;
+        }
+    }
+    
+    return $PRODUCTS;
+}
+
+/**
+ * Get products by category from database
+ */
 function getProductsByCategory($category = null) {
-    global $PRODUCTS;
-    if ($category === null) return $PRODUCTS;
+    global $pdo, $PRODUCTS;
+    
+    if ($category === null) {
+        return getAllProducts();
+    }
+    
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("
+                SELECT p.*, c.slug as category 
+                FROM products p 
+                LEFT JOIN categories c ON p.category_id = c.id 
+                WHERE c.slug = ? AND p.active = 1 
+                ORDER BY p.featured DESC, p.name ASC
+            ");
+            $stmt->execute([$category]);
+            $products = $stmt->fetchAll();
+            
+            foreach ($products as &$product) {
+                $product['featured'] = (bool) $product['featured'];
+            }
+            
+            return $products;
+        } catch (PDOException $e) {
+            // Fallback to static array
+            return array_filter($PRODUCTS, fn($p) => $p['category'] === $category);
+        }
+    }
+    
     return array_filter($PRODUCTS, fn($p) => $p['category'] === $category);
 }
 
+/**
+ * Get featured products from database
+ */
 function getFeaturedProducts() {
-    global $PRODUCTS;
+    global $pdo, $PRODUCTS;
+    
+    if ($pdo) {
+        try {
+            $stmt = $pdo->query("
+                SELECT p.*, c.slug as category 
+                FROM products p 
+                LEFT JOIN categories c ON p.category_id = c.id 
+                WHERE p.featured = 1 AND p.active = 1 
+                ORDER BY p.name ASC
+            ");
+            $products = $stmt->fetchAll();
+            
+            foreach ($products as &$product) {
+                $product['featured'] = true;
+            }
+            
+            return $products;
+        } catch (PDOException $e) {
+            return array_filter($PRODUCTS, fn($p) => $p['featured'] === true);
+        }
+    }
+    
     return array_filter($PRODUCTS, fn($p) => $p['featured'] === true);
 }
 
+/**
+ * Get single product by ID from database
+ */
 function getProductById($id) {
-    global $PRODUCTS;
-    foreach ($PRODUCTS as $p) { if ($p['id'] == $id) return $p; }
+    global $pdo, $PRODUCTS;
+    
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("
+                SELECT p.*, c.slug as category 
+                FROM products p 
+                LEFT JOIN categories c ON p.category_id = c.id 
+                WHERE p.id = ?
+            ");
+            $stmt->execute([$id]);
+            $product = $stmt->fetch();
+            
+            if ($product) {
+                $product['featured'] = (bool) $product['featured'];
+                return $product;
+            }
+        } catch (PDOException $e) {
+            // Fallback to static array
+        }
+    }
+    
+    foreach ($PRODUCTS as $p) { 
+        if ($p['id'] == $id) return $p; 
+    }
     return null;
 }
 
+/**
+ * Get all categories from database
+ */
+function getAllCategories() {
+    global $pdo, $CATEGORIES;
+    
+    if ($pdo) {
+        try {
+            $stmt = $pdo->query("SELECT * FROM categories ORDER BY name ASC");
+            $categories = [];
+            while ($row = $stmt->fetch()) {
+                $categories[$row['slug']] = [
+                    'id' => $row['id'],
+                    'name' => $row['name'],
+                    'icon' => $row['icon']
+                ];
+            }
+            return $categories;
+        } catch (PDOException $e) {
+            return $CATEGORIES;
+        }
+    }
+    
+    return $CATEGORIES;
+}
+
+/**
+ * Get category name by slug
+ */
 function getCategoryName($slug) {
-    global $CATEGORIES;
+    global $pdo, $CATEGORIES;
+    
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("SELECT name FROM categories WHERE slug = ?");
+            $stmt->execute([$slug]);
+            $category = $stmt->fetch();
+            if ($category) {
+                return $category['name'];
+            }
+        } catch (PDOException $e) {
+            // Fallback to static array
+        }
+    }
+    
     return isset($CATEGORIES[$slug]) ? $CATEGORIES[$slug]['name'] : 'All Products';
 }
 
-function getProductImage($image) { return "assets/images/products/{$image}"; }
+/**
+ * Get product count by category
+ */
+function getProductCountByCategory($categorySlug = null) {
+    global $pdo, $PRODUCTS;
+    
+    if ($pdo) {
+        try {
+            if ($categorySlug === null) {
+                $stmt = $pdo->query("SELECT COUNT(*) as count FROM products WHERE active = 1");
+            } else {
+                $stmt = $pdo->prepare("
+                    SELECT COUNT(*) as count 
+                    FROM products p 
+                    JOIN categories c ON p.category_id = c.id 
+                    WHERE c.slug = ? AND p.active = 1
+                ");
+                $stmt->execute([$categorySlug]);
+            }
+            $result = $stmt->fetch();
+            return (int) $result['count'];
+        } catch (PDOException $e) {
+            // Fallback
+        }
+    }
+    
+    if ($categorySlug === null) {
+        return count($PRODUCTS);
+    }
+    return count(array_filter($PRODUCTS, fn($p) => $p['category'] === $categorySlug));
+}
 
-function setFlashMessage($type, $message) { $_SESSION['flash'] = ['type' => $type, 'message' => $message]; }
+function getProductImage($image) { 
+    return "assets/images/products/{$image}"; 
+}
+
+function setFlashMessage($type, $message) { 
+    $_SESSION['flash'] = ['type' => $type, 'message' => $message]; 
+}
 
 function getFlashMessage() {
-    if (isset($_SESSION['flash'])) { $f = $_SESSION['flash']; unset($_SESSION['flash']); return $f; }
+    if (isset($_SESSION['flash'])) { 
+        $f = $_SESSION['flash']; 
+        unset($_SESSION['flash']); 
+        return $f; 
+    }
     return null;
 }
 
-function isLoggedIn() { return isset($_SESSION['user_id']); }
+function isLoggedIn() { 
+    return isset($_SESSION['user_id']); 
+}
 
 function redirect($url, $message = null, $type = 'info') {
     if ($message) setFlashMessage($type, $message);
-    header("Location: {$url}"); exit;
+    header("Location: {$url}"); 
+    exit;
 }
 
-function isValidEmail($email) { return filter_var($email, FILTER_VALIDATE_EMAIL) !== false; }
+function isValidEmail($email) { 
+    return filter_var($email, FILTER_VALIDATE_EMAIL) !== false; 
+}
 
 function generateCSRFToken() {
-    if (!isset($_SESSION['csrf_token'])) $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    if (!isset($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
     return $_SESSION['csrf_token'];
 }
 
-function verifyCSRFToken($token) { return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token); }
+function verifyCSRFToken($token) { 
+    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token); 
+}
 
-function getCart() { return $_SESSION['cart'] ?? []; }
+function getCart() { 
+    return $_SESSION['cart'] ?? []; 
+}
 
 function getCartTotal() {
     $total = 0;
-    foreach (getCart() as $item) { $p = getProductById($item['product_id']); if ($p) $total += $p['price'] * $item['quantity']; }
+    foreach (getCart() as $item) { 
+        $p = getProductById($item['product_id']); 
+        if ($p) $total += $p['price'] * $item['quantity']; 
+    }
     return $total;
 }
 
 function getCartItemCount() {
     $count = 0;
-    foreach (getCart() as $item) $count += $item['quantity'];
+    foreach (getCart() as $item) {
+        $count += $item['quantity'];
+    }
     return $count;
 }
 ?>

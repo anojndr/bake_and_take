@@ -34,13 +34,13 @@
             <p class="section-subtitle">From artisan breads to decadent cakes, discover your next favorite treat</p>
         </div>
         <div class="categories-grid">
-            <?php foreach ($CATEGORIES as $slug => $category): ?>
+            <?php foreach (getAllCategories() as $slug => $category): ?>
             <a href="index.php?page=menu&category=<?php echo $slug; ?>" class="category-card">
                 <div class="category-icon">
                     <i class="bi <?php echo $category['icon']; ?>"></i>
                 </div>
                 <h4><?php echo $category['name']; ?></h4>
-                <p><?php echo count(array_filter($PRODUCTS, fn($p) => $p['category'] === $slug)); ?> Items</p>
+                <p><?php echo getProductCountByCategory($slug); ?> Items</p>
             </a>
             <?php endforeach; ?>
         </div>

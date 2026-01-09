@@ -4,8 +4,12 @@ $searchQuery = isset($_GET['search']) ? trim($_GET['search']) : '';
 $currentPage = isset($_GET['pg']) ? max(1, (int)$_GET['pg']) : 1;
 $itemsPerPage = 6;
 
-// Get base products (by category if selected)
-$products = $selectedCategory ? getProductsByCategory($selectedCategory) : $PRODUCTS;
+// Get all categories and products from database
+$allCategories = getAllCategories();
+$allProducts = getAllProducts();
+
+// Get products (by category if selected)
+$products = $selectedCategory ? getProductsByCategory($selectedCategory) : $allProducts;
 
 // Filter by search query
 if (!empty($searchQuery)) {
@@ -97,16 +101,16 @@ function buildPaginationUrl($page, $category = null, $search = '') {
                         <li>
                             <a href="index.php?page=menu<?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) : ''; ?>" class="<?php echo !$selectedCategory ? 'active' : ''; ?>">
                                 <i class="bi bi-grid me-2"></i> All Products
-                                <span class="count"><?php echo count($PRODUCTS); ?></span>
+                                <span class="count"><?php echo getProductCountByCategory(); ?></span>
                             </a>
                         </li>
-                        <?php foreach ($CATEGORIES as $slug => $category): ?>
+                        <?php foreach ($allCategories as $slug => $category): ?>
                         <li>
                             <a href="index.php?page=menu&category=<?php echo $slug; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) : ''; ?>" 
                                class="<?php echo $selectedCategory === $slug ? 'active' : ''; ?>">
                                 <i class="bi <?php echo $category['icon']; ?> me-2"></i>
                                 <?php echo $category['name']; ?>
-                                <span class="count"><?php echo count(array_filter($PRODUCTS, fn($p) => $p['category'] === $slug)); ?></span>
+                                <span class="count"><?php echo getProductCountByCategory($slug); ?></span>
                             </a>
                         </li>
                         <?php endforeach; ?>
