@@ -292,7 +292,23 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    renderCheckoutItems();
+    // Wait for main.js to initialize the cart from localStorage
+    setTimeout(function() {
+        // Re-initialize cart from localStorage to ensure we have the latest data
+        const savedCart = localStorage.getItem('bakeAndTakeCart');
+        if (savedCart) {
+            try {
+                const parsedCart = JSON.parse(savedCart);
+                if (typeof cart !== 'undefined') {
+                    cart.length = 0;
+                    parsedCart.forEach(item => cart.push(item));
+                }
+            } catch (e) {
+                console.error('Error parsing cart from localStorage:', e);
+            }
+        }
+        renderCheckoutItems();
+    }, 50);
     
     // Toggle address section based on delivery method
     document.querySelectorAll('input[name="delivery_method"]').forEach(radio => {

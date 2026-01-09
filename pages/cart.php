@@ -231,7 +231,25 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    renderCartPage();
+    // Wait for main.js to initialize the cart from localStorage
+    // Use a small timeout to ensure initCart() in main.js has run first
+    setTimeout(function() {
+        // Re-initialize cart from localStorage to ensure we have the latest data
+        const savedCart = localStorage.getItem('bakeAndTakeCart');
+        if (savedCart) {
+            try {
+                const parsedCart = JSON.parse(savedCart);
+                // Update the global cart variable if it exists
+                if (typeof cart !== 'undefined') {
+                    cart.length = 0;
+                    parsedCart.forEach(item => cart.push(item));
+                }
+            } catch (e) {
+                console.error('Error parsing cart from localStorage:', e);
+            }
+        }
+        renderCartPage();
+    }, 50);
 });
 
 function renderCartPage() {
