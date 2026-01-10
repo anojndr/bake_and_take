@@ -15,8 +15,8 @@
 
 // SMSGate API endpoint (your Android device running SMSGate)
 // This should be the IP address of your Android device on the local network
-// Local: http://192.168.100.103:8080 | Public: http://136.158.78.144:8080
-define('SMS_GATEWAY_URL', 'http://192.168.100.103:8080');
+// Local: http://192.168.100.159:8080 | Public: http://136.158.78.144:8080
+define('SMS_GATEWAY_URL', 'http://192.168.100.159:8080');
 
 // SMSGate API endpoint path for sending messages
 define('SMS_GATEWAY_SEND_PATH', '/message');

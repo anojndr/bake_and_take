@@ -27,8 +27,8 @@ if (file_exists(__DIR__ . '/secrets.php')) {
     define('SMTP_PASS', '');
 }
 
-// Timezone
-date_default_timezone_set('America/New_York');
+// Timezone - Set to Philippines
+date_default_timezone_set('Asia/Manila');
 
 // Error Reporting (disable in production)
 error_reporting(E_ALL);

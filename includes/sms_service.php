@@ -213,19 +213,20 @@ function verifyOTP($phoneNumber, $otpCode) {
     }
     
     $phoneNumber = formatPhoneNumber($phoneNumber);
+    $currentTime = date('Y-m-d H:i:s');
     
     try {
-        // Find the OTP record
+        // Find the OTP record - check expiry using PHP time for timezone consistency
         $stmt = $pdo->prepare("
             SELECT * FROM sms_otp 
             WHERE phone_number = ? 
             AND otp_code = ?
             AND verified_at IS NULL
-            AND expires_at > NOW()
+            AND expires_at > ?
             ORDER BY created_at DESC
             LIMIT 1
         ");
-        $stmt->execute([$phoneNumber, $otpCode]);
+        $stmt->execute([$phoneNumber, $otpCode, $currentTime]);
         $otpRecord = $stmt->fetch();
         
         if (!$otpRecord) {
