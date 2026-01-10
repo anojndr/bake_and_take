@@ -182,6 +182,34 @@ img {
     border-radius: 50%;
     color: var(--secondary);
     font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Fix for dropdown toggle in nav-actions to prevent overlap with cart */
+.nav-actions .dropdown {
+    position: relative;
+    z-index: 1;
+}
+
+.nav-actions .btn-user.dropdown-toggle {
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Hide the default Bootstrap dropdown arrow/caret */
+.nav-actions .btn-user.dropdown-toggle::after {
+    display: none;
+}
+
+/* Ensure cart button doesn't overlap with user dropdown */
+.nav-actions .btn-cart {
+    flex-shrink: 0;
+    z-index: 1;
 }
 
 .btn-primary-custom {
