@@ -4,7 +4,7 @@ require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
 $page = isset($_GET['page']) ? $_GET['page'] : 'home';
-$allowedPages = ['home', 'menu', 'about', 'contact', 'cart', 'checkout', 'login', 'register', 'order-success', 'orders', 'privacy-policy'];
+$allowedPages = ['home', 'menu', 'about', 'contact', 'cart', 'checkout', 'login', 'register', 'order-success', 'orders', 'privacy-policy', 'terms-of-service'];
 
 if (!in_array($page, $allowedPages)) {
     $page = 'home';
@@ -161,7 +161,7 @@ if (!in_array($page, $allowedPages)) {
                 </div>
                 <div class="col-md-6 text-md-end">
                     <a href="index.php?page=privacy-policy" class="footer-link me-3">Privacy Policy</a>
-                    <a href="#" class="footer-link">Terms of Service</a>
+                    <a href="index.php?page=terms-of-service" class="footer-link">Terms of Service</a>
                 </div>
             </div>
         </div>
