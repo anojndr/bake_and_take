@@ -106,7 +106,7 @@ if ($pdo) {
                             <div class="order-card-footer">
                                 <div class="order-total">
                                     <span class="total-label">Total</span>
-                                    <span class="total-amount">$<?php echo number_format($order['total'], 2); ?></span>
+                                    <span class="total-amount">₱<?php echo number_format($order['total'], 2); ?></span>
                                 </div>
                                 <button class="btn btn-view-details" onclick="viewOrderDetails(<?php echo $order['id']; ?>)">
                                     View Details <i class="bi bi-chevron-right"></i>
@@ -619,19 +619,19 @@ async function viewOrderDetails(orderId) {
         <div class="order-totals">
             <div class="totals-row">
                 <span>Subtotal</span>
-                <span>$${parseFloat(order.subtotal).toFixed(2)}</span>
+                <span>₱${parseFloat(order.subtotal).toFixed(2)}</span>
             </div>
             <div class="totals-row">
                 <span>Delivery Fee</span>
-                <span>${parseFloat(order.delivery_fee) > 0 ? '$' + parseFloat(order.delivery_fee).toFixed(2) : 'Free'}</span>
+                <span>${parseFloat(order.delivery_fee) > 0 ? '₱' + parseFloat(order.delivery_fee).toFixed(2) : 'Free'}</span>
             </div>
             <div class="totals-row">
                 <span>Tax</span>
-                <span>$${parseFloat(order.tax).toFixed(2)}</span>
+                <span>₱${parseFloat(order.tax).toFixed(2)}</span>
             </div>
             <div class="totals-row">
                 <span>Total</span>
-                <span>$${parseFloat(order.total).toFixed(2)}</span>
+                <span>₱${parseFloat(order.total).toFixed(2)}</span>
             </div>
         </div>
     `;

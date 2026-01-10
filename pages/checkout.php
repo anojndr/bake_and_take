@@ -112,15 +112,15 @@
                     <hr>
                     <div class="summary-row">
                         <span>Subtotal</span>
-                        <span id="checkoutSubtotal">$0.00</span>
+                        <span id="checkoutSubtotal">₱0.00</span>
                     </div>
                     <div class="summary-row">
                         <span>Tax (8%)</span>
-                        <span id="checkoutTax">$0.00</span>
+                        <span id="checkoutTax">₱0.00</span>
                     </div>
                     <div class="summary-row total">
                         <span>Total</span>
-                        <span id="checkoutTotal">$0.00</span>
+                        <span id="checkoutTotal">₱0.00</span>
                     </div>
                     
                     <div class="secure-info text-center mt-4">
@@ -337,7 +337,7 @@ function renderCheckoutItems() {
                 <div class="order-item-name">${item.name}</div>
                 <div class="order-item-qty">Qty: ${item.quantity}</div>
             </div>
-            <div class="order-item-price">$${(item.price * item.quantity).toFixed(2)}</div>
+            <div class="order-item-price">₱${(item.price * item.quantity).toFixed(2)}</div>
         </div>
     `).join('');
     
@@ -349,9 +349,9 @@ function updateCheckoutSummary() {
     const tax = subtotal * 0.08;
     const total = subtotal + tax;
     
-    document.getElementById('checkoutSubtotal').textContent = '$' + subtotal.toFixed(2);
-    document.getElementById('checkoutTax').textContent = '$' + tax.toFixed(2);
-    document.getElementById('checkoutTotal').textContent = '$' + total.toFixed(2);
+    document.getElementById('checkoutSubtotal').textContent = '₱' + subtotal.toFixed(2);
+    document.getElementById('checkoutTax').textContent = '₱' + tax.toFixed(2);
+    document.getElementById('checkoutTotal').textContent = '₱' + total.toFixed(2);
 }
 
 function validateCustomerInfo() {

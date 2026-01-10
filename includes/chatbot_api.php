@@ -84,7 +84,7 @@ function buildProductsInfo() {
         // Fallback to config products if database fails
         if (isset($PRODUCTS) && is_array($PRODUCTS)) {
             foreach ($PRODUCTS as $product) {
-                $price = '$' . number_format($product['price'], 2);
+                $price = '₱' . number_format($product['price'], 2);
                 $featured = !empty($product['featured']) ? ' [BESTSELLER]' : '';
                 $productsInfo .= "- **{$product['name']}**{$featured}: {$product['description']} - {$price}\n";
             }
@@ -120,7 +120,7 @@ function buildFeaturedProductsInfo() {
             $featuredInfo = "";
             foreach ($PRODUCTS as $product) {
                 if (!empty($product['featured'])) {
-                    $price = '$' . number_format($product['price'], 2);
+                    $price = '₱' . number_format($product['price'], 2);
                     $featuredInfo .= "- **{$product['name']}** - {$product['description']} ({$price})\n";
                 }
             }

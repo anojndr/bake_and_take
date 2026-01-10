@@ -57,15 +57,15 @@
                     <div class="summary-content">
                         <div class="summary-row">
                             <span>Subtotal</span>
-                            <span id="subtotal">$0.00</span>
+                            <span id="subtotal">₱0.00</span>
                         </div>
                         <div class="summary-row">
                             <span>Tax (8%)</span>
-                            <span id="tax">$0.00</span>
+                            <span id="tax">₱0.00</span>
                         </div>
                         <div class="summary-row total">
                             <span>Total</span>
-                            <span id="total">$0.00</span>
+                            <span id="total">₱0.00</span>
                         </div>
                     </div>
                     
@@ -277,7 +277,7 @@ function renderCartPage() {
                  onerror="this.src='assets/images/placeholder.jpg'">
             <div class="cart-item-details">
                 <h5 class="cart-item-title">${item.name}</h5>
-                <span class="cart-item-price">$${item.price.toFixed(2)}</span>
+                <span class="cart-item-price">₱${item.price.toFixed(2)}</span>
             </div>
             <div class="quantity-control">
                 <button class="quantity-btn quantity-minus" onclick="updateCartItem(${item.id}, ${item.quantity - 1})">
@@ -289,7 +289,7 @@ function renderCartPage() {
                     <i class="bi bi-plus"></i>
                 </button>
             </div>
-            <span class="cart-item-total">$${(item.price * item.quantity).toFixed(2)}</span>
+            <span class="cart-item-total">₱${(item.price * item.quantity).toFixed(2)}</span>
             <button class="remove-item" onclick="removeCartItem(${item.id})" title="Remove">
                 <i class="bi bi-x-lg"></i>
             </button>
@@ -315,9 +315,9 @@ function updateSummary() {
     const tax = subtotal * 0.08;
     const total = subtotal + tax;
     
-    document.getElementById('subtotal').textContent = '$' + subtotal.toFixed(2);
-    document.getElementById('tax').textContent = '$' + tax.toFixed(2);
-    document.getElementById('total').textContent = '$' + total.toFixed(2);
+    document.getElementById('subtotal').textContent = '₱' + subtotal.toFixed(2);
+    document.getElementById('tax').textContent = '₱' + tax.toFixed(2);
+    document.getElementById('total').textContent = '₱' + total.toFixed(2);
 }
 </script>
 

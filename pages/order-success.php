@@ -19,7 +19,7 @@ $paypalCaptureId = $lastOrder['paypal_capture_id'] ?? null;
         <?php if ($orderTotal > 0): ?>
         <div class="order-total-display">
             <span class="label">Total Paid</span>
-            <span class="amount">$<?php echo number_format($orderTotal, 2); ?></span>
+            <span class="amount">₱<?php echo number_format($orderTotal, 2); ?></span>
         </div>
         <?php endif; ?>
         

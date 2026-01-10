@@ -2,7 +2,7 @@
  * Bake & Take - Admin Panel JavaScript
  */
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Sidebar Toggle for Mobile
     const sidebar = document.getElementById('adminSidebar');
     const sidebarOpen = document.getElementById('sidebarOpen');
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Confirm delete actions
     const deleteButtons = document.querySelectorAll('[data-confirm]');
     deleteButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
+        button.addEventListener('click', function (e) {
             const message = this.getAttribute('data-confirm') || 'Are you sure you want to delete this item?';
             if (!confirm(message)) {
                 e.preventDefault();
@@ -62,10 +62,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Active status update
     const statusSelects = document.querySelectorAll('.status-select');
     statusSelects.forEach(select => {
-        select.addEventListener('change', function() {
+        select.addEventListener('change', function () {
             const orderId = this.getAttribute('data-order-id');
             const newStatusValue = this.value;
-            
+
             // Update status via AJAX
             fetch('includes/update_order_status.php', {
                 method: 'POST',
@@ -74,19 +74,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 body: `order_id=${orderId}&status=${newStatusValue}`
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Show success notification
-                    showNotification('Order status updated successfully', 'success');
-                } else {
-                    showNotification('Failed to update order status', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('An error occurred', 'error');
-            });
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success notification
+                        showNotification('Order status updated successfully', 'success');
+                    } else {
+                        showNotification('Failed to update order status', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('An error occurred', 'error');
+                });
         });
     });
 
@@ -107,15 +107,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 3000);
     }
 
-    // Format currency
-    window.formatCurrency = function(amount) {
-        return '$' + parseFloat(amount).toFixed(2);
+    // Format currency (Philippine Peso)
+    window.formatCurrency = function (amount) {
+        return '₱' + parseFloat(amount).toFixed(2);
     };
 
     // Table row click to view details
     const clickableRows = document.querySelectorAll('.clickable-row');
     clickableRows.forEach(row => {
-        row.addEventListener('click', function() {
+        row.addEventListener('click', function () {
             window.location.href = this.getAttribute('data-href');
         });
     });

@@ -135,14 +135,14 @@ if ($pdo) {
             <p>Hi {$orderData['first_name']},</p>
             <p>Your order <strong>#{$orderNumber}</strong> has been received and is being processed.</p>
             <p>It will be ready for pickup at our store.</p>
-            <p><strong>Total:</strong> $" . number_format($total, 2) . "</p>
+            <p><strong>Total:</strong> ₱" . number_format($total, 2) . "</p>
             <br>
             <h3>Order Details</h3>
             <ul>
         ";
         
         foreach ($cartData as $item) {
-            $orderBody .= "<li>{$item['quantity']}x {$item['name']} - $" . number_format($item['price'] * $item['quantity'], 2) . "</li>";
+            $orderBody .= "<li>{$item['quantity']}x {$item['name']} - ₱" . number_format($item['price'] * $item['quantity'], 2) . "</li>";
         }
         
         $orderBody .= "
@@ -163,7 +163,7 @@ if ($pdo) {
             <p><strong>Method:</strong> Pickup</p>
             <p><strong>Customer:</strong> {$orderData['first_name']} {$orderData['last_name']}</p>
             <p><strong>Email:</strong> {$orderData['email']}</p>
-            <p><strong>Total:</strong> $" . number_format($total, 2) . "</p>
+            <p><strong>Total:</strong> ₱" . number_format($total, 2) . "</p>
             <a href='" . SITE_URL . "/admin/orders.php?id={$orderId}'>View Order</a>
         ";
         sendMail(SMTP_USER, $adminSubject, $adminBody);

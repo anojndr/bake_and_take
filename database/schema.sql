@@ -144,16 +144,17 @@ INSERT INTO categories (name, slug, icon) VALUES
 ('Cookies & Treats', 'cookies', 'bi-cookie');
 
 -- Insert sample products
+-- Prices in Philippine Peso (₱) - Updated based on market research from local bakeries
 INSERT INTO products (category_id, name, slug, description, price, image, featured) VALUES
-(1, 'Sourdough Loaf', 'sourdough-loaf', 'Traditional sourdough with a crispy crust and chewy interior. Fermented for 24 hours.', 8.99, 'sourdough.jpg', TRUE),
-(2, 'Butter Croissant', 'butter-croissant', 'Flaky, buttery layers made with authentic French technique.', 4.50, 'croissant.jpg', TRUE),
-(3, 'Red Velvet Cake', 'red-velvet-cake', 'Classic red velvet with cream cheese frosting. Serves 8-10.', 45.00, 'red-velvet.jpg', TRUE),
-(4, 'Chocolate Chip Cookies', 'chocolate-chip-cookies', 'Chewy cookies loaded with premium dark chocolate chips.', 3.50, 'chocolate-chip.jpg', TRUE),
-(1, 'Baguette', 'baguette', 'Classic French baguette with a golden crust.', 5.99, 'baguette.jpg', FALSE),
-(2, 'Pain au Chocolat', 'pain-au-chocolat', 'Buttery pastry with rich dark chocolate bars inside.', 4.99, 'pain-chocolat.jpg', TRUE),
-(3, 'Carrot Cake', 'carrot-cake', 'Moist carrot cake with cream cheese frosting and walnuts.', 42.00, 'carrot-cake.jpg', FALSE),
-(4, 'Macarons Box', 'macarons-box', 'Assorted French macarons in various flavors. Box of 12.', 18.00, 'macarons.jpg', TRUE),
-(1, 'Ciabatta', 'ciabatta', 'Italian bread with large air pockets and crispy crust.', 6.50, 'ciabatta.jpg', FALSE),
-(2, 'Danish Pastry', 'danish-pastry', 'Fruit-topped danish with vanilla custard.', 5.25, 'danish.jpg', FALSE),
-(3, 'Chocolate Truffle Cake', 'chocolate-truffle-cake', 'Decadent chocolate cake with ganache. Serves 10-12.', 55.00, 'truffle-cake.jpg', TRUE),
-(4, 'Oatmeal Raisin Cookies', 'oatmeal-raisin-cookies', 'Wholesome oatmeal cookies with plump raisins.', 3.25, 'oatmeal-raisin.jpg', FALSE);
+(1, 'Sourdough Loaf', 'sourdough-loaf', 'Traditional sourdough with a crispy crust and chewy interior. Fermented for 24 hours.', 299.00, 'sourdough.jpg', TRUE),
+(2, 'Butter Croissant', 'butter-croissant', 'Flaky, buttery layers made with authentic French technique.', 85.00, 'croissant.jpg', TRUE),
+(3, 'Red Velvet Cake', 'red-velvet-cake', 'Classic red velvet with cream cheese frosting. Serves 8-10.', 1350.00, 'red-velvet.jpg', TRUE),
+(4, 'Chocolate Chip Cookies', 'chocolate-chip-cookies', 'Chewy cookies loaded with premium dark chocolate chips.', 85.00, 'chocolate-chip.jpg', TRUE),
+(1, 'Baguette', 'baguette', 'Classic French baguette with a golden crust.', 145.00, 'baguette.jpg', FALSE),
+(2, 'Pain au Chocolat', 'pain-au-chocolat', 'Buttery pastry with rich dark chocolate bars inside.', 145.00, 'pain-chocolat.jpg', TRUE),
+(3, 'Carrot Cake', 'carrot-cake', 'Moist carrot cake with cream cheese frosting and walnuts.', 1250.00, 'carrot-cake.jpg', FALSE),
+(4, 'Macarons Box', 'macarons-box', 'Assorted French macarons in various flavors. Box of 12.', 950.00, 'macarons.jpg', TRUE),
+(1, 'Ciabatta', 'ciabatta', 'Italian bread with large air pockets and crispy crust.', 120.00, 'ciabatta.jpg', FALSE),
+(2, 'Danish Pastry', 'danish-pastry', 'Fruit-topped danish with vanilla custard.', 140.00, 'danish.jpg', FALSE),
+(3, 'Chocolate Truffle Cake', 'chocolate-truffle-cake', 'Decadent chocolate cake with ganache. Serves 10-12.', 1700.00, 'truffle-cake.jpg', TRUE),
+(4, 'Oatmeal Raisin Cookies', 'oatmeal-raisin-cookies', 'Wholesome oatmeal cookies with plump raisins.', 75.00, 'oatmeal-raisin.jpg', FALSE);
