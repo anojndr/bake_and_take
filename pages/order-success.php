@@ -5,6 +5,7 @@ $orderNumber = $lastOrder['order_number'] ?? strtoupper(substr(md5(time()), 0, 8
 $orderTotal = $lastOrder['total'] ?? 0;
 $paymentMethod = $lastOrder['payment_method'] ?? 'unknown';
 $paypalCaptureId = $lastOrder['paypal_capture_id'] ?? null;
+$gcashPayment = $lastOrder['gcash_payment'] ?? false;
 ?>
 
 <div class="success-container">
@@ -14,12 +15,27 @@ $paypalCaptureId = $lastOrder['paypal_capture_id'] ?? null;
         </div>
         <h1>Order Confirmed!</h1>
         <p class="order-number">Order #<?php echo htmlspecialchars($orderNumber); ?></p>
+        
+        <?php if ($gcashPayment): ?>
+        <p class="success-message">Thank you for your order! Your GCash payment is pending verification. We'll confirm your order shortly.</p>
+        <?php else: ?>
         <p class="success-message">Thank you for your order! We've received your order and will begin preparing your delicious treats right away.</p>
+        <?php endif; ?>
         
         <?php if ($orderTotal > 0): ?>
-        <div class="order-total-display">
-            <span class="label">Total Paid</span>
+        <div class="order-total-display <?php echo $gcashPayment ? 'gcash-total' : ''; ?>">
+            <span class="label"><?php echo $gcashPayment ? 'Amount' : 'Total Paid'; ?></span>
             <span class="amount">₱<?php echo number_format($orderTotal, 2); ?></span>
+        </div>
+        <?php endif; ?>
+        
+        <?php if ($gcashPayment): ?>
+        <div class="gcash-pending-notice">
+            <i class="bi bi-hourglass-split"></i>
+            <div>
+                <strong>Payment Verification Pending</strong>
+                <span>We will verify your GCash payment and notify you once confirmed.</span>
+            </div>
         </div>
         <?php endif; ?>
         
@@ -33,11 +49,20 @@ $paypalCaptureId = $lastOrder['paypal_capture_id'] ?? null;
                 </div>
             </div>
             <?php endif; ?>
+            <?php if ($gcashPayment): ?>
+            <div class="detail-item gcash-payment">
+                <i class="bi bi-phone"></i>
+                <div>
+                    <strong>GCash Payment</strong>
+                    <span>Awaiting payment verification</span>
+                </div>
+            </div>
+            <?php endif; ?>
             <div class="detail-item">
                 <i class="bi bi-clock"></i>
                 <div>
                     <strong>Estimated Ready Time</strong>
-                    <span>30-45 minutes</span>
+                    <span><?php echo $gcashPayment ? 'After payment verification' : '30-45 minutes'; ?></span>
                 </div>
             </div>
             <div class="detail-item">
@@ -211,6 +236,44 @@ $paypalCaptureId = $lastOrder['paypal_capture_id'] ?? null;
         flex-direction: column;
         gap: 0.5rem;
     }
+}
+
+/* GCash Payment Styles */
+.order-total-display.gcash-total {
+    background: linear-gradient(135deg, #007DFE, #0056B3);
+}
+
+.gcash-pending-notice {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: #FFF3CD;
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1.5rem;
+    text-align: left;
+    border-left: 4px solid #FFC107;
+}
+
+.gcash-pending-notice i {
+    font-size: 1.5rem;
+    color: #856404;
+}
+
+.gcash-pending-notice strong {
+    display: block;
+    color: #856404;
+    font-size: 0.95rem;
+}
+
+.gcash-pending-notice span {
+    font-size: 0.85rem;
+    color: #856404;
+    opacity: 0.9;
+}
+
+.detail-item.gcash-payment i {
+    color: #007DFE; /* GCash blue */
 }
 </style>
 

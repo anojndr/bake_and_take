@@ -115,9 +115,10 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
                     user_id, order_number, first_name, last_name, email, phone,
                     delivery_method, address, city, state, zip, instructions,
                     subtotal, delivery_fee, tax, total, status,
+                    payment_method, payment_status,
                     paypal_order_id, paypal_payer_id, paypal_capture_id, paypal_payment_status,
                     created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, 'pickup', '', '', '', '', ?, ?, 0, ?, ?, 'confirmed', ?, ?, ?, ?, NOW())
+                ) VALUES (?, ?, ?, ?, ?, ?, 'pickup', '', '', '', '', ?, ?, 0, ?, ?, 'confirmed', 'paypal', 'verified', ?, ?, ?, ?, NOW())
             ");
             
             $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
