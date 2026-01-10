@@ -102,6 +102,36 @@ bake_and_take/
 - CSRF protection
 - Success/error notifications
 
+### PayPal Integration
+The application uses PayPal REST API for secure payment processing:
+
+**Features:**
+- PayPal Smart Buttons (one-click checkout)
+- Secure server-to-server payment processing
+- Support for PayPal balance and credit/debit cards
+- Transaction logging for audit trails
+- Order confirmation emails with payment details
+
+**Setup:**
+1. Create a PayPal Developer account at [developer.paypal.com](https://developer.paypal.com/)
+2. Create a new app in the Dashboard to get credentials
+3. Copy `includes/secrets.example.php` to `includes/secrets.php`
+4. Add your PayPal Client ID and Secret:
+   ```php
+   define('PAYPAL_CLIENT_ID', 'your-client-id');
+   define('PAYPAL_CLIENT_SECRET', 'your-client-secret');
+   define('PAYPAL_SANDBOX', true); // false for production
+   ```
+5. Run the database migration:
+   ```sql
+   source database/paypal_migration.sql
+   ```
+
+**Architecture:**
+- `includes/paypal_create_order.php` - Creates PayPal orders
+- `includes/paypal_capture_order.php` - Captures payments and creates orders
+- Order status is set to 'confirmed' immediately after successful payment
+
 ## Customization
 
 ### Colors

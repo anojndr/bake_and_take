@@ -23,4 +23,31 @@ define('SMTP_PASS', 'your-app-password-here');
 // define('SMS_GATEWAY_USERNAME', 'admin');
 // define('SMS_GATEWAY_PASSWORD', 'your-password');
 // define('SMS_WEBHOOK_SECRET', 'your-secret-token');
+
+// ============================================
+// PAYPAL CONFIGURATION
+// ============================================
+// Get your credentials from: https://developer.paypal.com/
+// 1. Log in and go to Developer Dashboard
+// 2. Go to Apps & Credentials > Create App
+// 3. Copy Client ID and Secret
+//
+// For testing, use Sandbox credentials
+// For production, switch to Live credentials and set PAYPAL_SANDBOX to false
+
+define('PAYPAL_CLIENT_ID', 'your-paypal-client-id-here');
+define('PAYPAL_CLIENT_SECRET', 'your-paypal-client-secret-here');
+define('PAYPAL_SANDBOX', true); // Set to false for production
+
+// ============================================
+// SANDBOX TEST ACCOUNTS (for development only)
+// ============================================
+// Create sandbox accounts at: https://developer.paypal.com/dashboard/accounts
+// 
+// Example Sandbox Buyer:
+// Email: sb-buyer@personal.example.com
+// Password: (set in PayPal Dashboard)
+//
+// Example Sandbox Merchant:
+// Email: sb-merchant@business.example.com
 ?>

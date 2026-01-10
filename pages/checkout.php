@@ -18,30 +18,26 @@
         <div class="row g-4">
             <!-- Checkout Form -->
             <div class="col-lg-8">
-                <form id="checkoutForm" action="includes/process_order.php" method="POST">
-                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                    <input type="hidden" name="cart_data" id="cartDataInput" value="">
-                    <input type="hidden" name="delivery_method" value="pickup">
-                    
+                <div id="checkoutFormContainer">
                     <!-- Contact Information -->
                     <div class="checkout-card mb-4">
                         <h4><i class="bi bi-person me-2"></i>Contact Information</h4>
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">First Name *</label>
-                                <input type="text" class="form-control form-control-custom" name="first_name" required>
+                                <input type="text" class="form-control form-control-custom" id="checkout_first_name" name="first_name" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Last Name *</label>
-                                <input type="text" class="form-control form-control-custom" name="last_name" required>
+                                <input type="text" class="form-control form-control-custom" id="checkout_last_name" name="last_name" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Email Address *</label>
-                                <input type="email" class="form-control form-control-custom" name="email" required>
+                                <input type="email" class="form-control form-control-custom" id="checkout_email" name="email" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Phone Number *</label>
-                                <input type="tel" class="form-control form-control-custom" name="phone" required>
+                                <input type="tel" class="form-control form-control-custom" id="checkout_phone" name="phone" required>
                             </div>
                         </div>
                     </div>
@@ -68,34 +64,42 @@
                         </div>
                     </div>
                     
-                    <!-- Payment Information -->
+                    <!-- Special Instructions -->
+                    <div class="checkout-card mb-4">
+                        <h4><i class="bi bi-chat-text me-2"></i>Special Instructions (Optional)</h4>
+                        <textarea class="form-control form-control-custom" id="checkout_instructions" name="instructions" rows="3" placeholder="Any special requests or notes for your order..."></textarea>
+                    </div>
+                    
+                    <!-- Payment Section with PayPal -->
                     <div class="checkout-card">
-                        <h4><i class="bi bi-credit-card me-2"></i>Payment Information</h4>
-                        <div class="payment-methods mb-3">
-                            <span class="payment-icon"><i class="bi bi-credit-card"></i></span>
-                            <span class="payment-icon"><i class="bi bi-paypal"></i></span>
-                            <span class="payment-icon"><i class="bi bi-apple"></i></span>
+                        <h4><i class="bi bi-paypal me-2"></i>Payment</h4>
+                        <p class="text-muted mb-3">Complete your payment securely with PayPal. You can pay with your PayPal account or debit/credit card.</p>
+                        
+                        <!-- PayPal Button Container -->
+                        <div id="paypal-button-container"></div>
+                        
+                        <!-- Loading state -->
+                        <div id="paypal-loading" class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading PayPal...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Loading PayPal...</p>
                         </div>
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="form-label">Card Number *</label>
-                                <input type="text" class="form-control form-control-custom" name="card_number" placeholder="1234 5678 9012 3456" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Expiry Date *</label>
-                                <input type="text" class="form-control form-control-custom" name="expiry" placeholder="MM/YY" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">CVV *</label>
-                                <input type="text" class="form-control form-control-custom" name="cvv" placeholder="123" required>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Name on Card *</label>
-                                <input type="text" class="form-control form-control-custom" name="card_name" required>
+                        
+                        <!-- Error message container -->
+                        <div id="paypal-error" class="alert alert-danger d-none mt-3"></div>
+                        
+                        <div class="payment-badges mt-4">
+                            <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
+                                <img src="https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-100px.png" alt="PayPal" height="25">
+                                <span class="badge-separator">|</span>
+                                <span class="payment-badge"><i class="bi bi-credit-card"></i> Visa</span>
+                                <span class="payment-badge"><i class="bi bi-credit-card"></i> Mastercard</span>
+                                <span class="payment-badge"><i class="bi bi-credit-card"></i> Amex</span>
                             </div>
                         </div>
                     </div>
-                </form>
+                </div>
             </div>
             
             <!-- Order Summary -->
@@ -119,11 +123,7 @@
                         <span id="checkoutTotal">$0.00</span>
                     </div>
                     
-                    <button type="submit" form="checkoutForm" class="btn btn-hero btn-hero-primary w-100 mt-4">
-                        <i class="bi bi-lock me-2"></i> Place Order
-                    </button>
-                    
-                    <div class="secure-info text-center mt-3">
+                    <div class="secure-info text-center mt-4">
                         <small><i class="bi bi-shield-check me-1"></i> Your payment is secure and encrypted</small>
                     </div>
                 </div>
@@ -184,22 +184,6 @@
 .option-details span { font-size: 0.85rem; color: var(--text-light); }
 .option-price { font-weight: 600; color: var(--secondary); }
 
-.payment-methods {
-    display: flex;
-    gap: 0.75rem;
-}
-
-.payment-icon {
-    width: 50px;
-    height: 35px;
-    background: var(--cream-dark);
-    border-radius: var(--radius-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-secondary);
-}
-
 .order-summary-card {
     background: var(--white);
     padding: 2rem;
@@ -239,52 +223,110 @@
 .secure-info { color: var(--text-light); }
 .secure-info i { color: #28a745; }
 
+/* PayPal Button Styling */
+#paypal-button-container {
+    min-height: 55px;
+}
+
+.payment-badges {
+    padding-top: 1rem;
+    border-top: 1px solid var(--cream-dark);
+}
+
+.payment-badge {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.badge-separator {
+    color: var(--cream-dark);
+}
+
+/* Processing overlay */
+.checkout-processing {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.checkout-processing-content {
+    background: white;
+    padding: 3rem;
+    border-radius: var(--radius-xl);
+    text-align: center;
+    max-width: 400px;
+}
+
+.checkout-processing-content .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 1rem;
+}
+
 @media (max-width: 991px) {
     .order-summary-card { position: static; }
 }
 </style>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Wait for main.js to initialize the cart from localStorage
-    setTimeout(function() {
-        // Re-initialize cart from localStorage to ensure we have the latest data
-        const savedCart = localStorage.getItem('bakeAndTakeCart');
-        if (savedCart) {
-            try {
-                const parsedCart = JSON.parse(savedCart);
-                if (typeof cart !== 'undefined') {
-                    cart.length = 0;
-                    parsedCart.forEach(item => cart.push(item));
-                }
-            } catch (e) {
-                console.error('Error parsing cart from localStorage:', e);
-            }
-        }
-        renderCheckoutItems();
-    }, 50);
-    
-    // Handle form submission - add cart data
-    document.getElementById('checkoutForm').addEventListener('submit', function(e) {
-        const cart = getCart();
-        if (cart.length === 0) {
-            e.preventDefault();
-            alert('Your cart is empty!');
-            window.location.href = 'index.php?page=cart';
-            return false;
-        }
-        // Populate the hidden cart_data field with cart JSON
-        document.getElementById('cartDataInput').value = JSON.stringify(cart);
-    });
-});
+<!-- PayPal SDK -->
+<script src="https://www.paypal.com/sdk/js?client-id=<?php echo PAYPAL_CLIENT_ID; ?>&currency=USD&intent=capture"></script>
 
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    // Wait for the cart to be loaded from the database
+    // The initCart() function in main.js is async and fetches from cart_api.php
+    
+    // First, ensure initCart has been called by main.js
+    // We need to wait for the cart data to be available
+    let retries = 0;
+    const maxRetries = 20; // Wait up to 2 seconds (20 * 100ms)
+    
+    async function waitForCart() {
+        return new Promise((resolve) => {
+            const checkCart = setInterval(() => {
+                retries++;
+                const currentCart = getCart();
+                
+                // Check if cart has items OR we've waited long enough
+                if (currentCart.length > 0 || retries >= maxRetries) {
+                    clearInterval(checkCart);
+                    resolve(currentCart);
+                }
+            }, 100);
+        });
+    }
+    
+    // Wait for cart to be loaded
+    const cartData = await waitForCart();
+    
+    // If cart is still empty after waiting, redirect to cart page
+    if (cartData.length === 0) {
+        window.location.href = 'index.php?page=cart';
+        return;
+    }
+    
+    // Cart has items, render checkout
+    renderCheckoutItems();
+    initPayPalButtons();
+});
 
 function renderCheckoutItems() {
     const cart = getCart();
     const container = document.getElementById('checkoutItems');
     
+    // Cart empty check is handled in DOMContentLoaded, but keep as safety
     if (cart.length === 0) {
-        window.location.href = 'index.php?page=cart';
+        container.innerHTML = '<p class="text-muted">No items in cart</p>';
         return;
     }
     
@@ -311,4 +353,184 @@ function updateCheckoutSummary() {
     document.getElementById('checkoutTax').textContent = '$' + tax.toFixed(2);
     document.getElementById('checkoutTotal').textContent = '$' + total.toFixed(2);
 }
+
+function validateCustomerInfo() {
+    const firstName = document.getElementById('checkout_first_name').value.trim();
+    const lastName = document.getElementById('checkout_last_name').value.trim();
+    const email = document.getElementById('checkout_email').value.trim();
+    const phone = document.getElementById('checkout_phone').value.trim();
+    
+    if (!firstName || !lastName || !email || !phone) {
+        showPayPalError('Please fill in all required contact information fields before proceeding with payment.');
+        return null;
+    }
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showPayPalError('Please enter a valid email address.');
+        return null;
+    }
+    
+    return {
+        first_name: firstName,
+        last_name: lastName,
+        email: email,
+        phone: phone,
+        instructions: document.getElementById('checkout_instructions').value.trim()
+    };
+}
+
+function showPayPalError(message) {
+    const errorContainer = document.getElementById('paypal-error');
+    errorContainer.textContent = message;
+    errorContainer.classList.remove('d-none');
+    
+    // Scroll to error
+    errorContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function hidePayPalError() {
+    const errorContainer = document.getElementById('paypal-error');
+    errorContainer.classList.add('d-none');
+}
+
+function showProcessingOverlay() {
+    const overlay = document.createElement('div');
+    overlay.id = 'processing-overlay';
+    overlay.className = 'checkout-processing';
+    overlay.innerHTML = `
+        <div class="checkout-processing-content">
+            <div class="spinner-border text-primary" role="status"></div>
+            <h4>Processing Payment</h4>
+            <p class="text-muted mb-0">Please wait while we complete your order...</p>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+
+function hideProcessingOverlay() {
+    const overlay = document.getElementById('processing-overlay');
+    if (overlay) overlay.remove();
+}
+
+function initPayPalButtons() {
+    // Hide loading indicator
+    document.getElementById('paypal-loading').style.display = 'none';
+    
+    // Check if PayPal SDK loaded
+    if (typeof paypal === 'undefined') {
+        showPayPalError('Failed to load PayPal. Please refresh the page and try again.');
+        return;
+    }
+    
+    paypal.Buttons({
+        style: {
+            layout: 'vertical',
+            color: 'gold',
+            shape: 'rect',
+            label: 'paypal',
+            height: 55
+        },
+        
+        // Validate before showing PayPal popup
+        onClick: function(data, actions) {
+            hidePayPalError();
+            
+            const customerInfo = validateCustomerInfo();
+            if (!customerInfo) {
+                return actions.reject();
+            }
+            
+            const cart = getCart();
+            if (cart.length === 0) {
+                showPayPalError('Your cart is empty.');
+                return actions.reject();
+            }
+            
+            return actions.resolve();
+        },
+        
+        // Create order through our backend
+        createOrder: function(data, actions) {
+            const cart = getCart();
+            
+            return fetch('includes/paypal_create_order.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    cart: cart
+                })
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(orderData) {
+                if (orderData.error) {
+                    throw new Error(orderData.error);
+                }
+                return orderData.id;
+            });
+        },
+        
+        // Capture payment after approval
+        onApprove: function(data, actions) {
+            showProcessingOverlay();
+            
+            const customerInfo = validateCustomerInfo();
+            
+            return fetch('includes/paypal_capture_order.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    orderID: data.orderID,
+                    customerInfo: customerInfo
+                })
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(details) {
+                hideProcessingOverlay();
+                
+                if (details.error) {
+                    showPayPalError(details.error + (details.details ? ': ' + details.details : ''));
+                    return;
+                }
+                
+                // Payment successful - redirect to success page
+                console.log('Payment completed successfully:', details);
+                
+                // Clear the cart
+                clearCart();
+                
+                // Redirect to order success page
+                window.location.href = 'index.php?page=order-success';
+            })
+            .catch(function(error) {
+                hideProcessingOverlay();
+                console.error('Payment capture error:', error);
+                showPayPalError('An error occurred while processing your payment. Please try again.');
+            });
+        },
+        
+        // Handle cancellation
+        onCancel: function(data) {
+            console.log('Payment cancelled by user');
+            // Optional: Show a message
+        },
+        
+        // Handle errors
+        onError: function(err) {
+            hideProcessingOverlay();
+            console.error('PayPal error:', err);
+            showPayPalError('An error occurred with PayPal. Please try again or use a different payment method.');
+        }
+    }).render('#paypal-button-container');
+}
 </script>
+
