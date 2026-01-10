@@ -1110,3 +1110,506 @@ img {
         text-align: center;
     }
 }
+
+/* =====================================================
+   MOBILE-SPECIFIC STYLES (max-width: 991px)
+   ===================================================== */
+@media (max-width: 991px) {
+
+    /* Hide desktop navbar elements on mobile */
+    .navbar-collapse {
+        display: none !important;
+    }
+
+    .navbar-toggler {
+        display: none !important;
+    }
+
+    /* Simplify top navbar for mobile - only logo */
+    .navbar {
+        padding: 0.75rem 0;
+    }
+
+    .navbar .container {
+        justify-content: center;
+    }
+
+    .navbar-brand {
+        margin: 0;
+    }
+
+    /* Add bottom padding to body for fixed bottom nav */
+    body {
+        padding-bottom: 70px;
+    }
+
+    /* Adjust footer margin for bottom nav */
+    .footer {
+        margin-bottom: 0;
+    }
+}
+
+/* =====================================================
+   MOBILE BOTTOM NAVIGATION BAR
+   ===================================================== */
+.mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 65px;
+    background: var(--white);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -4px 20px rgba(44, 24, 16, 0.1);
+    z-index: 1050;
+    border-top: 1px solid var(--cream-dark);
+}
+
+.mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.7rem;
+    font-weight: 500;
+    transition: var(--transition);
+    background: none;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    min-width: 60px;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-nav-item i {
+    font-size: 1.35rem;
+    margin-bottom: 3px;
+    transition: var(--transition);
+}
+
+.mobile-nav-item span {
+    line-height: 1;
+}
+
+.mobile-nav-item:hover,
+.mobile-nav-item:active {
+    color: var(--primary-dark);
+}
+
+.mobile-nav-item.active {
+    color: var(--primary-dark);
+}
+
+.mobile-nav-item.active i {
+    color: var(--primary);
+    transform: scale(1.1);
+}
+
+/* Cart badge on mobile nav */
+.mobile-cart-badge {
+    position: absolute;
+    top: 2px;
+    right: 8px;
+    background: var(--secondary);
+    color: var(--white);
+    font-size: 0.6rem;
+    font-weight: 700;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+}
+
+/* =====================================================
+   MOBILE MORE MENU OVERLAY
+   ===================================================== */
+.mobile-more-menu {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: 0;
+    background: rgba(44, 24, 16, 0.5);
+    z-index: 1100;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.mobile-more-menu.open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.mobile-more-content {
+    position: absolute;
+    bottom: 65px;
+    left: 0;
+    right: 0;
+    background: var(--white);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 1.5rem;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.mobile-more-menu.open .mobile-more-content {
+    transform: translateY(0);
+}
+
+.mobile-more-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--cream-dark);
+}
+
+.mobile-more-header h5 {
+    margin: 0;
+    font-family: var(--font-display);
+    color: var(--dark);
+    font-size: 1.25rem;
+}
+
+.mobile-more-close {
+    background: var(--cream-dark);
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.mobile-more-close:hover {
+    background: var(--primary);
+    color: var(--white);
+}
+
+.mobile-more-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.mobile-more-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+    font-weight: 500;
+}
+
+.mobile-more-item i {
+    font-size: 1.25rem;
+    color: var(--primary-dark);
+    width: 24px;
+    text-align: center;
+}
+
+.mobile-more-item:hover,
+.mobile-more-item:active {
+    background: var(--accent);
+    color: var(--primary-dark);
+}
+
+.mobile-more-item.active {
+    background: var(--accent);
+    color: var(--primary-dark);
+}
+
+/* =====================================================
+   MOBILE PRODUCT LISTING FIXES (max-width: 768px)
+   ===================================================== */
+@media (max-width: 768px) {
+
+    /* --- Product Action Buttons Always Visible on Mobile --- */
+    .product-card .product-actions {
+        opacity: 1 !important;
+        transform: translateX(0) !important;
+    }
+
+    /* Make action buttons more touch-friendly */
+    .product-action-btn {
+        width: 44px;
+        height: 44px;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+    }
+
+    /* Active state for touch */
+    .product-action-btn:active {
+        background: var(--primary);
+        color: var(--white);
+        transform: scale(0.95);
+    }
+
+    /* --- Sort Options Touch-Friendly --- */
+    .sort-options .form-select {
+        min-height: 44px;
+        font-size: 1rem;
+        padding: 0.5rem 2rem 0.5rem 1rem;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        cursor: pointer;
+    }
+
+    /* --- Price Filter Touch-Friendly --- */
+    .price-filter .form-check {
+        padding: 0.5rem 0;
+    }
+
+    .price-filter .form-check-input {
+        width: 22px;
+        height: 22px;
+        margin-right: 0.75rem;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .price-filter .form-check-label {
+        font-size: 1rem;
+        cursor: pointer;
+        padding: 0.25rem 0;
+    }
+
+    /* --- Category Filter as Dropdown for Mobile --- */
+    .filter-sidebar .category-filter {
+        display: none;
+    }
+
+    .filter-sidebar .mobile-category-dropdown {
+        display: block !important;
+    }
+
+    /* --- Menu Header Mobile Layout --- */
+    .menu-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .menu-header .results-count {
+        text-align: center;
+    }
+
+    .menu-header .sort-options {
+        width: 100%;
+    }
+
+    .menu-header .sort-options .form-select {
+        width: 100%;
+    }
+
+    /* --- Filter Sidebar Mobile Layout --- */
+    .filter-sidebar {
+        position: relative;
+        top: 0;
+        margin-bottom: 1.5rem;
+    }
+
+    /* --- Mobile Category Dropdown Styling --- */
+    .mobile-category-dropdown .form-select {
+        padding: 0.875rem 2.5rem 0.875rem 1rem;
+        font-size: 1rem;
+        border: 2px solid var(--cream-dark);
+        border-radius: var(--radius-md);
+        background-color: var(--white);
+        color: var(--text-primary);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .mobile-category-dropdown .form-select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(212, 165, 116, 0.15);
+        outline: none;
+    }
+}
+
+/* =====================================================
+   MOBILE FOOTER FIXES (max-width: 768px)
+   ===================================================== */
+@media (max-width: 768px) {
+
+    /* Lighter footer background for mobile */
+    .footer {
+        background: #3D2317;
+        padding: 3rem 0 1.5rem;
+    }
+
+    /* Center all footer content on mobile */
+    .footer .col-lg-4,
+    .footer .col-lg-2,
+    .footer .col-md-4 {
+        text-align: center;
+    }
+
+    /* Footer brand section */
+    .footer-brand {
+        margin-bottom: 2rem;
+    }
+
+    .footer-brand h3 {
+        justify-content: center;
+        display: flex;
+        align-items: center;
+    }
+
+    .footer-brand p {
+        max-width: 300px;
+        margin: 0 auto 1rem;
+    }
+
+    /* Mobile social links section */
+    .mobile-social-links {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .mobile-social-links .social-links {
+        display: flex;
+        gap: 1rem;
+    }
+
+    /* Footer titles */
+    .footer h5 {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    /* Footer links centered */
+    .footer-links {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .footer-links li {
+        margin-bottom: 0.75rem;
+        text-align: center;
+    }
+
+    .footer-links li a {
+        display: inline-block;
+    }
+
+    /* Contact info centered */
+    .contact-info {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .contact-info li {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 0.75rem;
+        text-align: center;
+    }
+
+    .contact-info li i {
+        margin-right: 0.5rem;
+    }
+
+    /* Hide categories section on mobile */
+    .footer .footer-categories-section {
+        display: none !important;
+    }
+
+    /* Footer divider */
+    .footer-divider {
+        margin: 2rem 0 1rem;
+    }
+
+    /* Copyright section centered */
+    .footer .copyright,
+    .footer .col-md-6 {
+        text-align: center !important;
+    }
+
+    .footer .col-md-6.text-md-end {
+        text-align: center !important;
+        margin-top: 0.5rem;
+    }
+
+    /* Footer bottom links */
+    .footer-link {
+        display: inline-block;
+        margin: 0 0.5rem;
+    }
+}
+
+/* =====================================================
+   SMALL MOBILE FIXES (max-width: 576px)
+   ===================================================== */
+@media (max-width: 576px) {
+
+    /* Nav actions sizing for small screens */
+    .navbar .nav-actions {
+        gap: 0.25rem;
+    }
+
+    .navbar .btn-cart {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+
+    .navbar .btn-primary-custom {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.8rem;
+    }
+
+    .navbar .btn-user {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+
+    /* Product grid single column */
+    .products-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Smaller product action buttons */
+    .product-action-btn {
+        width: 40px;
+        height: 40px;
+    }
+
+    /* Footer even more compact */
+    .footer {
+        padding: 2rem 0 1rem;
+    }
+
+    .footer-brand p {
+        font-size: 0.9rem;
+    }
+}

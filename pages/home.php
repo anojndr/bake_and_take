@@ -65,14 +65,6 @@
                 <div class="product-image">
                     <img src="<?php echo getProductImage($product['image']); ?>" alt="<?php echo sanitize($product['name']); ?>">
                     <span class="product-badge">Popular</span>
-                    <div class="product-actions">
-                        <button class="product-action-btn" title="Quick View">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                        <button class="product-action-btn" title="Add to Wishlist">
-                            <i class="bi bi-heart"></i>
-                        </button>
-                    </div>
                 </div>
                 <div class="product-content">
                     <span class="product-category"><?php echo getCategoryName($product['category']); ?></span>

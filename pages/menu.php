@@ -1,6 +1,8 @@
 <?php
 $selectedCategory = isset($_GET['category']) ? $_GET['category'] : null;
 $searchQuery = isset($_GET['search']) ? trim($_GET['search']) : '';
+$priceMin = isset($_GET['price_min']) && $_GET['price_min'] !== '' ? (float)$_GET['price_min'] : null;
+$priceMax = isset($_GET['price_max']) && $_GET['price_max'] !== '' ? (float)$_GET['price_max'] : null;
 $currentPage = isset($_GET['pg']) ? max(1, (int)$_GET['pg']) : 1;
 $itemsPerPage = 6;
 
@@ -20,6 +22,16 @@ if (!empty($searchQuery)) {
     });
 }
 
+// Filter by price range
+if ($priceMin !== null || $priceMax !== null) {
+    $products = array_filter($products, function($p) use ($priceMin, $priceMax) {
+        $price = (float)$p['price'];
+        if ($priceMin !== null && $price < $priceMin) return false;
+        if ($priceMax !== null && $price > $priceMax) return false;
+        return true;
+    });
+}
+
 // Re-index array after filtering
 $products = array_values($products);
 
@@ -36,10 +48,12 @@ if (!empty($searchQuery)) {
 }
 
 // Build query string for pagination links
-function buildPaginationUrl($page, $category = null, $search = '') {
+function buildPaginationUrl($page, $category = null, $search = '', $priceMin = null, $priceMax = null) {
     $params = ['page' => 'menu', 'pg' => $page];
     if ($category) $params['category'] = $category;
     if (!empty($search)) $params['search'] = $search;
+    if ($priceMin !== null) $params['price_min'] = $priceMin;
+    if ($priceMax !== null) $params['price_max'] = $priceMax;
     return 'index.php?' . http_build_query($params);
 }
 ?>
@@ -97,6 +111,22 @@ function buildPaginationUrl($page, $category = null, $search = '') {
                     </form>
 
                     <h4 class="filter-title">Categories</h4>
+                    
+                    <!-- Mobile Category Dropdown (shown on mobile) -->
+                    <div class="mobile-category-dropdown d-none mb-3">
+                        <select class="form-select form-select-lg" id="mobileCategorySelect" onchange="window.location.href=this.value">
+                            <option value="index.php?page=menu<?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) : ''; ?>" <?php echo !$selectedCategory ? 'selected' : ''; ?>>
+                                All Products (<?php echo getProductCountByCategory(); ?>)
+                            </option>
+                            <?php foreach ($allCategories as $slug => $category): ?>
+                            <option value="index.php?page=menu&category=<?php echo $slug; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) : ''; ?>" <?php echo $selectedCategory === $slug ? 'selected' : ''; ?>>
+                                <?php echo $category['name']; ?> (<?php echo getProductCountByCategory($slug); ?>)
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <!-- Desktop Category List (hidden on mobile) -->
                     <ul class="category-filter">
                         <li>
                             <a href="index.php?page=menu<?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) : ''; ?>" class="<?php echo !$selectedCategory ? 'active' : ''; ?>">
@@ -117,24 +147,37 @@ function buildPaginationUrl($page, $category = null, $search = '') {
                     </ul>
                     
                     <h4 class="filter-title mt-4">Price Range</h4>
-                    <div class="price-filter">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="price1" checked>
-                            <label class="form-check-label" for="price1">Under $10</label>
+                    <form action="index.php" method="GET" class="price-filter-form" id="priceFilterForm">
+                        <input type="hidden" name="page" value="menu">
+                        <?php if ($selectedCategory): ?>
+                        <input type="hidden" name="category" value="<?php echo $selectedCategory; ?>">
+                        <?php endif; ?>
+                        <?php if (!empty($searchQuery)): ?>
+                        <input type="hidden" name="search" value="<?php echo sanitize($searchQuery); ?>">
+                        <?php endif; ?>
+                        
+                        <div class="price-range-inputs">
+                            <div class="price-input-group">
+                                <span class="price-currency">$</span>
+                                <input type="number" class="price-input" name="price_min" id="priceMin" placeholder="Min" min="0" step="1" value="<?php echo $priceMin !== null ? $priceMin : ''; ?>">
+                            </div>
+                            <span class="price-separator">to</span>
+                            <div class="price-input-group">
+                                <span class="price-currency">$</span>
+                                <input type="number" class="price-input" name="price_max" id="priceMax" placeholder="Max" min="0" step="1" value="<?php echo $priceMax !== null ? $priceMax : ''; ?>">
+                            </div>
                         </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="price2" checked>
-                            <label class="form-check-label" for="price2">$10 - $25</label>
+                        <div class="price-filter-actions">
+                            <button type="submit" class="price-apply-btn">
+                                <i class="bi bi-funnel"></i> Apply
+                            </button>
+                            <?php if ($priceMin !== null || $priceMax !== null): ?>
+                            <a href="index.php?page=menu<?php echo $selectedCategory ? '&category=' . $selectedCategory : ''; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) : ''; ?>" class="price-clear-btn">
+                                <i class="bi bi-x-circle"></i> Clear
+                            </a>
+                            <?php endif; ?>
                         </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="price3" checked>
-                            <label class="form-check-label" for="price3">$25 - $50</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="price4" checked>
-                            <label class="form-check-label" for="price4">Over $50</label>
-                        </div>
-                    </div>
+                    </form>
                 </div>
             </div>
             
@@ -169,14 +212,6 @@ function buildPaginationUrl($page, $category = null, $search = '') {
                             <?php if ($product['featured']): ?>
                             <span class="product-badge">Popular</span>
                             <?php endif; ?>
-                            <div class="product-actions">
-                                <button class="product-action-btn" title="Quick View">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                                <button class="product-action-btn" title="Add to Wishlist">
-                                    <i class="bi bi-heart"></i>
-                                </button>
-                            </div>
                         </div>
                         <div class="product-content">
                             <span class="product-category"><?php echo getCategoryName($product['category']); ?></span>
@@ -216,7 +251,7 @@ function buildPaginationUrl($page, $category = null, $search = '') {
                     <ul class="pagination">
                         <!-- Previous Button -->
                         <li class="page-item <?php echo $currentPage <= 1 ? 'disabled' : ''; ?>">
-                            <a class="page-link page-nav" href="<?php echo buildPaginationUrl($currentPage - 1, $selectedCategory, $searchQuery); ?>" aria-label="Previous">
+                            <a class="page-link page-nav" href="<?php echo buildPaginationUrl($currentPage - 1, $selectedCategory, $searchQuery, $priceMin, $priceMax); ?>" aria-label="Previous">
                                 <i class="bi bi-chevron-left"></i>
                                 <span>Previous</span>
                             </a>
@@ -230,7 +265,7 @@ function buildPaginationUrl($page, $category = null, $search = '') {
                         // Show first page if not in range
                         if ($startPage > 1): ?>
                             <li class="page-item">
-                                <a class="page-link" href="<?php echo buildPaginationUrl(1, $selectedCategory, $searchQuery); ?>">1</a>
+                                <a class="page-link" href="<?php echo buildPaginationUrl(1, $selectedCategory, $searchQuery, $priceMin, $priceMax); ?>">1</a>
                             </li>
                             <?php if ($startPage > 2): ?>
                             <li class="page-item disabled"><span class="page-link">...</span></li>
@@ -239,7 +274,7 @@ function buildPaginationUrl($page, $category = null, $search = '') {
 
                         <?php for ($i = $startPage; $i <= $endPage; $i++): ?>
                         <li class="page-item <?php echo $i === $currentPage ? 'active' : ''; ?>">
-                            <a class="page-link" href="<?php echo buildPaginationUrl($i, $selectedCategory, $searchQuery); ?>"><?php echo $i; ?></a>
+                            <a class="page-link" href="<?php echo buildPaginationUrl($i, $selectedCategory, $searchQuery, $priceMin, $priceMax); ?>"><?php echo $i; ?></a>
                         </li>
                         <?php endfor; ?>
 
@@ -250,13 +285,13 @@ function buildPaginationUrl($page, $category = null, $search = '') {
                             <li class="page-item disabled"><span class="page-link">...</span></li>
                             <?php endif; ?>
                             <li class="page-item">
-                                <a class="page-link" href="<?php echo buildPaginationUrl($totalPages, $selectedCategory, $searchQuery); ?>"><?php echo $totalPages; ?></a>
+                                <a class="page-link" href="<?php echo buildPaginationUrl($totalPages, $selectedCategory, $searchQuery, $priceMin, $priceMax); ?>"><?php echo $totalPages; ?></a>
                             </li>
                         <?php endif; ?>
 
                         <!-- Next Button -->
                         <li class="page-item <?php echo $currentPage >= $totalPages ? 'disabled' : ''; ?>">
-                            <a class="page-link page-nav" href="<?php echo buildPaginationUrl($currentPage + 1, $selectedCategory, $searchQuery); ?>" aria-label="Next">
+                            <a class="page-link page-nav" href="<?php echo buildPaginationUrl($currentPage + 1, $selectedCategory, $searchQuery, $priceMin, $priceMax); ?>" aria-label="Next">
                                 <span>Next</span>
                                 <i class="bi bi-chevron-right"></i>
                             </a>
@@ -319,7 +354,130 @@ function buildPaginationUrl($page, $category = null, $search = '') {
 
 .category-filter a.active .count { background: var(--primary-light); }
 
-.price-filter .form-check { margin-bottom: 0.5rem; }
+/* Price Range Min/Max Inputs */
+.price-range-inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.price-input-group {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    background: var(--white);
+    border: 2px solid var(--cream-dark);
+    border-radius: var(--radius-sm);
+    padding: 0 0.75rem;
+    transition: all 0.25s ease;
+}
+
+.price-input-group:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.15);
+}
+
+.price-currency {
+    color: var(--text-light);
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.price-input {
+    border: none;
+    background: transparent;
+    padding: 0.65rem 0.5rem;
+    width: 100%;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+}
+
+.price-input:focus {
+    outline: none;
+}
+
+.price-input::placeholder {
+    color: var(--text-light);
+}
+
+/* Hide number input spinners */
+.price-input::-webkit-outer-spin-button,
+.price-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.price-input[type=number] {
+    -moz-appearance: textfield;
+}
+
+.price-separator {
+    color: var(--text-light);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.price-apply-btn {
+    width: 100%;
+    margin-top: 0.75rem;
+    padding: 0.65rem 1rem;
+    background: var(--gradient-warm);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--white);
+    font-weight: 500;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.25s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.price-apply-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(212, 165, 116, 0.3);
+}
+
+.price-apply-btn:active {
+    transform: scale(0.98);
+}
+
+.price-filter-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.price-filter-actions .price-apply-btn {
+    flex: 1;
+    margin-top: 0;
+}
+
+.price-clear-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.65rem 0.85rem;
+    background: var(--cream-dark);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: all 0.25s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.price-clear-btn:hover {
+    background: #f0e0d0;
+    color: var(--secondary);
+}
 
 .form-check-input:checked {
     background-color: var(--primary);

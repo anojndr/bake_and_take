@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // Initialize animations
     initScrollAnimations();
 
+    // Initialize mobile bottom navigation
+    initMobileBottomNav();
+
 });
 
 /**
@@ -187,6 +190,13 @@ function updateCartUI() {
         el.style.display = count > 0 ? 'flex' : 'none';
     });
 
+    // Update mobile cart badge
+    const mobileCartBadge = document.querySelector('.mobile-cart-badge');
+    if (mobileCartBadge) {
+        mobileCartBadge.textContent = count;
+        mobileCartBadge.style.display = count > 0 ? 'flex' : 'none';
+    }
+
     // Clear legacy localStorage data if it exists
     if (localStorage.getItem('bakeAndTakeCart')) {
         clearLocalCart();
@@ -220,9 +230,52 @@ function initNavbarScroll() {
 }
 
 /**
+ * Mobile Bottom Navigation
+ */
+function initMobileBottomNav() {
+    const moreBtn = document.getElementById('mobileMoreBtn');
+    const moreMenu = document.getElementById('mobileMoreMenu');
+    const moreClose = document.getElementById('mobileMoreClose');
+
+    if (!moreBtn || !moreMenu) return;
+
+    // Open more menu
+    moreBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        moreMenu.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    });
+
+    // Close more menu
+    if (moreClose) {
+        moreClose.addEventListener('click', function () {
+            moreMenu.classList.remove('open');
+            document.body.style.overflow = '';
+        });
+    }
+
+    // Close on overlay click
+    moreMenu.addEventListener('click', function (e) {
+        if (e.target === moreMenu) {
+            moreMenu.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+    });
+
+    // Close on escape key
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && moreMenu.classList.contains('open')) {
+            moreMenu.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+    });
+}
+
+/**
  * Product Card Interactions
  */
 function initProductCards() {
+    // Add to cart buttons
     document.querySelectorAll('.btn-add-cart').forEach(btn => {
         btn.addEventListener('click', function (e) {
             e.preventDefault();
@@ -234,6 +287,45 @@ function initProductCards() {
             const image = card.dataset.productImage;
 
             addToCart(id, name, price, image);
+        });
+    });
+
+    // Product action buttons (view and favorite) - add touch support
+    document.querySelectorAll('.product-action-btn').forEach(btn => {
+        // Prevent default touch behavior and handle clicks
+        const handleAction = function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const icon = this.querySelector('i');
+            const card = this.closest('.product-card');
+            const productName = card?.dataset.productName || 'this item';
+
+            if (icon.classList.contains('bi-eye')) {
+                // Quick view action
+                showNotification(`Quick view for "${productName}"`, 'info');
+                // TODO: Implement quick view modal
+            } else if (icon.classList.contains('bi-heart')) {
+                // Toggle favorite
+                if (icon.classList.contains('bi-heart-fill')) {
+                    icon.classList.remove('bi-heart-fill');
+                    icon.classList.add('bi-heart');
+                    showNotification(`Removed "${productName}" from favorites`, 'info');
+                } else {
+                    icon.classList.remove('bi-heart');
+                    icon.classList.add('bi-heart-fill');
+                    this.style.background = 'var(--primary)';
+                    this.style.color = 'white';
+                    showNotification(`Added "${productName}" to favorites!`, 'success');
+                }
+            }
+        };
+
+        // Add both click and touch event listeners
+        btn.addEventListener('click', handleAction);
+        btn.addEventListener('touchend', function (e) {
+            e.preventDefault();
+            handleAction.call(this, e);
         });
     });
 }

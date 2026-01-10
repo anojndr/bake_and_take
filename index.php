@@ -31,16 +31,38 @@ if (!in_array($page, $allowedPages)) {
     <link href="assets/css/chatbot.css?v=<?php echo time(); ?>" rel="stylesheet">
 </head>
 <body>
-    <!-- Navigation -->
+    <!-- Navigation (Desktop) -->
     <nav class="navbar navbar-expand-lg fixed-top" id="mainNav">
         <div class="container">
             <a class="navbar-brand" href="index.php">
                 <i class="bi bi-cake2 me-2"></i>Bake & Take
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
+            
+            <!-- Desktop Nav Actions (hidden on mobile) -->
+            <div class="nav-actions d-none d-lg-flex align-items-center order-lg-2">
+                <a href="index.php?page=cart" class="btn btn-cart me-2" id="cartBtn">
+                    <i class="bi bi-cart3"></i>
+                    <?php $cartCount = getCartItemCount(); ?>
+                    <span class="cart-count" id="cartCount" style="display: <?php echo $cartCount > 0 ? 'flex' : 'none'; ?>"><?php echo $cartCount; ?></span>
+                </a>
+                <?php if (isset($_SESSION['user_id'])): ?>
+                    <div class="dropdown">
+                        <button class="btn btn-user dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="index.php?page=orders">My Orders</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="includes/logout.php">Logout</a></li>
+                        </ul>
+                    </div>
+                <?php else: ?>
+                    <a href="index.php?page=login" class="btn btn-primary-custom">Sign In</a>
+                <?php endif; ?>
+            </div>
+            
+            <!-- Desktop nav collapse (hidden on mobile) -->
+            <div class="collapse navbar-collapse d-lg-flex" id="navbarNav">
                 <ul class="navbar-nav mx-auto">
                     <li class="nav-item">
                         <a class="nav-link <?php echo $page === 'home' ? 'active' : ''; ?>" href="index.php">Home</a>
@@ -55,30 +77,75 @@ if (!in_array($page, $allowedPages)) {
                         <a class="nav-link <?php echo $page === 'contact' ? 'active' : ''; ?>" href="index.php?page=contact">Contact</a>
                     </li>
                 </ul>
-                <div class="nav-actions">
-                    <a href="index.php?page=cart" class="btn btn-cart me-2" id="cartBtn">
-                        <i class="bi bi-cart3"></i>
-                        <?php $cartCount = getCartItemCount(); ?>
-                        <span class="cart-count" id="cartCount" style="display: <?php echo $cartCount > 0 ? 'flex' : 'none'; ?>"><?php echo $cartCount; ?></span>
-                    </a>
-                    <?php if (isset($_SESSION['user_id'])): ?>
-                        <div class="dropdown">
-                            <button class="btn btn-user dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                <i class="bi bi-person-circle"></i>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="index.php?page=orders">My Orders</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="includes/logout.php">Logout</a></li>
-                            </ul>
-                        </div>
-                    <?php else: ?>
-                        <a href="index.php?page=login" class="btn btn-primary-custom">Sign In</a>
-                    <?php endif; ?>
-                </div>
             </div>
         </div>
     </nav>
+    
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav d-lg-none" id="mobileBottomNav">
+        <a href="index.php" class="mobile-nav-item <?php echo $page === 'home' ? 'active' : ''; ?>">
+            <i class="bi bi-house"></i>
+            <span>Home</span>
+        </a>
+        <a href="index.php?page=menu" class="mobile-nav-item <?php echo $page === 'menu' ? 'active' : ''; ?>">
+            <i class="bi bi-grid"></i>
+            <span>Menu</span>
+        </a>
+        <a href="index.php?page=cart" class="mobile-nav-item <?php echo $page === 'cart' ? 'active' : ''; ?>">
+            <i class="bi bi-cart3"></i>
+            <span>Cart</span>
+            <?php if ($cartCount > 0): ?>
+            <span class="mobile-cart-badge"><?php echo $cartCount; ?></span>
+            <?php endif; ?>
+        </a>
+        <?php if (isset($_SESSION['user_id'])): ?>
+        <a href="index.php?page=orders" class="mobile-nav-item <?php echo $page === 'orders' ? 'active' : ''; ?>">
+            <i class="bi bi-person"></i>
+            <span>Account</span>
+        </a>
+        <?php else: ?>
+        <a href="index.php?page=login" class="mobile-nav-item <?php echo $page === 'login' ? 'active' : ''; ?>">
+            <i class="bi bi-person"></i>
+            <span>Sign In</span>
+        </a>
+        <?php endif; ?>
+        <button class="mobile-nav-item" id="mobileMoreBtn" type="button">
+            <i class="bi bi-three-dots"></i>
+            <span>More</span>
+        </button>
+    </nav>
+    
+    <!-- Mobile More Menu Overlay -->
+    <div class="mobile-more-menu" id="mobileMoreMenu">
+        <div class="mobile-more-content">
+            <div class="mobile-more-header">
+                <h5>More</h5>
+                <button class="mobile-more-close" id="mobileMoreClose">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="mobile-more-links">
+                <a href="index.php?page=about" class="mobile-more-item <?php echo $page === 'about' ? 'active' : ''; ?>">
+                    <i class="bi bi-info-circle"></i>
+                    <span>About Us</span>
+                </a>
+                <a href="index.php?page=contact" class="mobile-more-item <?php echo $page === 'contact' ? 'active' : ''; ?>">
+                    <i class="bi bi-envelope"></i>
+                    <span>Contact</span>
+                </a>
+                <?php if (isset($_SESSION['user_id'])): ?>
+                <a href="index.php?page=orders" class="mobile-more-item">
+                    <i class="bi bi-bag"></i>
+                    <span>My Orders</span>
+                </a>
+                <a href="includes/logout.php" class="mobile-more-item">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Logout</span>
+                </a>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
 
     <!-- Main Content -->
     <main>
@@ -88,48 +155,6 @@ if (!in_array($page, $allowedPages)) {
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <div class="row g-4">
-                <div class="col-lg-4">
-                    <div class="footer-brand">
-                        <h3><i class="bi bi-cake2 me-2"></i>Bake & Take</h3>
-                        <p>Crafting happiness, one bite at a time. Fresh artisan baked goods made with love and the finest ingredients.</p>
-                        <div class="social-links">
-                            <a href="#"><i class="bi bi-facebook"></i></a>
-                            <a href="#"><i class="bi bi-instagram"></i></a>
-                            <a href="#"><i class="bi bi-twitter-x"></i></a>
-                            <a href="#"><i class="bi bi-pinterest"></i></a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-2 col-md-4">
-                    <h5>Quick Links</h5>
-                    <ul class="footer-links">
-                        <li><a href="index.php">Home</a></li>
-                        <li><a href="index.php?page=menu">Menu</a></li>
-                        <li><a href="index.php?page=about">About Us</a></li>
-                        <li><a href="index.php?page=contact">Contact</a></li>
-                    </ul>
-                </div>
-                <div class="col-lg-2 col-md-4">
-                    <h5>Categories</h5>
-                    <ul class="footer-links">
-                        <li><a href="index.php?page=menu&category=breads">Breads</a></li>
-                        <li><a href="index.php?page=menu&category=pastries">Pastries</a></li>
-                        <li><a href="index.php?page=menu&category=cakes">Cakes</a></li>
-                        <li><a href="index.php?page=menu&category=cookies">Cookies</a></li>
-                    </ul>
-                </div>
-                <div class="col-lg-4 col-md-4">
-                    <h5>Contact Info</h5>
-                    <ul class="contact-info">
-                        <li><i class="bi bi-geo-alt me-2"></i>PUP Sto. Tomas, Batangas</li>
-                        <li><i class="bi bi-telephone me-2"></i>(043) 123-4567</li>
-                        <li><i class="bi bi-envelope me-2"></i>bakeandtake@pup.edu.ph</li>
-                        <li><i class="bi bi-clock me-2"></i>Mon-Sat: 7AM - 8PM</li>
-                    </ul>
-                </div>
-            </div>
-            <hr class="footer-divider">
             <div class="row align-items-center">
                 <div class="col-md-6">
                     <p class="copyright">&copy; 2026 Bake & Take. All rights reserved.</p>

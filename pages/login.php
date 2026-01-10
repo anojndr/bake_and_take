@@ -3,9 +3,6 @@
 <div class="auth-container">
     <div class="auth-card">
         <div class="auth-header">
-            <a href="index.php" class="auth-logo">
-                <i class="bi bi-cake2"></i> Bake & Take
-            </a>
             <h2>Welcome Back</h2>
             <p>Sign in to continue shopping</p>
         </div>
@@ -47,22 +44,6 @@
             <button type="submit" class="btn btn-hero btn-hero-primary w-100 mb-3">
                 <i class="bi bi-box-arrow-in-right me-2"></i> Sign In
             </button>
-            
-            <div class="divider">
-                <span>or continue with</span>
-            </div>
-            
-            <div class="social-login">
-                <button type="button" class="btn-social">
-                    <i class="bi bi-google"></i>
-                </button>
-                <button type="button" class="btn-social">
-                    <i class="bi bi-facebook"></i>
-                </button>
-                <button type="button" class="btn-social">
-                    <i class="bi bi-apple"></i>
-                </button>
-            </div>
         </form>
         
         <div class="auth-footer">
