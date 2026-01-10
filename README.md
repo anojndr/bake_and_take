@@ -10,6 +10,7 @@ A beautiful, modern bakery web application built with PHP, Bootstrap, CSS, and J
 - 📧 **Contact Form** - Get in touch with the bakery
 - 📱 **Responsive Design** - Works on desktop, tablet, and mobile
 - ✨ **Modern UI** - Beautiful animations and premium design
+- 🤖 **AI Chatbot** - Intelligent assistant powered by Ollama (qwen3:0.6b) to answer questions about Bake & Take
 
 ## Tech Stack
 
@@ -131,6 +132,36 @@ The application uses PayPal REST API for secure payment processing:
 - `includes/paypal_create_order.php` - Creates PayPal orders
 - `includes/paypal_capture_order.php` - Captures payments and creates orders
 - Order status is set to 'confirmed' immediately after successful payment
+
+### AI Chatbot (Ollama)
+The application includes an AI-powered chatbot that can answer questions about Bake & Take:
+
+**Features:**
+- Intelligent responses about products, services, and ordering
+- Only responds to Bake & Take related queries
+- Modern, responsive chat interface
+- Quick action buttons for common questions
+- Real-time typing indicators
+
+**Prerequisites:**
+1. Install [Ollama](https://ollama.com/) on your system
+2. Pull the qwen3:0.6b model:
+   ```bash
+   ollama pull qwen3:0.6b
+   ```
+3. Start the Ollama service (runs on localhost:11434 by default)
+
+**Usage:**
+- Click the "Ask AI" button in the bottom-right corner of any page
+- Ask questions about products, operating hours, ordering, and more
+- The chatbot will only respond to Bake & Take related queries
+
+**Architecture:**
+- `includes/chatbot_api.php` - PHP API endpoint for chatbot communication
+- `assets/js/chatbot.js` - JavaScript chatbot UI and logic
+- `assets/css/chatbot.css` - Chatbot styling
+- Uses Ollama's OpenAI-compatible API (v1/chat/completions)
+
 
 ## Customization
 
