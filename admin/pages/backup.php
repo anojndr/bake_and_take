@@ -34,22 +34,27 @@ $tableCount = 0;
 
 if ($pdo) {
     try {
-        // Get table sizes
-        $stmt = $pdo->query("
-            SELECT 
-                table_name as name,
-                table_rows as rows,
-                ROUND((data_length + index_length) / 1024, 2) as size_kb
-            FROM information_schema.tables 
-            WHERE table_schema = '" . DB_NAME . "'
-            ORDER BY (data_length + index_length) DESC
-        ");
-        $dbInfo = $stmt->fetchAll();
+        // Get table sizes using SHOW TABLE STATUS (more reliable than information_schema)
+        $stmt = $pdo->query("SHOW TABLE STATUS");
+        $tables = $stmt->fetchAll();
         
-        foreach ($dbInfo as $table) {
-            $totalSize += $table['size_kb'];
+        foreach ($tables as $table) {
+            $size = ($table['Data_length'] + $table['Index_length']) / 1024; // KB
+            $dbInfo[] = [
+                'name' => $table['Name'],
+                'rows' => $table['Rows'],
+                'size_kb' => round($size, 2)
+            ];
+            
+            $totalSize += $size;
             $tableCount++;
         }
+        
+        // Sort by size descending
+        usort($dbInfo, function($a, $b) {
+            return $b['size_kb'] <=> $a['size_kb'];
+        });
+        
     } catch (PDOException $e) {
         // Ignore
     }
