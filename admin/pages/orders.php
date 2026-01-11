@@ -115,15 +115,12 @@ $statusLabels = [
                             <?php 
                             $paymentMethod = $order['payment_method'] ?? 'paypal';
                             $paymentIcons = [
-                                'gcash' => 'bi-phone',
                                 'paypal' => 'bi-paypal'
                             ];
                             $paymentLabels = [
-                                'gcash' => 'GCash',
                                 'paypal' => 'PayPal'
                             ];
                             $paymentColors = [
-                                'gcash' => '#007DFE',
                                 'paypal' => '#003087'
                             ];
                             $icon = $paymentIcons[$paymentMethod] ?? 'bi-credit-card';
@@ -208,15 +205,12 @@ $statusLabels = [
                             <?php 
                             $modalPaymentMethod = $order['payment_method'] ?? 'paypal';
                             $modalPaymentIcons = [
-                                'gcash' => 'bi-phone',
                                 'paypal' => 'bi-paypal'
                             ];
                             $modalPaymentLabels = [
-                                'gcash' => 'GCash',
                                 'paypal' => 'PayPal'
                             ];
                             $modalPaymentColors = [
-                                'gcash' => '#007DFE',
                                 'paypal' => '#003087'
                             ];
                             $modalIcon = $modalPaymentIcons[$modalPaymentMethod] ?? 'bi-credit-card';

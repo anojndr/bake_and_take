@@ -1,6 +1,6 @@
 <?php
 /**
- * Migration: Remove Cash Payment Method
+ * Migration: Remove GCash Payment Method
  * Run this file once to update the database
  */
 
@@ -10,24 +10,24 @@ if (!$pdo) {
     die("Error: Could not connect to database.\n");
 }
 
-echo "Starting migration: Remove cash payment method...\n\n";
+echo "Starting migration: Remove GCash payment method...\n\n";
 
 try {
-    // Check for any existing cash orders
-    $checkStmt = $pdo->query("SELECT COUNT(*) as count FROM orders WHERE payment_method = 'cash'");
-    $cashCount = $checkStmt->fetch()['count'];
+    // Check for any existing GCash orders
+    $checkStmt = $pdo->query("SELECT COUNT(*) as count FROM orders WHERE payment_method = 'gcash'");
+    $gcashCount = $checkStmt->fetch()['count'];
     
-    if ($cashCount > 0) {
-        echo "Warning: Found {$cashCount} orders with 'cash' payment method.\n";
+    if ($gcashCount > 0) {
+        echo "Warning: Found {$gcashCount} orders with 'gcash' payment method.\n";
         echo "These will be converted to 'paypal'.\n\n";
     }
     
     // Run the migration
-    $pdo->exec("ALTER TABLE orders MODIFY COLUMN payment_method ENUM('paypal', 'gcash') DEFAULT 'paypal'");
+    $pdo->exec("ALTER TABLE orders MODIFY COLUMN payment_method ENUM('paypal') DEFAULT 'paypal'");
     
     echo "✓ Successfully updated payment_method column!\n";
-    echo "  - Removed 'cash' from allowed payment methods\n";
-    echo "  - Only 'paypal' and 'gcash' are now valid options\n\n";
+    echo "  - Removed 'gcash' from allowed payment methods\n";
+    echo "  - Only 'paypal' is now a valid option\n\n";
     
     // Verify the change
     $verifyStmt = $pdo->query("SHOW COLUMNS FROM orders LIKE 'payment_method'");

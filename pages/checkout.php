@@ -70,61 +70,13 @@
                         <textarea class="form-control form-control-custom" id="checkout_instructions" name="instructions" rows="3" placeholder="Any special requests or notes for your order..."></textarea>
                     </div>
                     
-                    <!-- Payment Section with Payment Method Selection -->
+                    <!-- Payment Section -->
                     <div class="checkout-card">
                         <h4><i class="bi bi-wallet2 me-2"></i>Payment Method</h4>
-                        <p class="text-muted mb-3">Choose your preferred payment method to complete your order.</p>
-                        
-                        <!-- Payment Method Tabs -->
-                        <div class="payment-method-tabs">
-                            <button type="button" class="payment-tab active" data-method="gcash" id="gcash-tab">
-                                <div class="tab-icon gcash-icon">
-                                    <img src="assets/images/gcash-logo.png" alt="GCash">
-                                </div>
-                                <span>GCash</span>
-                            </button>
-
-                            <button type="button" class="payment-tab" data-method="paypal" id="paypal-tab">
-                                <div class="tab-icon paypal-icon">
-                                    <i class="bi bi-paypal"></i>
-                                </div>
-                                <span>PayPal</span>
-                            </button>
-                        </div>
-                        
-                        <!-- GCash Payment Section -->
-                        <div id="gcash-payment-section" class="payment-section active">
-                            <div class="gcash-info">
-                                <div class="gcash-header">
-                                    <img src="assets/images/gcash-logo.png" alt="GCash" class="gcash-header-logo">
-                                    <span>Pay via GCash QR Code</span>
-                                </div>
-                                <p class="text-muted mb-3">Scan the QR code using your GCash app to complete the payment. After paying, click the confirmation button below.</p>
-                                
-                                <button type="button" class="btn btn-gcash" id="show-gcash-qr">
-                                    <i class="bi bi-qr-code me-2"></i>Show GCash QR Code
-                                </button>
-                                
-                                <div class="gcash-instructions mt-3">
-                                    <h6><i class="bi bi-info-circle me-2"></i>How to Pay:</h6>
-                                    <ol>
-                                        <li>Click "Show GCash QR Code" above</li>
-                                        <li>Open your GCash app and tap "Scan QR"</li>
-                                        <li>Scan the QR code displayed</li>
-                                        <li>Enter the exact amount shown in your order</li>
-                                        <li>Complete the payment in GCash</li>
-                                        <li>Click "I've Completed Payment" button</li>
-                                    </ol>
-                                </div>
-                            </div>
-                        </div>
-                        
-
+                        <p class="text-muted mb-3">Complete your payment securely with PayPal. You can pay with your PayPal account or debit/credit card.</p>
                         
                         <!-- PayPal Payment Section -->
-                        <div id="paypal-payment-section" class="payment-section">
-                            <p class="text-muted mb-3">Complete your payment securely with PayPal. You can pay with your PayPal account or debit/credit card.</p>
-                            
+                        <div id="paypal-payment-section" class="payment-section active">
                             <!-- PayPal Button Container -->
                             <div id="paypal-button-container"></div>
                             
@@ -149,32 +101,6 @@
                         
                         <!-- Error message container -->
                         <div id="payment-error" class="alert alert-danger d-none mt-3"></div>
-                    </div>
-                    
-                    <!-- GCash QR Code Modal -->
-                    <div class="gcash-modal" id="gcash-modal">
-                        <div class="gcash-modal-content">
-                            <button type="button" class="gcash-modal-close" id="close-gcash-modal">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
-                            <div class="gcash-modal-header">
-                                <img src="assets/images/gcash-logo.png" alt="GCash" class="gcash-modal-logo">
-                                <h4>Scan to Pay</h4>
-                            </div>
-                            <div class="gcash-qr-container">
-                                <img src="assets/images/gcash.png" alt="GCash QR Code" class="gcash-qr-image" id="gcash-qr-image">
-                            </div>
-                            <div class="gcash-amount">
-                                <span class="label">Amount to Pay:</span>
-                                <span class="amount" id="gcash-modal-amount">₱0.00</span>
-                            </div>
-                            <div class="gcash-modal-instructions">
-                                <p><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Please enter the <strong>exact amount</strong> when paying.</p>
-                            </div>
-                            <button type="button" class="btn btn-gcash-confirm" id="confirm-gcash-payment">
-                                <i class="bi bi-check-circle me-2"></i>I've Completed Payment
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -354,76 +280,6 @@
     .order-summary-card { position: static; }
 }
 
-/* Payment Method Tabs */
-.payment-method-tabs {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.payment-tab {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1.25rem 1rem;
-    border: 2px solid var(--cream-dark);
-    border-radius: var(--radius-lg);
-    background: var(--white);
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.payment-tab:hover {
-    border-color: var(--primary);
-    background: var(--accent);
-}
-
-.payment-tab.active {
-    border-color: var(--primary);
-    background: var(--accent);
-    box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.2);
-}
-
-.payment-tab .tab-icon {
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    font-size: 1.5rem;
-}
-
-.payment-tab .tab-icon img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-}
-
-.payment-tab .gcash-icon {
-    background: transparent;
-    overflow: hidden;
-}
-
-.payment-tab .gcash-icon img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
-}
-
-.payment-tab .paypal-icon {
-    background: #003087;
-    color: white;
-}
-
-.payment-tab span {
-    font-weight: 600;
-    color: var(--dark);
-}
-
 /* Payment Sections */
 .payment-section {
     display: none;
@@ -439,261 +295,25 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* GCash Styles */
-.gcash-info {
-    background: linear-gradient(135deg, #E8F4FD, #F0F8FF);
-    padding: 1.5rem;
-    border-radius: var(--radius-lg);
-    border: 1px solid rgba(0, 125, 254, 0.2);
-}
-
-.gcash-header {
+.summary-row {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-    font-weight: 600;
-    color: #007DFE;
-    font-size: 1.1rem;
-}
-
-.gcash-header-logo {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    object-fit: cover;
-}
-
-.btn-gcash {
-    background: linear-gradient(135deg, #007DFE, #0056B3);
-    color: white;
-    border: none;
-    padding: 1rem 2rem;
-    border-radius: var(--radius-lg);
-    font-weight: 600;
-    font-size: 1rem;
-    width: 100%;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.btn-gcash:hover {
-    background: linear-gradient(135deg, #0056B3, #004494);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0, 125, 254, 0.3);
-}
-
-.gcash-instructions {
-    background: white;
-    padding: 1rem;
-    border-radius: var(--radius-md);
-    border-left: 4px solid #007DFE;
-}
-
-.gcash-instructions h6 {
-    color: #007DFE;
-    margin-bottom: 0.75rem;
-}
-
-.gcash-instructions ol {
-    margin: 0;
-    padding-left: 1.25rem;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
     color: var(--text-secondary);
 }
 
-.gcash-instructions li {
-    margin-bottom: 0.5rem;
-}
-
-.gcash-instructions li:last-child {
-    margin-bottom: 0;
-}
-
-/* GCash Modal */
-.gcash-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
-    z-index: 10000;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 1rem;
-    overflow-y: auto;
-    animation: fadeIn 0.3s ease;
-}
-
-.gcash-modal.active {
-    display: flex;
-}
-
-.gcash-modal-content {
-    background: white;
-    border-radius: var(--radius-xl);
-    padding: 1.5rem;
-    max-width: 380px;
-    width: 100%;
-    position: relative;
-    text-align: center;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    margin: auto;
-}
-
-.gcash-modal-close {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: none;
-    background: var(--cream);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-}
-
-.gcash-modal-close:hover {
-    background: var(--cream-dark);
-}
-
-.gcash-modal-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.25rem;
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 2px solid var(--accent);
-}
-
-.gcash-modal-logo {
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
-    object-fit: cover;
-}
-
-.gcash-modal-header h4 {
-    margin: 0;
-    color: #007DFE;
-    font-size: 1.1rem;
-}
-
-.gcash-brand {
-    color: #007DFE;
-    font-weight: 700;
-    font-size: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.gcash-qr-container {
-    background: white;
-    padding: 0.5rem;
-    border-radius: var(--radius-lg);
-    margin-bottom: 0.75rem;
-    border: 2px solid var(--cream);
-    max-width: 280px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.gcash-qr-image {
-    max-width: 100%;
-    max-height: 280px;
-    height: auto;
-    border-radius: var(--radius-md);
-    object-fit: contain;
-}
-
-.gcash-amount {
-    background: linear-gradient(135deg, #007DFE, #0056B3);
-    color: white;
-    padding: 0.75rem 1.25rem;
-    border-radius: var(--radius-lg);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.75rem;
-}
-
-.gcash-amount .label {
-    font-size: 0.85rem;
-    opacity: 0.9;
-}
-
-.gcash-amount .amount {
-    font-size: 1.3rem;
-    font-weight: 700;
-}
-
-.gcash-modal-instructions {
-    background: #FFF3CD;
-    padding: 0.5rem 0.75rem;
-    border-radius: var(--radius-md);
-    margin-bottom: 0.75rem;
-}
-
-.gcash-modal-instructions p {
-    margin: 0;
-    font-size: 0.8rem;
-    color: #856404;
-}
-
-.btn-gcash-confirm {
-    background: linear-gradient(135deg, #28a745, #20c997);
-    color: white;
-    border: none;
-    padding: 0.875rem 1.5rem;
-    border-radius: var(--radius-lg);
+.summary-row.total {
     font-weight: 600;
-    font-size: 0.95rem;
-    width: 100%;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    font-size: 1.2rem;
+    color: var(--dark);
+    padding-top: 0.5rem;
+    border-top: 2px solid var(--accent);
+    margin-top: 0.5rem;
 }
 
-.btn-gcash-confirm:hover {
-    background: linear-gradient(135deg, #20c997, #1aa179);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+.summary-row.total span:last-child {
+    color: var(--secondary);
 }
-
-@media (max-width: 576px) {
-    .payment-method-tabs {
-        flex-direction: column;
-    }
-    
-    .payment-tab {
-        flex-direction: row;
-        justify-content: center;
-    }
-    
-    .gcash-modal-content {
-        padding: 1.5rem;
-    }
-    
-    .gcash-amount {
-        flex-direction: column;
-        gap: 0.5rem;
-        text-align: center;
-    }
-}
-
-
 </style>
 
 <!-- PayPal SDK -->
@@ -735,8 +355,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Cart has items, render checkout
     renderCheckoutItems();
-    initPaymentTabs();
-    initGCashPayment();
     initPayPalButtons();
 });
 
@@ -956,140 +574,4 @@ function initPayPalButtons() {
         }
     }).render('#paypal-button-container');
 }
-
-// ==================== Payment Method Tabs ====================
-function initPaymentTabs() {
-    document.querySelectorAll('.payment-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const method = this.dataset.method;
-            
-            // Update active tab
-            document.querySelectorAll('.payment-tab').forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Show/hide payment sections
-            document.querySelectorAll('.payment-section').forEach(section => {
-                section.classList.remove('active');
-            });
-            
-            if (method === 'gcash') {
-                document.getElementById('gcash-payment-section').classList.add('active');
-            } else if (method === 'paypal') {
-                document.getElementById('paypal-payment-section').classList.add('active');
-            }
-            
-            // Hide any errors
-            hidePaymentError();
-        });
-    });
-}
-
-
-
-// ==================== GCash Payment ====================
-function initGCashPayment() {
-    const gcashModal = document.getElementById('gcash-modal');
-    const showGcashQrBtn = document.getElementById('show-gcash-qr');
-    const closeGcashModalBtn = document.getElementById('close-gcash-modal');
-    const confirmGcashPaymentBtn = document.getElementById('confirm-gcash-payment');
-    const gcashModalAmount = document.getElementById('gcash-modal-amount');
-
-    // Show GCash QR Modal
-    showGcashQrBtn.addEventListener('click', function() {
-        // Validate customer info first
-        const customerInfo = validateCustomerInfo();
-        if (!customerInfo) return;
-        
-        // Update amount in modal
-        const subtotal = getCartTotal();
-        const tax = subtotal * 0.08;
-        const total = subtotal + tax;
-        gcashModalAmount.textContent = '₱' + total.toFixed(2);
-        
-        // Show modal
-        gcashModal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    });
-
-    // Close GCash Modal
-    closeGcashModalBtn.addEventListener('click', function() {
-        gcashModal.classList.remove('active');
-        document.body.style.overflow = '';
-    });
-
-    // Close on backdrop click
-    gcashModal.addEventListener('click', function(e) {
-        if (e.target === gcashModal) {
-            gcashModal.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-    });
-
-    // Close on Escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && gcashModal.classList.contains('active')) {
-            gcashModal.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-    });
-
-    // Confirm GCash Payment
-    confirmGcashPaymentBtn.addEventListener('click', function() {
-        const customerInfo = validateCustomerInfo();
-        if (!customerInfo) {
-            gcashModal.classList.remove('active');
-            document.body.style.overflow = '';
-            return;
-        }
-        
-        const cart = getCart();
-        if (cart.length === 0) {
-            showPaymentError('Your cart is empty.');
-            gcashModal.classList.remove('active');
-            document.body.style.overflow = '';
-            return;
-        }
-        
-        // Close modal and show processing
-        gcashModal.classList.remove('active');
-        document.body.style.overflow = '';
-        showProcessingOverlay();
-        
-        // Process GCash order
-        fetch('includes/gcash_process_order.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                customerInfo: customerInfo,
-                cart: cart
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            hideProcessingOverlay();
-            
-            if (data.error) {
-                showPaymentError(data.error);
-                return;
-            }
-            
-            // Payment successful - redirect to success page
-            console.log('GCash order placed successfully:', data);
-            
-            // Clear the cart
-            clearCart();
-            
-            // Redirect to order success page
-            window.location.href = 'index.php?page=order-success';
-        })
-        .catch(error => {
-            hideProcessingOverlay();
-            console.error('GCash order error:', error);
-            showPaymentError('An error occurred while processing your order. Please try again.');
-        });
-    });
-}
 </script>
-

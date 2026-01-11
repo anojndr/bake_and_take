@@ -110,11 +110,9 @@ if ($pdo) {
                                         <?php 
                                         $paymentMethod = $order['payment_method'] ?? 'paypal';
                                         $paymentIcons = [
-                                            'gcash' => 'bi-phone',
                                             'paypal' => 'bi-paypal'
                                         ];
                                         $paymentLabels = [
-                                            'gcash' => 'GCash',
                                             'paypal' => 'PayPal'
                                         ];
                                         $icon = $paymentIcons[$paymentMethod] ?? 'bi-credit-card';
@@ -359,10 +357,6 @@ if ($pdo) {
 .order-payment {
     color: var(--text-light);
     font-size: 0.9rem;
-}
-
-.order-payment .bi-phone {
-    color: #007DFE;
 }
 
 .order-payment .bi-paypal {
@@ -653,15 +647,12 @@ async function viewOrderDetails(orderId) {
                     ${(() => {
                         const paymentMethod = order.payment_method || 'paypal';
                         const paymentIcons = {
-                            'gcash': 'bi-phone',
                             'paypal': 'bi-paypal'
                         };
                         const paymentLabels = {
-                            'gcash': 'GCash',
                             'paypal': 'PayPal'
                         };
                         const paymentColors = {
-                            'gcash': '#007DFE',
                             'paypal': '#003087'
                         };
                         const icon = paymentIcons[paymentMethod] || 'bi-credit-card';

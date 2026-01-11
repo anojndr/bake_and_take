@@ -3,9 +3,8 @@
 $lastOrder = $_SESSION['last_order'] ?? null;
 $orderNumber = $lastOrder['order_number'] ?? strtoupper(substr(md5(time()), 0, 8));
 $orderTotal = $lastOrder['total'] ?? 0;
-$paymentMethod = $lastOrder['payment_method'] ?? 'unknown';
+$paymentMethod = $lastOrder['payment_method'] ?? 'paypal';
 $paypalCaptureId = $lastOrder['paypal_capture_id'] ?? null;
-$gcashPayment = $lastOrder['gcash_payment'] ?? false;
 ?>
 
 <div class="success-container">
@@ -16,26 +15,12 @@ $gcashPayment = $lastOrder['gcash_payment'] ?? false;
         <h1>Order Confirmed!</h1>
         <p class="order-number">Order #<?php echo htmlspecialchars($orderNumber); ?></p>
         
-        <?php if ($gcashPayment): ?>
-        <p class="success-message">Thank you for your order! Please show your GCash payment receipt when you pick up your order.</p>
-        <?php else: ?>
         <p class="success-message">Thank you for your order! We've received your order and will begin preparing your delicious treats right away.</p>
-        <?php endif; ?>
         
         <?php if ($orderTotal > 0): ?>
-        <div class="order-total-display <?php echo $gcashPayment ? 'gcash-total' : ''; ?>">
-            <span class="label"><?php echo $gcashPayment ? 'Amount' : 'Total Paid'; ?></span>
+        <div class="order-total-display">
+            <span class="label">Total Paid</span>
             <span class="amount">₱<?php echo number_format($orderTotal, 2); ?></span>
-        </div>
-        <?php endif; ?>
-        
-        <?php if ($gcashPayment): ?>
-        <div class="gcash-pending-notice">
-            <i class="bi bi-receipt"></i>
-            <div>
-                <strong>Show Receipt at Pickup</strong>
-                <span>Please present your GCash payment receipt or screenshot when picking up your order.</span>
-            </div>
         </div>
         <?php endif; ?>
         
@@ -46,15 +31,6 @@ $gcashPayment = $lastOrder['gcash_payment'] ?? false;
                 <div>
                     <strong>Payment Confirmed</strong>
                     <span>PayPal Transaction: <?php echo htmlspecialchars(substr($paypalCaptureId, 0, 17)); ?>...</span>
-                </div>
-            </div>
-            <?php endif; ?>
-            <?php if ($gcashPayment): ?>
-            <div class="detail-item gcash-payment">
-                <i class="bi bi-phone"></i>
-                <div>
-                    <strong>GCash Payment</strong>
-                    <span>Present receipt at pickup</span>
                 </div>
             </div>
             <?php endif; ?>
@@ -237,44 +213,6 @@ $gcashPayment = $lastOrder['gcash_payment'] ?? false;
         gap: 0.5rem;
     }
 }
-
-/* GCash Payment Styles */
-.order-total-display.gcash-total {
-    background: linear-gradient(135deg, #007DFE, #0056B3);
-}
-
-.gcash-pending-notice {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    background: #FFF3CD;
-    padding: 1rem 1.5rem;
-    border-radius: var(--radius-md);
-    margin-bottom: 1.5rem;
-    text-align: left;
-    border-left: 4px solid #FFC107;
-}
-
-.gcash-pending-notice i {
-    font-size: 1.5rem;
-    color: #856404;
-}
-
-.gcash-pending-notice strong {
-    display: block;
-    color: #856404;
-    font-size: 0.95rem;
-}
-
-.gcash-pending-notice span {
-    font-size: 0.85rem;
-    color: #856404;
-    opacity: 0.9;
-}
-
-.detail-item.gcash-payment i {
-    color: #007DFE; /* GCash blue */
-}
 </style>
 
 <script>
@@ -283,4 +221,3 @@ document.addEventListener('DOMContentLoaded', function() {
     clearCart();
 });
 </script>
-
