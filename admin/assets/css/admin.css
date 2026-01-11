@@ -673,6 +673,13 @@ body {
     background: rgba(239, 68, 68, 0.1);
 }
 
+.btn-action-danger:hover,
+.btn-action.btn-action-danger:hover {
+    border-color: var(--admin-danger);
+    color: var(--admin-danger);
+    background: rgba(239, 68, 68, 0.1);
+}
+
 /* =====================================================
    ADMIN BUTTONS
    ===================================================== */

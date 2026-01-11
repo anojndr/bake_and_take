@@ -135,6 +135,9 @@ $statusLabels = [
                                 <button class="btn-action" title="View Details" data-bs-toggle="modal" data-bs-target="#orderModal<?php echo $order['id']; ?>">
                                     <i class="bi bi-eye"></i>
                                 </button>
+                                <button class="btn-action btn-action-danger" title="Delete Order" onclick="deleteOrder(<?php echo $order['id']; ?>, '<?php echo sanitize($order['order_number']); ?>')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -247,3 +250,62 @@ $statusLabels = [
     </div>
 </div>
 <?php endforeach; ?>
+
+<script>
+function deleteOrder(orderId, orderNumber) {
+    Swal.fire({
+        title: 'Delete Order?',
+        html: `Are you sure you want to delete order <strong>#${orderNumber}</strong>?<br><small class="text-muted">This action cannot be undone.</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel',
+        background: 'var(--admin-dark-secondary)',
+        color: 'var(--admin-text)'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Send delete request
+            fetch('includes/delete_order.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'order_id=' + orderId
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Deleted!',
+                        text: 'Order has been deleted.',
+                        icon: 'success',
+                        background: 'var(--admin-dark-secondary)',
+                        color: 'var(--admin-text)'
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: data.error || 'Failed to delete order.',
+                        icon: 'error',
+                        background: 'var(--admin-dark-secondary)',
+                        color: 'var(--admin-text)'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'An error occurred while deleting the order.',
+                    icon: 'error',
+                    background: 'var(--admin-dark-secondary)',
+                    color: 'var(--admin-text)'
+                });
+            });
+        }
+    });
+}
+</script>
