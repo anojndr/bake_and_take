@@ -119,6 +119,7 @@
     align-items: center;
     justify-content: center;
     padding: 2rem;
+    padding-top: 100px;
     background: linear-gradient(135deg, var(--cream) 0%, var(--accent) 100%);
 }
 
