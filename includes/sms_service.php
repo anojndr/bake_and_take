@@ -352,7 +352,6 @@ function sendOrderStatusSMS($orderData, $status) {
     }
     
     $statusLabels = [
-        'pending' => 'Pending',
         'confirmed' => 'Confirmed',
         'preparing' => 'Being Prepared',
         'ready' => 'Ready for Pickup',

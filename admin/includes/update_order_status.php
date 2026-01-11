@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $orderId = filter_input(INPUT_POST, 'order_id', FILTER_VALIDATE_INT);
 $status = filter_input(INPUT_POST, 'status', FILTER_SANITIZE_SPECIAL_CHARS);
 
-$validStatuses = ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled'];
+$validStatuses = ['confirmed', 'preparing', 'ready', 'delivered', 'cancelled'];
 
 if (!$orderId || !in_array($status, $validStatuses)) {
     echo json_encode(['success' => false, 'message' => 'Invalid parameters']);

@@ -9,7 +9,7 @@ $totalRevenue = 0;
 $totalUsers = 0;
 $totalProducts = 0;
 $recentOrders = [];
-$pendingOrders = 0;
+$newOrders = 0;
 
 if ($pdo) {
     try {
@@ -29,9 +29,9 @@ if ($pdo) {
         $stmt = $pdo->query("SELECT COUNT(*) as count FROM products WHERE active = 1");
         $totalProducts = $stmt->fetch()['count'];
         
-        // Pending orders
-        $stmt = $pdo->query("SELECT COUNT(*) as count FROM orders WHERE status = 'pending'");
-        $pendingOrders = $stmt->fetch()['count'];
+        // New orders (confirmed but not yet preparing)
+        $stmt = $pdo->query("SELECT COUNT(*) as count FROM orders WHERE status = 'confirmed'");
+        $newOrders = $stmt->fetch()['count'];
         
         // Recent orders
         $stmt = $pdo->query("
@@ -50,7 +50,6 @@ if ($pdo) {
 }
 
 $statusLabels = [
-    'pending' => 'Pending',
     'confirmed' => 'Confirmed',
     'preparing' => 'Preparing',
     'ready' => 'Ready',
@@ -110,9 +109,9 @@ $statusLabels = [
             <div class="stat-icon">
                 <i class="bi bi-box-seam"></i>
             </div>
-            <?php if ($pendingOrders > 0): ?>
+            <?php if ($newOrders > 0): ?>
             <span class="stat-trend down">
-                <i class="bi bi-clock"></i> <?php echo $pendingOrders; ?> pending
+                <i class="bi bi-clock"></i> <?php echo $newOrders; ?> new
             </span>
             <?php endif; ?>
         </div>
@@ -203,8 +202,8 @@ $statusLabels = [
             </div>
         </div>
         
-        <!-- Pending Orders Alert -->
-        <?php if ($pendingOrders > 0): ?>
+        <!-- New Orders Alert -->
+        <?php if ($newOrders > 0): ?>
         <div class="admin-card mt-4" style="border-left: 4px solid var(--admin-warning);">
             <div class="admin-card-body">
                 <div class="d-flex align-items-center gap-3">
@@ -212,11 +211,11 @@ $statusLabels = [
                         <i class="bi bi-clock-history"></i>
                     </div>
                     <div>
-                        <h4 style="margin: 0; font-size: 1.25rem;"><?php echo $pendingOrders; ?> Pending Orders</h4>
-                        <p class="mb-0" style="color: var(--admin-text-muted); font-size: 0.875rem;">Orders awaiting confirmation</p>
+                        <h4 style="margin: 0; font-size: 1.25rem;"><?php echo $newOrders; ?> New Orders</h4>
+                        <p class="mb-0" style="color: var(--admin-text-muted); font-size: 0.875rem;">Orders awaiting preparation</p>
                     </div>
                 </div>
-                <a href="index.php?page=orders&status=pending" class="btn-admin-primary mt-3 w-100 justify-content-center">
+                <a href="index.php?page=orders&status=confirmed" class="btn-admin-primary mt-3 w-100 justify-content-center">
                     <i class="bi bi-arrow-right"></i> Review Now
                 </a>
             </div>

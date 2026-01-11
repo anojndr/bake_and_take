@@ -32,9 +32,8 @@ if ($pdo) {
     }
 }
 
-$statusOptions = ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled'];
+$statusOptions = ['confirmed', 'preparing', 'ready', 'delivered', 'cancelled'];
 $statusLabels = [
-    'pending' => 'Pending',
     'confirmed' => 'Confirmed',
     'preparing' => 'Preparing',
     'ready' => 'Ready',

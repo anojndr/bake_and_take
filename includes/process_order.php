@@ -74,7 +74,7 @@ if ($pdo) {
                 user_id, order_number, first_name, last_name, email, phone,
                 delivery_method, address, city, state, zip, instructions,
                 subtotal, delivery_fee, tax, total, status, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', NOW())
         ");
         
         $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;

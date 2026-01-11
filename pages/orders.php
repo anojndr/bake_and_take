@@ -75,7 +75,6 @@ if ($pdo) {
                                 <div class="order-status status-<?php echo strtolower($order['status']); ?>">
                                     <?php
                                     $statusIcons = [
-                                        'pending' => 'bi-clock',
                                         'confirmed' => 'bi-check-circle',
                                         'preparing' => 'bi-fire',
                                         'ready' => 'bi-box-seam',
@@ -83,7 +82,6 @@ if ($pdo) {
                                         'cancelled' => 'bi-x-circle'
                                     ];
                                     $statusLabels = [
-                                        'pending' => 'Pending',
                                         'confirmed' => 'Confirmed',
                                         'preparing' => 'Preparing',
                                         'ready' => 'Ready',
@@ -579,7 +577,6 @@ async function viewOrderDetails(orderId) {
     // For simplicity, we'll display what we have
     const statusClass = 'status-' + order.status.toLowerCase();
     const statusIcons = {
-        'pending': 'bi-clock',
         'confirmed': 'bi-check-circle',
         'preparing': 'bi-fire',
         'ready': 'bi-box-seam',
@@ -587,7 +584,6 @@ async function viewOrderDetails(orderId) {
         'cancelled': 'bi-x-circle'
     };
     const statusLabels = {
-        'pending': 'Pending',
         'confirmed': 'Confirmed',
         'preparing': 'Preparing',
         'ready': 'Ready',

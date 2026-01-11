@@ -222,26 +222,22 @@ function handleConfirmReply($phoneNumber) {
         return ['action' => 'logged', 'details' => 'No database'];
     }
     
-    // Find pending order for this phone number
+    // Find confirmed order for this phone number (orders now start from confirmed)
     try {
         $stmt = $pdo->prepare("
             SELECT * FROM orders 
-            WHERE phone = ? AND status = 'pending'
+            WHERE phone = ? AND status = 'confirmed'
             ORDER BY created_at DESC LIMIT 1
         ");
         $stmt->execute([formatPhoneNumber($phoneNumber)]);
         $order = $stmt->fetch();
         
         if ($order) {
-            // Confirm the order
-            $stmt = $pdo->prepare("UPDATE orders SET status = 'confirmed' WHERE id = ?");
-            $stmt->execute([$order['id']]);
-            
-            // Send confirmation SMS
-            sendSMS($phoneNumber, SMS_SENDER_NAME . ": Your order #{$order['order_number']} has been confirmed!");
+            // Order is already confirmed, send acknowledgement
+            sendSMS($phoneNumber, SMS_SENDER_NAME . ": Your order #{$order['order_number']} is already confirmed!");
             
             return [
-                'action' => 'order_confirmed',
+                'action' => 'order_already_confirmed',
                 'details' => ['order_id' => $order['id'], 'order_number' => $order['order_number']]
             ];
         }
@@ -249,7 +245,7 @@ function handleConfirmReply($phoneNumber) {
         error_log("Confirm reply error: " . $e->getMessage());
     }
     
-    return ['action' => 'no_pending_order', 'details' => 'No pending order found'];
+    return ['action' => 'no_order_found', 'details' => 'No recent order found'];
 }
 
 /**
@@ -262,11 +258,11 @@ function handleCancelReply($phoneNumber) {
         return ['action' => 'logged', 'details' => 'No database'];
     }
     
-    // Find pending/confirmed order for this phone number
+    // Find confirmed order for this phone number to cancel
     try {
         $stmt = $pdo->prepare("
             SELECT * FROM orders 
-            WHERE phone = ? AND status IN ('pending', 'confirmed')
+            WHERE phone = ? AND status = 'confirmed'
             ORDER BY created_at DESC LIMIT 1
         ");
         $stmt->execute([formatPhoneNumber($phoneNumber)]);
@@ -313,7 +309,6 @@ function handleStatusRequest($phoneNumber) {
         
         if ($order) {
             $statusLabels = [
-                'pending' => 'Pending',
                 'confirmed' => 'Confirmed',
                 'preparing' => 'Being Prepared',
                 'ready' => 'Ready for Pickup',

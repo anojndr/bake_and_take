@@ -22,10 +22,10 @@ $notificationCount = 0;
 
 if ($pdo) {
     try {
-        // Pending orders
-        $stmt = $pdo->query("SELECT id, order_number, first_name, created_at FROM orders WHERE status = 'pending' ORDER BY created_at DESC LIMIT 5");
-        $pendingOrders = $stmt->fetchAll();
-        foreach ($pendingOrders as $order) {
+        // New orders (confirmed orders that need attention)
+        $stmt = $pdo->query("SELECT id, order_number, first_name, created_at FROM orders WHERE status = 'confirmed' ORDER BY created_at DESC LIMIT 5");
+        $newOrders = $stmt->fetchAll();
+        foreach ($newOrders as $order) {
             $notifications[] = [
                 'type' => 'order',
                 'icon' => 'bi-cart-check',
@@ -55,7 +55,7 @@ if ($pdo) {
         // Sort by time
         usort($notifications, fn($a, $b) => strtotime($b['time']) - strtotime($a['time']));
         $notifications = array_slice($notifications, 0, 5);
-        $notificationCount = count($pendingOrders) + count($unreadMessages);
+        $notificationCount = count($newOrders) + count($unreadMessages);
         
     } catch (PDOException $e) {
         // Ignore
@@ -199,7 +199,7 @@ if ($pdo) {
                         </div>
                         <?php if (!empty($notifications)): ?>
                         <div class="p-2" style="border-top: 1px solid var(--admin-dark-tertiary);">
-                            <a href="index.php?page=orders&status=pending" class="btn btn-sm w-100" style="background: var(--admin-dark); color: var(--admin-text-muted);">View All</a>
+                            <a href="index.php?page=orders&status=confirmed" class="btn btn-sm w-100" style="background: var(--admin-dark); color: var(--admin-text-muted);">View All</a>
                         </div>
                         <?php endif; ?>
                     </div>
