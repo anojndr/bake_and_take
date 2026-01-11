@@ -1,12 +1,18 @@
 <!-- Hero Section -->
 <section class="hero" id="heroSection">
+    <!-- Video Background -->
+    <video class="hero-video" autoplay muted loop playsinline>
+        <source src="assets/images/herovid.mp4" type="video/mp4">
+    </video>
+    <div class="hero-overlay"></div>
+    
     <div class="container">
-        <div class="row align-items-center">
-            <div class="col-lg-6">
-                <div class="hero-content">
+        <div class="row align-items-center justify-content-center">
+            <div class="col-lg-8 col-xl-7">
+                <div class="hero-content text-center">
                     <h1>Freshly Baked <span>Happiness</span> Made Daily</h1>
                     <p>Experience the art of artisan baking. From crusty sourdoughs to delicate pastries, every bite tells a story of passion and tradition.</p>
-                    <div class="hero-buttons">
+                    <div class="hero-buttons justify-content-center">
                         <a href="index.php?page=menu" class="btn btn-hero btn-hero-primary">
                             <i class="bi bi-basket"></i> Explore Menu
                         </a>
@@ -14,11 +20,6 @@
                             <i class="bi bi-play-circle"></i> Our Story
                         </a>
                     </div>
-                </div>
-            </div>
-            <div class="col-lg-6">
-                <div class="hero-image">
-                    <img src="assets/images/hero-bread.png" alt="Artisan Bread" class="img-fluid">
                 </div>
             </div>
         </div>
