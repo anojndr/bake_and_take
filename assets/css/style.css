@@ -937,6 +937,21 @@ img {
     color: var(--primary);
 }
 
+/* Store Hours */
+.store-hours li {
+    margin-bottom: 1rem;
+}
+
+.store-hours .day {
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.store-hours .time {
+    color: var(--primary-light);
+    font-size: 0.9rem;
+}
+
 /* Page Header */
 .page-header {
     background: var(--gradient-hero), url('../images/page-header-bg.jpg') center/cover;

@@ -155,6 +155,63 @@ if (!in_array($page, $allowedPages)) {
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
+            <!-- Main Footer Content -->
+            <div class="row g-4 g-lg-5">
+                <!-- Brand Section -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="footer-brand">
+                        <h5>About Us</h5>
+                        <p>Experience the art of artisan baking. From crusty sourdoughs to delicate pastries, every bite tells a story of passion and tradition.</p>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="col-lg-2 col-md-6">
+                    <h5>Quick Links</h5>
+                    <ul class="footer-links">
+                        <li><a href="index.php">Home</a></li>
+                        <li><a href="index.php?page=menu">Menu</a></li>
+                        <li><a href="index.php?page=about">About Us</a></li>
+                        <li><a href="index.php?page=contact">Contact</a></li>
+                        <?php if (isset($_SESSION['user_id'])): ?>
+                        <li><a href="index.php?page=orders">My Orders</a></li>
+                        <?php endif; ?>
+                    </ul>
+                </div>
+
+                <!-- Contact Info -->
+                <div class="col-lg-3 col-md-6">
+                    <h5>Contact Us</h5>
+                    <ul class="contact-info">
+                        <li>
+                            <i class="bi bi-geo-alt me-2"></i>
+                            <span>Polytechnic University of the Philippines<br>Sto. Tomas, Batangas, Philippines</span>
+                        </li>
+                        <li>
+                            <i class="bi bi-telephone me-2"></i>
+                            <span>(555) 123-4567</span>
+                        </li>
+                        <li>
+                            <i class="bi bi-envelope me-2"></i>
+                            <span>hello@bakeandtake.com</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Store Hours -->
+                <div class="col-lg-3 col-md-6">
+                    <h5>Store Hours</h5>
+                    <ul class="footer-links store-hours">
+                        <li><span class="day">Monday - Saturday</span><br><span class="time">7:00 AM - 8:00 PM</span></li>
+                        <li><span class="day">Sunday</span><br><span class="time">8:00 AM - 6:00 PM</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Footer Divider -->
+            <hr class="footer-divider">
+
+            <!-- Bottom Bar -->
             <div class="row align-items-center">
                 <div class="col-md-6">
                     <p class="copyright">&copy; 2026 Bake & Take. All rights reserved.</p>
