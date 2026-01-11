@@ -70,9 +70,6 @@ $statusLabels = [
             <div class="stat-icon">
                 <i class="bi bi-receipt"></i>
             </div>
-            <span class="stat-trend up">
-                <i class="bi bi-arrow-up"></i> 12%
-            </span>
         </div>
         <div class="stat-value"><?php echo number_format($totalOrders); ?></div>
         <div class="stat-label">Total Orders</div>
@@ -83,9 +80,6 @@ $statusLabels = [
             <div class="stat-icon">
                 <i class="bi bi-currency-dollar"></i>
             </div>
-            <span class="stat-trend up">
-                <i class="bi bi-arrow-up"></i> 8%
-            </span>
         </div>
         <div class="stat-value"><?php echo formatPrice($totalRevenue); ?></div>
         <div class="stat-label">Total Revenue</div>
@@ -96,9 +90,6 @@ $statusLabels = [
             <div class="stat-icon">
                 <i class="bi bi-people"></i>
             </div>
-            <span class="stat-trend up">
-                <i class="bi bi-arrow-up"></i> 24%
-            </span>
         </div>
         <div class="stat-value"><?php echo number_format($totalUsers); ?></div>
         <div class="stat-label">Registered Users</div>
