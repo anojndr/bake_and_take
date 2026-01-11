@@ -3,7 +3,6 @@
 $lastOrder = $_SESSION['last_order'] ?? null;
 $orderNumber = $lastOrder['order_number'] ?? strtoupper(substr(md5(time()), 0, 8));
 $orderTotal = $lastOrder['total'] ?? 0;
-$paymentMethod = $lastOrder['payment_method'] ?? 'paypal';
 $paypalCaptureId = $lastOrder['paypal_capture_id'] ?? null;
 ?>
 

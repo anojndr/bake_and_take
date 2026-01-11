@@ -114,11 +114,10 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
                 INSERT INTO orders (
                     user_id, order_number, first_name, last_name, email, phone,
                     delivery_method, address, city, state, zip, instructions,
-                    subtotal, delivery_fee, tax, total, status,
-                    payment_method, payment_status,
+                    subtotal, delivery_fee, tax, total, status, payment_status,
                     paypal_order_id, paypal_payer_id, paypal_capture_id, paypal_payment_status,
                     created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, 'pickup', '', '', '', '', ?, ?, 0, ?, ?, 'confirmed', 'paypal', 'verified', ?, ?, ?, ?, NOW())
+                ) VALUES (?, ?, ?, ?, ?, ?, 'pickup', '', '', '', '', ?, ?, 0, ?, ?, 'confirmed', 'verified', ?, ?, ?, ?, NOW())
             ");
             
             $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
@@ -209,8 +208,7 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
         'order_id' => $orderId,
         'total' => $total,
         'paypal_order_id' => $paypalOrderId,
-        'paypal_capture_id' => $paypalCaptureId,
-        'payment_method' => 'paypal'
+        'paypal_capture_id' => $paypalCaptureId
     ];
     
     // Clear pending order
