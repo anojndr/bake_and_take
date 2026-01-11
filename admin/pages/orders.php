@@ -112,7 +112,27 @@ $statusLabels = [
                         <td><?php echo $order['item_count']; ?> items</td>
                         <td><strong><?php echo formatPrice($order['total']); ?></strong></td>
                         <td>
-                            <span class="text-capitalize"><?php echo $order['delivery_method']; ?></span>
+                            <?php 
+                            $paymentMethod = $order['payment_method'] ?? 'paypal';
+                            $paymentIcons = [
+                                'gcash' => 'bi-phone',
+                                'paypal' => 'bi-paypal'
+                            ];
+                            $paymentLabels = [
+                                'gcash' => 'GCash',
+                                'paypal' => 'PayPal'
+                            ];
+                            $paymentColors = [
+                                'gcash' => '#007DFE',
+                                'paypal' => '#003087'
+                            ];
+                            $icon = $paymentIcons[$paymentMethod] ?? 'bi-credit-card';
+                            $label = $paymentLabels[$paymentMethod] ?? ucfirst($paymentMethod);
+                            $color = $paymentColors[$paymentMethod] ?? '#6c757d';
+                            ?>
+                            <span class="badge" style="background: <?php echo $color; ?>; color: white;">
+                                <i class="bi <?php echo $icon; ?> me-1"></i><?php echo $label; ?>
+                            </span>
                         </td>
                         <td>
                             <select class="form-select form-select-sm status-select" 
@@ -179,8 +199,34 @@ $statusLabels = [
                         <p class="mb-0"><?php echo sanitize($order['phone']); ?></p>
                     </div>
                     <div class="col-md-6">
-                        <h6 style="color: var(--admin-text-muted);">Order Method</h6>
-                        <p class="mb-1"><strong><?php echo ucfirst($order['delivery_method']); ?></strong></p>
+                        <h6 style="color: var(--admin-text-muted);">Order & Payment Method</h6>
+                        <p class="mb-1">
+                            <strong>Pickup:</strong> <?php echo ucfirst($order['delivery_method']); ?>
+                        </p>
+                        <p class="mb-1">
+                            <strong>Payment:</strong>
+                            <?php 
+                            $modalPaymentMethod = $order['payment_method'] ?? 'paypal';
+                            $modalPaymentIcons = [
+                                'gcash' => 'bi-phone',
+                                'paypal' => 'bi-paypal'
+                            ];
+                            $modalPaymentLabels = [
+                                'gcash' => 'GCash',
+                                'paypal' => 'PayPal'
+                            ];
+                            $modalPaymentColors = [
+                                'gcash' => '#007DFE',
+                                'paypal' => '#003087'
+                            ];
+                            $modalIcon = $modalPaymentIcons[$modalPaymentMethod] ?? 'bi-credit-card';
+                            $modalLabel = $modalPaymentLabels[$modalPaymentMethod] ?? ucfirst($modalPaymentMethod);
+                            $modalColor = $modalPaymentColors[$modalPaymentMethod] ?? '#6c757d';
+                            ?>
+                            <span class="badge" style="background: <?php echo $modalColor; ?>; color: white;">
+                                <i class="bi <?php echo $modalIcon; ?> me-1"></i><?php echo $modalLabel; ?>
+                            </span>
+                        </p>
                         <?php if ($order['delivery_method'] === 'delivery' && $order['address']): ?>
                         <p class="mb-0">
                             <?php echo sanitize($order['address']); ?><br>

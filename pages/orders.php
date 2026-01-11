@@ -106,6 +106,23 @@ if ($pdo) {
                                         <i class="bi bi-<?php echo $order['delivery_method'] === 'delivery' ? 'truck' : 'shop'; ?> me-1"></i>
                                         <?php echo $order['delivery_method'] === 'delivery' ? 'Home Delivery' : 'Store Pickup'; ?>
                                     </div>
+                                    <div class="order-payment">
+                                        <?php 
+                                        $paymentMethod = $order['payment_method'] ?? 'paypal';
+                                        $paymentIcons = [
+                                            'gcash' => 'bi-phone',
+                                            'paypal' => 'bi-paypal'
+                                        ];
+                                        $paymentLabels = [
+                                            'gcash' => 'GCash',
+                                            'paypal' => 'PayPal'
+                                        ];
+                                        $icon = $paymentIcons[$paymentMethod] ?? 'bi-credit-card';
+                                        $label = $paymentLabels[$paymentMethod] ?? ucfirst($paymentMethod);
+                                        ?>
+                                        <i class="bi <?php echo $icon; ?> me-1"></i>
+                                        <?php echo $label; ?>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -337,6 +354,19 @@ if ($pdo) {
 .order-delivery {
     color: var(--text-light);
     font-size: 0.9rem;
+}
+
+.order-payment {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+.order-payment .bi-phone {
+    color: #007DFE;
+}
+
+.order-payment .bi-paypal {
+    color: #003087;
 }
 
 .order-card-footer {
@@ -618,8 +648,29 @@ async function viewOrderDetails(orderId) {
                 </p>
             </div>
             <div class="detail-block">
-                <h6><i class="bi bi-info-circle"></i> Notes</h6>
-                <p>${order.instructions || 'No special instructions'}</p>
+                <h6><i class="bi bi-wallet2"></i> Payment Method</h6>
+                <p>
+                    ${(() => {
+                        const paymentMethod = order.payment_method || 'paypal';
+                        const paymentIcons = {
+                            'gcash': 'bi-phone',
+                            'paypal': 'bi-paypal'
+                        };
+                        const paymentLabels = {
+                            'gcash': 'GCash',
+                            'paypal': 'PayPal'
+                        };
+                        const paymentColors = {
+                            'gcash': '#007DFE',
+                            'paypal': '#003087'
+                        };
+                        const icon = paymentIcons[paymentMethod] || 'bi-credit-card';
+                        const label = paymentLabels[paymentMethod] || paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1);
+                        const color = paymentColors[paymentMethod] || '#6c757d';
+                        return `<i class="bi ${icon}" style="color: ${color}; margin-right: 0.5rem;"></i>${label}`;
+                    })()}
+                    ${order.instructions ? `<br><small class="text-muted">Note: ${order.instructions}</small>` : ''}
+                </p>
             </div>
         </div>
         
