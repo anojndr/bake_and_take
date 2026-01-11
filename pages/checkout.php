@@ -1,3 +1,17 @@
+<?php
+// Fetch user data if logged in
+$userData = null;
+if (isset($_SESSION['user_id'])) {
+    try {
+        $stmt = $pdo->prepare("SELECT first_name, last_name, email, phone FROM users WHERE id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        $userData = $stmt->fetch();
+    } catch (PDOException $e) {
+        // Silently fail - form just won't be prefilled
+    }
+}
+?>
+
 <!-- Page Header -->
 <header class="page-header">
     <div class="container">
@@ -25,19 +39,19 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">First Name *</label>
-                                <input type="text" class="form-control form-control-custom" id="checkout_first_name" name="first_name" required>
+                                <input type="text" class="form-control form-control-custom" id="checkout_first_name" name="first_name" required value="<?php echo htmlspecialchars($userData['first_name'] ?? ''); ?>">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Last Name *</label>
-                                <input type="text" class="form-control form-control-custom" id="checkout_last_name" name="last_name" required>
+                                <input type="text" class="form-control form-control-custom" id="checkout_last_name" name="last_name" required value="<?php echo htmlspecialchars($userData['last_name'] ?? ''); ?>">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Email Address *</label>
-                                <input type="email" class="form-control form-control-custom" id="checkout_email" name="email" required>
+                                <input type="email" class="form-control form-control-custom" id="checkout_email" name="email" required value="<?php echo htmlspecialchars($userData['email'] ?? ''); ?>">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Phone Number *</label>
-                                <input type="tel" class="form-control form-control-custom" id="checkout_phone" name="phone" required>
+                                <input type="tel" class="form-control form-control-custom" id="checkout_phone" name="phone" required value="<?php echo htmlspecialchars($userData['phone'] ?? ''); ?>">
                             </div>
                         </div>
                     </div>
