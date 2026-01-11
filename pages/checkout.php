@@ -83,12 +83,7 @@
                                 </div>
                                 <span>GCash</span>
                             </button>
-                            <button type="button" class="payment-tab" data-method="cash" id="cash-tab">
-                                <div class="tab-icon cash-icon">
-                                    <i class="bi bi-cash-coin"></i>
-                                </div>
-                                <span>Cash</span>
-                            </button>
+
                             <button type="button" class="payment-tab" data-method="paypal" id="paypal-tab">
                                 <div class="tab-icon paypal-icon">
                                     <i class="bi bi-paypal"></i>
@@ -124,45 +119,7 @@
                             </div>
                         </div>
                         
-                        <!-- Cash Payment Section -->
-                        <div id="cash-payment-section" class="payment-section">
-                            <div class="cash-info">
-                                <div class="cash-header">
-                                    <i class="bi bi-cash-coin"></i>
-                                    <span>Pay Cash on Pickup</span>
-                                </div>
-                                <p class="text-muted mb-3">Pay for your order with cash when you pick it up at our store. No advance payment required!</p>
-                                
-                                <div class="cash-benefits">
-                                    <div class="benefit-item">
-                                        <i class="bi bi-check-circle-fill"></i>
-                                        <span>No online payment needed</span>
-                                    </div>
-                                    <div class="benefit-item">
-                                        <i class="bi bi-check-circle-fill"></i>
-                                        <span>Pay when you pick up your order</span>
-                                    </div>
-                                    <div class="benefit-item">
-                                        <i class="bi bi-check-circle-fill"></i>
-                                        <span>Exact change appreciated</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="cash-amount-display">
-                                    <span class="label">Total to Pay at Pickup:</span>
-                                    <span class="amount" id="cash-total-amount">₱0.00</span>
-                                </div>
-                                
-                                <button type="button" class="btn btn-cash" id="place-cash-order">
-                                    <i class="bi bi-bag-check me-2"></i>Place Order (Pay at Pickup)
-                                </button>
-                                
-                                <div class="cash-note mt-3">
-                                    <i class="bi bi-info-circle me-2"></i>
-                                    <span>Your order will be prepared and ready for pickup. Please bring the exact amount.</span>
-                                </div>
-                            </div>
-                        </div>
+
                         
                         <!-- PayPal Payment Section -->
                         <div id="paypal-payment-section" class="payment-section">
@@ -736,124 +693,7 @@
     }
 }
 
-/* Cash Payment Styles */
-.payment-tab .cash-icon {
-    background: linear-gradient(135deg, #28a745, #20c997);
-    color: white;
-}
 
-.cash-info {
-    background: linear-gradient(135deg, #E8F5E9, #F1F8E9);
-    padding: 1.5rem;
-    border-radius: var(--radius-lg);
-    border: 1px solid rgba(40, 167, 69, 0.2);
-}
-
-.cash-header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-    font-weight: 600;
-    color: #28a745;
-    font-size: 1.1rem;
-}
-
-.cash-header i {
-    font-size: 1.5rem;
-}
-
-.cash-benefits {
-    background: white;
-    padding: 1rem;
-    border-radius: var(--radius-md);
-    margin-bottom: 1rem;
-}
-
-.cash-benefits .benefit-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem 0;
-    color: var(--text-secondary);
-}
-
-.cash-benefits .benefit-item:not(:last-child) {
-    border-bottom: 1px solid var(--cream);
-}
-
-.cash-benefits .benefit-item i {
-    color: #28a745;
-    font-size: 1.1rem;
-}
-
-.cash-amount-display {
-    background: linear-gradient(135deg, #28a745, #20c997);
-    color: white;
-    padding: 1rem 1.25rem;
-    border-radius: var(--radius-lg);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.cash-amount-display .label {
-    font-size: 0.9rem;
-    opacity: 0.9;
-}
-
-.cash-amount-display .amount {
-    font-size: 1.4rem;
-    font-weight: 700;
-}
-
-.btn-cash {
-    background: linear-gradient(135deg, #28a745, #218838);
-    color: white;
-    border: none;
-    padding: 1rem 2rem;
-    border-radius: var(--radius-lg);
-    font-weight: 600;
-    font-size: 1rem;
-    width: 100%;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.btn-cash:hover {
-    background: linear-gradient(135deg, #218838, #1e7e34);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-}
-
-.cash-note {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    padding: 0.75rem;
-    background: white;
-    border-radius: var(--radius-md);
-    border-left: 4px solid #28a745;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-}
-
-.cash-note i {
-    color: #28a745;
-    margin-top: 0.1rem;
-}
-
-@media (max-width: 576px) {
-    .cash-amount-display {
-        flex-direction: column;
-        gap: 0.5rem;
-        text-align: center;
-    }
-}
 </style>
 
 <!-- PayPal SDK -->
@@ -897,7 +737,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     renderCheckoutItems();
     initPaymentTabs();
     initGCashPayment();
-    initCashPayment();
     initPayPalButtons();
 });
 
@@ -1135,10 +974,6 @@ function initPaymentTabs() {
             
             if (method === 'gcash') {
                 document.getElementById('gcash-payment-section').classList.add('active');
-            } else if (method === 'cash') {
-                document.getElementById('cash-payment-section').classList.add('active');
-                // Update cash amount display
-                updateCashAmount();
             } else if (method === 'paypal') {
                 document.getElementById('paypal-payment-section').classList.add('active');
             }
@@ -1149,75 +984,7 @@ function initPaymentTabs() {
     });
 }
 
-// ==================== Cash Payment ====================
-function updateCashAmount() {
-    const subtotal = getCartTotal();
-    const tax = subtotal * 0.08;
-    const total = subtotal + tax;
-    const cashAmountEl = document.getElementById('cash-total-amount');
-    if (cashAmountEl) {
-        cashAmountEl.textContent = '₱' + total.toFixed(2);
-    }
-}
 
-function initCashPayment() {
-    const placeCashOrderBtn = document.getElementById('place-cash-order');
-    
-    if (!placeCashOrderBtn) return;
-    
-    // Initialize cash amount display
-    updateCashAmount();
-    
-    placeCashOrderBtn.addEventListener('click', function() {
-        // Validate customer info first
-        const customerInfo = validateCustomerInfo();
-        if (!customerInfo) return;
-        
-        const cart = getCart();
-        if (cart.length === 0) {
-            showPaymentError('Your cart is empty.');
-            return;
-        }
-        
-        // Show processing overlay
-        showProcessingOverlay();
-        
-        // Process Cash order
-        fetch('includes/cash_process_order.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                customerInfo: customerInfo,
-                cart: cart
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            hideProcessingOverlay();
-            
-            if (data.error) {
-                showPaymentError(data.error);
-                return;
-            }
-            
-            // Order placed successfully - redirect to success page
-            console.log('Cash order placed successfully:', data);
-            
-            // Clear the cart
-            clearCart();
-            
-            // Redirect to order success page
-            window.location.href = 'index.php?page=order-success';
-        })
-        .catch(error => {
-            hideProcessingOverlay();
-            console.error('Cash order error:', error);
-            showPaymentError('An error occurred while processing your order. Please try again.');
-        });
-    });
-}
 
 // ==================== GCash Payment ====================
 function initGCashPayment() {
