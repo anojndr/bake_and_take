@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS orders (
     last_name VARCHAR(50) NOT NULL,
     email VARCHAR(100) NOT NULL,
     phone VARCHAR(20) NOT NULL,
-    delivery_method ENUM('delivery', 'pickup') DEFAULT 'delivery',
+    delivery_method ENUM('delivery', 'pickup') DEFAULT 'pickup',
     address TEXT,
     city VARCHAR(50),
     state VARCHAR(50),
@@ -72,11 +72,16 @@ CREATE TABLE IF NOT EXISTS orders (
     delivery_fee DECIMAL(10, 2) DEFAULT 0,
     tax DECIMAL(10, 2) DEFAULT 0,
     total DECIMAL(10, 2) NOT NULL,
-    status ENUM('pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled') DEFAULT 'pending',
-    payment_status ENUM('pending', 'pending_verification', 'verified', 'failed') DEFAULT 'pending',
+    status ENUM('pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled') DEFAULT 'confirmed',
+    payment_status ENUM('pending', 'completed', 'failed', 'refunded') DEFAULT 'pending',
+    paypal_order_id VARCHAR(100),
+    paypal_payer_id VARCHAR(100),
+    paypal_capture_id VARCHAR(100),
+    paypal_payment_status VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_paypal_order_id (paypal_order_id)
 );
 
 -- Order items table
@@ -151,3 +156,58 @@ INSERT INTO products (category_id, name, slug, description, price, image, featur
 (2, 'Danish Pastry', 'danish-pastry', 'Fruit-topped danish with vanilla custard.', 140.00, 'danish.jpg', FALSE),
 (3, 'Chocolate Truffle Cake', 'chocolate-truffle-cake', 'Decadent chocolate cake with ganache. Serves 10-12.', 1700.00, 'truffle-cake.jpg', TRUE),
 (4, 'Oatmeal Raisin Cookies', 'oatmeal-raisin-cookies', 'Wholesome oatmeal cookies with plump raisins.', 75.00, 'oatmeal-raisin.jpg', FALSE);
+
+-- PayPal transactions table - logs all PayPal API interactions
+CREATE TABLE IF NOT EXISTS paypal_transactions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT,
+    paypal_order_id VARCHAR(100),
+    paypal_capture_id VARCHAR(100),
+    paypal_payer_id VARCHAR(100),
+    amount DECIMAL(10, 2),
+    currency VARCHAR(10) DEFAULT 'PHP',
+    transaction_type ENUM('create_order', 'capture', 'refund', 'webhook') NOT NULL,
+    status VARCHAR(50),
+    request_data JSON,
+    response_data JSON,
+    raw_response TEXT,
+    error_message TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL,
+    INDEX idx_order_id (order_id)
+);
+
+-- SMS log table - tracks all SMS messages sent/received
+CREATE TABLE IF NOT EXISTS sms_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    direction ENUM('outbound', 'inbound') NOT NULL,
+    phone_number VARCHAR(20) NOT NULL,
+    message TEXT NOT NULL,
+    status ENUM('pending', 'sent', 'delivered', 'failed', 'received') DEFAULT 'pending',
+    gateway_response TEXT,
+    order_id INT,
+    user_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_phone (phone_number),
+    INDEX idx_direction (direction),
+    INDEX idx_status (status)
+);
+
+-- SMS OTP table - stores one-time passwords for verification
+CREATE TABLE IF NOT EXISTS sms_otp (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    phone_number VARCHAR(20) NOT NULL,
+    otp_code VARCHAR(10) NOT NULL,
+    purpose ENUM('order_verify', 'phone_verify', 'login', 'registration', 'other') DEFAULT 'other',
+    reference_id INT,
+    expires_at TIMESTAMP NOT NULL,
+    verified_at TIMESTAMP NULL,
+    attempts INT DEFAULT 0,
+    max_attempts INT DEFAULT 3,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_phone_otp (phone_number, otp_code),
+    INDEX idx_expires (expires_at)
+);
