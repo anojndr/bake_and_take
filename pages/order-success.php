@@ -17,7 +17,7 @@ $gcashPayment = $lastOrder['gcash_payment'] ?? false;
         <p class="order-number">Order #<?php echo htmlspecialchars($orderNumber); ?></p>
         
         <?php if ($gcashPayment): ?>
-        <p class="success-message">Thank you for your order! Your GCash payment is pending verification. We'll confirm your order shortly.</p>
+        <p class="success-message">Thank you for your order! Please show your GCash payment receipt when you pick up your order.</p>
         <?php else: ?>
         <p class="success-message">Thank you for your order! We've received your order and will begin preparing your delicious treats right away.</p>
         <?php endif; ?>
@@ -31,10 +31,10 @@ $gcashPayment = $lastOrder['gcash_payment'] ?? false;
         
         <?php if ($gcashPayment): ?>
         <div class="gcash-pending-notice">
-            <i class="bi bi-hourglass-split"></i>
+            <i class="bi bi-receipt"></i>
             <div>
-                <strong>Payment Verification Pending</strong>
-                <span>We will verify your GCash payment and notify you once confirmed.</span>
+                <strong>Show Receipt at Pickup</strong>
+                <span>Please present your GCash payment receipt or screenshot when picking up your order.</span>
             </div>
         </div>
         <?php endif; ?>
@@ -54,7 +54,7 @@ $gcashPayment = $lastOrder['gcash_payment'] ?? false;
                 <i class="bi bi-phone"></i>
                 <div>
                     <strong>GCash Payment</strong>
-                    <span>Awaiting payment verification</span>
+                    <span>Present receipt at pickup</span>
                 </div>
             </div>
             <?php endif; ?>
@@ -62,7 +62,7 @@ $gcashPayment = $lastOrder['gcash_payment'] ?? false;
                 <i class="bi bi-clock"></i>
                 <div>
                     <strong>Estimated Ready Time</strong>
-                    <span><?php echo $gcashPayment ? 'After payment verification' : '30-45 minutes'; ?></span>
+                    <span>30-45 minutes</span>
                 </div>
             </div>
             <div class="detail-item">
