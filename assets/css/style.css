@@ -620,9 +620,14 @@ img {
     box-shadow: var(--shadow-glow);
 }
 
+/* Products Section */
+.products {
+    background: var(--white);
+}
+
 /* Features */
 .features {
-    background: var(--white);
+    background: var(--cream);
 }
 
 .feature-card {
