@@ -48,6 +48,15 @@ if ($pdo) {
         // Handle error silently
     }
 }
+
+$statusLabels = [
+    'pending' => 'Pending',
+    'confirmed' => 'Confirmed',
+    'preparing' => 'Preparing',
+    'ready' => 'Ready',
+    'delivered' => 'Picked Up',
+    'cancelled' => 'Cancelled'
+];
 ?>
 
 <div class="page-header">
@@ -153,7 +162,7 @@ if ($pdo) {
                             <td><strong><?php echo formatPrice($order['total']); ?></strong></td>
                             <td>
                                 <span class="status-badge <?php echo $order['status']; ?>">
-                                    <?php echo ucfirst($order['status']); ?>
+                                    <?php echo $statusLabels[$order['status']] ?? ucfirst($order['status']); ?>
                                 </span>
                             </td>
                             <td><?php echo date('M d, Y', strtotime($order['created_at'])); ?></td>

@@ -82,10 +82,18 @@ if ($pdo) {
                                         'delivered' => 'bi-check-all',
                                         'cancelled' => 'bi-x-circle'
                                     ];
+                                    $statusLabels = [
+                                        'pending' => 'Pending',
+                                        'confirmed' => 'Confirmed',
+                                        'preparing' => 'Preparing',
+                                        'ready' => 'Ready',
+                                        'delivered' => 'Picked Up',
+                                        'cancelled' => 'Cancelled'
+                                    ];
                                     $icon = $statusIcons[$order['status']] ?? 'bi-circle';
                                     ?>
                                     <i class="bi <?php echo $icon; ?> me-1"></i>
-                                    <?php echo ucfirst($order['status']); ?>
+                                    <?php echo $statusLabels[$order['status']] ?? ucfirst($order['status']); ?>
                                 </div>
                             </div>
                             
@@ -578,6 +586,14 @@ async function viewOrderDetails(orderId) {
         'delivered': 'bi-check-all',
         'cancelled': 'bi-x-circle'
     };
+    const statusLabels = {
+        'pending': 'Pending',
+        'confirmed': 'Confirmed',
+        'preparing': 'Preparing',
+        'ready': 'Ready',
+        'delivered': 'Picked Up',
+        'cancelled': 'Cancelled'
+    };
     
     modalBody.innerHTML = `
         <div class="order-details-grid">
@@ -586,7 +602,7 @@ async function viewOrderDetails(orderId) {
                 <p>
                     <strong>Order #:</strong> ${order.order_number}<br>
                     <strong>Date:</strong> ${new Date(order.created_at).toLocaleString()}<br>
-                    <strong>Status:</strong> <span class="order-status ${statusClass}"><i class="bi ${statusIcons[order.status] || 'bi-circle'} me-1"></i>${order.status.charAt(0).toUpperCase() + order.status.slice(1)}</span>
+                    <strong>Status:</strong> <span class="order-status ${statusClass}"><i class="bi ${statusIcons[order.status] || 'bi-circle'} me-1"></i>${statusLabels[order.status] || order.status.charAt(0).toUpperCase() + order.status.slice(1)}</span>
                 </p>
             </div>
             <div class="detail-block">

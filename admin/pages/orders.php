@@ -33,6 +33,14 @@ if ($pdo) {
 }
 
 $statusOptions = ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled'];
+$statusLabels = [
+    'pending' => 'Pending',
+    'confirmed' => 'Confirmed',
+    'preparing' => 'Preparing',
+    'ready' => 'Ready',
+    'delivered' => 'Picked Up',
+    'cancelled' => 'Cancelled'
+];
 ?>
 
 <div class="page-header d-flex justify-content-between align-items-center">
@@ -52,7 +60,7 @@ $statusOptions = ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'ca
             <?php foreach ($statusOptions as $status): ?>
             <a href="index.php?page=orders&status=<?php echo $status; ?>" 
                class="btn <?php echo $statusFilter === $status ? 'btn-admin-primary' : 'btn-admin-secondary'; ?> btn-sm">
-                <?php echo ucfirst($status); ?>
+                <?php echo $statusLabels[$status]; ?>
             </a>
             <?php endforeach; ?>
         </div>
@@ -63,7 +71,7 @@ $statusOptions = ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'ca
 <div class="admin-card">
     <div class="admin-card-header">
         <h3 class="admin-card-title">
-            <?php echo $statusFilter ? ucfirst($statusFilter) . ' Orders' : 'All Orders'; ?>
+            <?php echo $statusFilter ? ($statusLabels[$statusFilter] ?? ucfirst($statusFilter)) . ' Orders' : 'All Orders'; ?>
             <span class="badge bg-secondary ms-2"><?php echo count($orders); ?></span>
         </h3>
     </div>
@@ -113,7 +121,7 @@ $statusOptions = ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'ca
                                     style="background: var(--admin-dark); border-color: var(--admin-dark-tertiary); color: var(--admin-text); width: 130px;">
                                 <?php foreach ($statusOptions as $status): ?>
                                 <option value="<?php echo $status; ?>" <?php echo $order['status'] === $status ? 'selected' : ''; ?>>
-                                    <?php echo ucfirst($status); ?>
+                                    <?php echo $statusLabels[$status]; ?>
                                 </option>
                                 <?php endforeach; ?>
                             </select>
