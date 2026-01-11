@@ -12,7 +12,7 @@ define('DB_PASS', '');
 // Site Configuration
 define('SITE_NAME', 'Bake & Take');
 define('SITE_URL', 'http://localhost/bake_and_take');
-define('SITE_EMAIL', 'hello@bakeandtake.com');
+define('SITE_EMAIL', 'anojndr@gmail.com');
 
 // Email Configuration
 define('SMTP_HOST', 'smtp.gmail.com');

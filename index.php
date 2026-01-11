@@ -187,13 +187,13 @@ if (!in_array($page, $allowedPages)) {
                             <i class="bi bi-geo-alt me-2"></i>
                             <span>Polytechnic University of the Philippines<br>Sto. Tomas, Batangas, Philippines</span>
                         </li>
-                        <li>
+						<li>
                             <i class="bi bi-telephone me-2"></i>
-                            <span>(555) 123-4567</span>
+                            <span>09763197468</span>
                         </li>
                         <li>
                             <i class="bi bi-envelope me-2"></i>
-                            <span>hello@bakeandtake.com</span>
+                            <span>anojndr@gmail.com</span>
                         </li>
                     </ul>
                 </div>

@@ -209,8 +209,8 @@ The 5 team members who developed this project are:
 
 === CONTACT INFORMATION ===
 - Location: Polytechnic University of the Philippines, Sto. Tomas, Batangas, Philippines
-- Phone: (555) 123-4567, (555) 987-6543
-- Email: hello@bakeandtake.com, orders@bakeandtake.com
+- Phone: 09763197468
+- Email: anojndr@gmail.com
 - Operating Hours: Monday to Saturday: 7:00 AM - 8:00 PM, Sunday: 8:00 AM - 6:00 PM
 
 === ORDER PROCESS ===

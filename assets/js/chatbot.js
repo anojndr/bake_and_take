@@ -197,7 +197,7 @@ class BakeAndTakeChatbot {
                 const errorMsg = data.error || "Unknown error occurred";
                 console.error('Chatbot API error:', data);
                 this.addMessage(
-                    `I'm sorry, I'm having trouble connecting right now. Error: ${errorMsg}. Please try again later or contact us at hello@bakeandtake.com.`,
+                    `I'm sorry, I'm having trouble connecting right now. Error: ${errorMsg}. Please try again later or contact us at anojndr@gmail.com.`,
                     'bot',
                     true
                 );
@@ -205,7 +205,7 @@ class BakeAndTakeChatbot {
         } catch (error) {
             console.error('Chatbot fetch error:', error);
             this.addMessage(
-                "I'm sorry, I couldn't process your request. Please make sure the server is running. You can also reach us at hello@bakeandtake.com.",
+                "I'm sorry, I couldn't process your request. Please make sure the server is running. You can also reach us at anojndr@gmail.com.",
                 'bot',
                 true
             );

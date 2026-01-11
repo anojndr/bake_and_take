@@ -207,7 +207,7 @@ if (isset($_GET['error'])) {
                     <label class="form-label">Email Address</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                        <input type="email" name="email" class="form-control" placeholder="admin@bakeandtake.com" required>
+                        <input type="email" name="email" class="form-control" placeholder="admin@email.com" required>
                     </div>
                 </div>
                 

@@ -47,7 +47,7 @@ $flash = getFlashMessage();
                             </div>
                             <div class="contact-details">
                                 <h5>Call Us</h5>
-                                <p>(555) 123-4567<br>(555) 987-6543</p>
+                                <p>09763197468</p>
                             </div>
                         </div>
                         <div class="contact-info-item">
@@ -56,7 +56,7 @@ $flash = getFlashMessage();
                             </div>
                             <div class="contact-details">
                                 <h5>Email Us</h5>
-                                <p>hello@bakeandtake.com<br>orders@bakeandtake.com</p>
+                                <p>anojndr@gmail.com</p>
                             </div>
                         </div>
                         <div class="contact-info-item">
@@ -67,16 +67,6 @@ $flash = getFlashMessage();
                                 <h5>Opening Hours</h5>
                                 <p>Mon - Sat: 7:00 AM - 8:00 PM<br>Sunday: 8:00 AM - 6:00 PM</p>
                             </div>
-                        </div>
-                    </div>
-                    
-                    <div class="social-section">
-                        <h5>Follow Us</h5>
-                        <div class="social-links">
-                            <a href="#"><i class="bi bi-facebook"></i></a>
-                            <a href="#"><i class="bi bi-instagram"></i></a>
-                            <a href="#"><i class="bi bi-twitter-x"></i></a>
-                            <a href="#"><i class="bi bi-pinterest"></i></a>
                         </div>
                     </div>
                 </div>
@@ -204,19 +194,7 @@ $flash = getFlashMessage();
     color: rgba(255,255,255,0.9);
 }
 
-.social-section h5 {
-    color: var(--primary-light);
-    font-size: 0.9rem;
-    margin-bottom: 0.75rem;
-}
 
-.contact-info-card .social-links a {
-    background: rgba(255,255,255,0.15);
-}
-
-.contact-info-card .social-links a:hover {
-    background: var(--primary);
-}
 
 .contact-form-card {
     background: var(--white);
