@@ -44,6 +44,7 @@ $categories = getAllCategories();
                         <th>Product</th>
                         <th>Category</th>
                         <th>Price</th>
+                        <th>Stock</th>
                         <th>Featured</th>
                         <th>Status</th>
                         <th>Actions</th>
@@ -78,6 +79,11 @@ $categories = getAllCategories();
                             </span>
                         </td>
                         <td><strong><?php echo formatPrice($product['price']); ?></strong></td>
+                        <td>
+                            <span class="badge <?php echo ($product['stock'] ?? 0) > 0 ? 'bg-success' : 'bg-danger'; ?>">
+                                <?php echo $product['stock'] ?? 0; ?> in stock
+                            </span>
+                        </td>
                         <td>
                             <?php if ($product['featured']): ?>
                             <i class="bi bi-star-fill" style="color: var(--admin-accent);"></i>
@@ -149,18 +155,24 @@ $categories = getAllCategories();
                             <textarea name="description" class="form-control" rows="3"
                                       style="background: var(--admin-dark); border-color: var(--admin-dark-tertiary); color: var(--admin-text);"></textarea>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Price ($)</label>
+                        <div class="col-md-3">
+                            <label class="form-label">Price (₱)</label>
                             <input type="number" name="price" step="0.01" min="0" class="form-control"
                                    style="background: var(--admin-dark); border-color: var(--admin-dark-tertiary); color: var(--admin-text);" 
                                    required>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <label class="form-label">Stock Quantity</label>
+                            <input type="number" name="stock" min="0" class="form-control"
+                                   style="background: var(--admin-dark); border-color: var(--admin-dark-tertiary); color: var(--admin-text);" 
+                                   placeholder="0" value="0">
+                        </div>
+                        <div class="col-md-3">
                             <label class="form-label">Image</label>
                             <input type="file" name="image" class="form-control" accept="image/*"
                                    style="background: var(--admin-dark); border-color: var(--admin-dark-tertiary); color: var(--admin-text);">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label">Options</label>
                             <div class="form-check mt-2">
                                 <input class="form-check-input" type="checkbox" name="featured" id="featuredCheck">
@@ -220,14 +232,20 @@ $categories = getAllCategories();
                             <textarea name="description" class="form-control" rows="3"
                                       style="background: var(--admin-dark); border-color: var(--admin-dark-tertiary); color: var(--admin-text);"><?php echo sanitize($product['description']); ?></textarea>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Price ($)</label>
+                        <div class="col-md-3">
+                            <label class="form-label">Price (₱)</label>
                             <input type="number" name="price" step="0.01" min="0" class="form-control"
                                    value="<?php echo $product['price']; ?>"
                                    style="background: var(--admin-dark); border-color: var(--admin-dark-tertiary); color: var(--admin-text);" 
                                    required>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <label class="form-label">Stock Quantity</label>
+                            <input type="number" name="stock" min="0" class="form-control"
+                                   value="<?php echo $product['stock'] ?? 0; ?>"
+                                   style="background: var(--admin-dark); border-color: var(--admin-dark-tertiary); color: var(--admin-text);">
+                        </div>
+                        <div class="col-md-3">
                             <label class="form-label">Options</label>
                             <div class="form-check mt-2">
                                 <input class="form-check-input" type="checkbox" name="featured" id="featuredCheck<?php echo $product['id']; ?>"

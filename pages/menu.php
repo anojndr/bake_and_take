@@ -212,6 +212,9 @@ function buildPaginationUrl($page, $category = null, $search = '', $priceMin = n
                             <?php if ($product['featured']): ?>
                             <span class="product-badge">Popular</span>
                             <?php endif; ?>
+                            <?php if (($product['stock'] ?? 0) <= 0): ?>
+                            <span class="product-badge out-of-stock">Out of Stock</span>
+                            <?php endif; ?>
                         </div>
                         <div class="product-content">
                             <span class="product-category"><?php echo getCategoryName($product['category']); ?></span>
@@ -219,10 +222,21 @@ function buildPaginationUrl($page, $category = null, $search = '', $priceMin = n
                                 <a href="index.php?page=product&id=<?php echo $product['id']; ?>"><?php echo sanitize($product['name']); ?></a>
                             </h3>
                             <p class="product-description"><?php echo sanitize($product['description']); ?></p>
+                            <div class="product-stock-info">
+                                <?php 
+                                $stock = $product['stock'] ?? 0;
+                                if ($stock > 5): ?>
+                                <span class="stock-indicator in-stock"><i class="bi bi-check-circle-fill"></i> <?php echo $stock; ?> in stock</span>
+                                <?php elseif ($stock > 0): ?>
+                                <span class="stock-indicator low-stock"><i class="bi bi-exclamation-circle-fill"></i> Only <?php echo $stock; ?> left</span>
+                                <?php else: ?>
+                                <span class="stock-indicator out-of-stock"><i class="bi bi-x-circle-fill"></i> Out of stock</span>
+                                <?php endif; ?>
+                            </div>
                             <div class="product-footer">
                                 <span class="product-price"><?php echo formatPrice($product['price']); ?></span>
-                                <button class="btn-add-cart">
-                                    <i class="bi bi-cart-plus"></i> Add
+                                <button class="btn-add-cart" <?php echo $stock <= 0 ? 'disabled' : ''; ?>>
+                                    <i class="bi bi-cart-plus"></i> <?php echo $stock > 0 ? 'Add' : 'Sold Out'; ?>
                                 </button>
                             </div>
                         </div>
@@ -694,4 +708,59 @@ function buildPaginationUrl($page, $category = null, $search = '', $priceMin = n
 .products-grid .product-card:nth-child(4) { animation-delay: 0.15s; }
 .products-grid .product-card:nth-child(5) { animation-delay: 0.2s; }
 .products-grid .product-card:nth-child(6) { animation-delay: 0.25s; }
+
+/* Stock Indicator Styles */
+.product-stock-info {
+    margin-bottom: 0.75rem;
+}
+
+.stock-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.25rem 0.6rem;
+    border-radius: 20px;
+}
+
+.stock-indicator.in-stock {
+    color: #059669;
+    background: rgba(5, 150, 105, 0.1);
+}
+
+.stock-indicator.low-stock {
+    color: #d97706;
+    background: rgba(217, 119, 6, 0.1);
+}
+
+.stock-indicator.out-of-stock {
+    color: #dc2626;
+    background: rgba(220, 38, 38, 0.1);
+}
+
+.stock-indicator i {
+    font-size: 0.75rem;
+}
+
+/* Out of stock badge overlay */
+.product-badge.out-of-stock {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    top: auto;
+    bottom: 1rem;
+    left: 1rem;
+    right: auto;
+}
+
+/* Disabled add to cart button */
+.btn-add-cart:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.btn-add-cart:disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
 </style>

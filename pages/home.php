@@ -66,6 +66,9 @@
                 <div class="product-image">
                     <img src="<?php echo getProductImage($product['image']); ?>" alt="<?php echo sanitize($product['name']); ?>">
                     <span class="product-badge">Popular</span>
+                    <?php if (($product['stock'] ?? 0) <= 0): ?>
+                    <span class="product-badge out-of-stock">Out of Stock</span>
+                    <?php endif; ?>
                 </div>
                 <div class="product-content">
                     <span class="product-category"><?php echo getCategoryName($product['category']); ?></span>
@@ -73,10 +76,21 @@
                         <a href="index.php?page=product&id=<?php echo $product['id']; ?>"><?php echo sanitize($product['name']); ?></a>
                     </h3>
                     <p class="product-description"><?php echo sanitize($product['description']); ?></p>
+                    <div class="product-stock-info">
+                        <?php 
+                        $stock = $product['stock'] ?? 0;
+                        if ($stock > 5): ?>
+                        <span class="stock-indicator in-stock"><i class="bi bi-check-circle-fill"></i> <?php echo $stock; ?> in stock</span>
+                        <?php elseif ($stock > 0): ?>
+                        <span class="stock-indicator low-stock"><i class="bi bi-exclamation-circle-fill"></i> Only <?php echo $stock; ?> left</span>
+                        <?php else: ?>
+                        <span class="stock-indicator out-of-stock"><i class="bi bi-x-circle-fill"></i> Out of stock</span>
+                        <?php endif; ?>
+                    </div>
                     <div class="product-footer">
                         <span class="product-price"><?php echo formatPrice($product['price']); ?></span>
-                        <button class="btn-add-cart">
-                            <i class="bi bi-cart-plus"></i> Add
+                        <button class="btn-add-cart" <?php echo $stock <= 0 ? 'disabled' : ''; ?>>
+                            <i class="bi bi-cart-plus"></i> <?php echo $stock > 0 ? 'Add' : 'Sold Out'; ?>
                         </button>
                     </div>
                 </div>

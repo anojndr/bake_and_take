@@ -38,6 +38,7 @@ try {
             $categoryId = (int)($_POST['category_id'] ?? 0);
             $description = sanitize($_POST['description'] ?? '');
             $price = (float)($_POST['price'] ?? 0);
+            $stock = (int)($_POST['stock'] ?? 0);
             $featured = isset($_POST['featured']) ? 1 : 0;
             
             // Generate slug
@@ -57,10 +58,10 @@ try {
             }
             
             $stmt = $pdo->prepare("
-                INSERT INTO products (category_id, name, slug, description, price, image, featured, active)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+                INSERT INTO products (category_id, name, slug, description, price, image, stock, featured, active)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
             ");
-            $stmt->execute([$categoryId, $name, $slug, $description, $price, $imageName, $featured]);
+            $stmt->execute([$categoryId, $name, $slug, $description, $price, $imageName, $stock, $featured]);
             
             setFlashMessage('success', 'Product added successfully!');
             break;
@@ -71,13 +72,14 @@ try {
             $categoryId = (int)($_POST['category_id'] ?? 0);
             $description = sanitize($_POST['description'] ?? '');
             $price = (float)($_POST['price'] ?? 0);
+            $stock = (int)($_POST['stock'] ?? 0);
             $featured = isset($_POST['featured']) ? 1 : 0;
             
             $stmt = $pdo->prepare("
-                UPDATE products SET category_id = ?, name = ?, description = ?, price = ?, featured = ?
+                UPDATE products SET category_id = ?, name = ?, description = ?, price = ?, stock = ?, featured = ?
                 WHERE id = ?
             ");
-            $stmt->execute([$categoryId, $name, $description, $price, $featured, $id]);
+            $stmt->execute([$categoryId, $name, $description, $price, $stock, $featured, $id]);
             
             setFlashMessage('success', 'Product updated successfully!');
             break;
