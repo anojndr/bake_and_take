@@ -55,15 +55,15 @@ $orderData = [
             'reference_id' => 'bake_and_take_order_' . time(),
             'description' => 'Bake & Take Order',
             'amount' => [
-                'currency_code' => 'USD',
+                'currency_code' => 'PHP',
                 'value' => number_format($total, 2, '.', ''),
                 'breakdown' => [
                     'item_total' => [
-                        'currency_code' => 'USD',
+                        'currency_code' => 'PHP',
                         'value' => number_format($subtotal, 2, '.', '')
                     ],
                     'tax_total' => [
-                        'currency_code' => 'USD',
+                        'currency_code' => 'PHP',
                         'value' => number_format($tax, 2, '.', '')
                     ]
                 ]
@@ -73,7 +73,7 @@ $orderData = [
                     'name' => substr($item['name'], 0, 127), // PayPal limits name to 127 chars
                     'quantity' => strval(intval($item['quantity'])),
                     'unit_amount' => [
-                        'currency_code' => 'USD',
+                        'currency_code' => 'PHP',
                         'value' => number_format(floatval($item['price']), 2, '.', '')
                     ]
                 ];

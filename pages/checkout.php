@@ -857,7 +857,7 @@
 </style>
 
 <!-- PayPal SDK -->
-<script src="https://www.paypal.com/sdk/js?client-id=<?php echo PAYPAL_CLIENT_ID; ?>&currency=USD&intent=capture"></script>
+<script src="https://www.paypal.com/sdk/js?client-id=<?php echo PAYPAL_CLIENT_ID; ?>&currency=PHP&intent=capture"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', async function() {
