@@ -10,7 +10,7 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 }
 
 $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
-$allowedPages = ['dashboard', 'orders', 'products', 'categories', 'users', 'messages', 'sms'];
+$allowedPages = ['dashboard', 'orders', 'products', 'categories', 'users', 'messages', 'sms', 'backup'];
 
 if (!in_array($page, $allowedPages)) {
     $page = 'dashboard';
@@ -130,6 +130,14 @@ if ($pdo) {
                 <a href="index.php?page=sms" class="nav-link <?php echo $page === 'sms' ? 'active' : ''; ?>">
                     <i class="bi bi-phone"></i>
                     <span>SMS Gateway</span>
+                </a>
+            </div>
+            
+            <div class="nav-section">
+                <span class="nav-section-title">Settings</span>
+                <a href="index.php?page=backup" class="nav-link <?php echo $page === 'backup' ? 'active' : ''; ?>">
+                    <i class="bi bi-database-gear"></i>
+                    <span>Database Backup</span>
                 </a>
             </div>
         </nav>

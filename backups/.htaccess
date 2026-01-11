@@ -1,0 +1,12 @@
+# Deny access to all files in this directory
+<Files "*">
+    Require all denied
+</Files>
+
+# For Apache 2.2 compatibility
+<IfModule !mod_authz_core.c>
+    <Files "*">
+        Order allow,deny
+        Deny from all
+    </Files>
+</IfModule>
