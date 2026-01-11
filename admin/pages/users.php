@@ -95,12 +95,20 @@ if ($pdo) {
                                     <i class="bi bi-eye"></i>
                                 </button>
                                 <?php if ($user['id'] != $_SESSION['admin_id']): ?>
-                                <form action="includes/manage_user.php" method="POST" style="display: inline;" onsubmit="return confirm('<?php echo $user['is_admin'] ? 'Remove admin privileges?' : 'Grant admin privileges?'; ?>');">
+                                <form action="includes/manage_user.php" method="POST" style="display: inline;" onsubmit="return confirm('<?php echo $user['is_admin'] ? 'Remove admin privileges?' : 'Grant admin privileges?'; ?>')">
                                     <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                     <input type="hidden" name="action" value="toggle_admin">
                                     <input type="hidden" name="id" value="<?php echo $user['id']; ?>">
                                     <button type="submit" class="btn-action edit" title="Toggle Admin">
                                         <i class="bi bi-shield<?php echo $user['is_admin'] ? '-x' : '-plus'; ?>"></i>
+                                    </button>
+                                </form>
+                                <form action="includes/manage_user.php" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this user? This action cannot be undone.')">
+                                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="id" value="<?php echo $user['id']; ?>">
+                                    <button type="submit" class="btn-action delete" title="Delete User">
+                                        <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
                                 <?php endif; ?>
@@ -185,13 +193,22 @@ if ($pdo) {
             <div class="modal-footer" style="border-color: var(--admin-dark-tertiary);">
                 <button type="button" class="btn-admin-secondary" data-bs-dismiss="modal">Close</button>
                 <?php if ($user['id'] != $_SESSION['admin_id']): ?>
-                <form action="includes/manage_user.php" method="POST" style="display: inline;" onsubmit="return confirm('<?php echo $user['is_admin'] ? 'Remove admin privileges?' : 'Grant admin privileges?'; ?>');">
+                <form action="includes/manage_user.php" method="POST" style="display: inline;" onsubmit="return confirm('<?php echo $user['is_admin'] ? 'Remove admin privileges?' : 'Grant admin privileges?'; ?>')">
                     <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                     <input type="hidden" name="action" value="toggle_admin">
                     <input type="hidden" name="id" value="<?php echo $user['id']; ?>">
                     <button type="submit" class="btn-admin-primary">
                         <i class="bi bi-shield<?php echo $user['is_admin'] ? '-x' : '-plus'; ?> me-1"></i>
                         <?php echo $user['is_admin'] ? 'Remove Admin' : 'Make Admin'; ?>
+                    </button>
+                </form>
+                <form action="includes/manage_user.php" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this user? This action cannot be undone.')">
+                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="id" value="<?php echo $user['id']; ?>">
+                    <button type="submit" class="btn-admin-danger" style="background: var(--admin-danger); color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;">
+                        <i class="bi bi-trash me-1"></i>
+                        Delete User
                     </button>
                 </form>
                 <?php endif; ?>
