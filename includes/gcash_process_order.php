@@ -120,6 +120,16 @@ if ($pdo) {
                 floatval($item['price']),
                 $itemTotal
             ]);
+            
+            // Decrease stock for the product
+            if (isset($item['id']) && $item['id']) {
+                $stockStmt = $pdo->prepare("UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?");
+                $stockStmt->execute([
+                    intval($item['quantity']),
+                    intval($item['id']),
+                    intval($item['quantity'])
+                ]);
+            }
         }
         
         // Clear user's cart if logged in
