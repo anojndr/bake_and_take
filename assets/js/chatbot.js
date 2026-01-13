@@ -8,12 +8,20 @@ class BakeAndTakeChatbot {
         this.isOpen = false;
         this.isLoading = false;
         this.messages = [];
+        this.isDragging = false;
+        this.dragStartX = 0;
+        this.dragStartY = 0;
+        this.buttonStartX = 0;
+        this.buttonStartY = 0;
+        this.hasDragged = false;
         this.init();
     }
 
     init() {
         this.createChatbotUI();
         this.attachEventListeners();
+        this.attachDragListeners();
+        this.restorePosition();
         this.addWelcomeMessage();
     }
 
@@ -88,8 +96,13 @@ class BakeAndTakeChatbot {
     }
 
     attachEventListeners() {
-        // Toggle chatbot
-        this.toggleBtn.addEventListener('click', () => this.toggle());
+        // Toggle chatbot (only if not dragging)
+        this.toggleBtn.addEventListener('click', (e) => {
+            if (!this.hasDragged) {
+                this.toggle();
+            }
+            this.hasDragged = false;
+        });
 
         // Close chatbot
         this.closeBtn.addEventListener('click', () => this.close());
@@ -119,6 +132,126 @@ class BakeAndTakeChatbot {
         });
     }
 
+    attachDragListeners() {
+        // Mouse events
+        this.toggleBtn.addEventListener('mousedown', (e) => this.startDrag(e));
+        document.addEventListener('mousemove', (e) => this.drag(e));
+        document.addEventListener('mouseup', (e) => this.endDrag(e));
+
+        // Touch events for mobile
+        this.toggleBtn.addEventListener('touchstart', (e) => this.startDrag(e), { passive: false });
+        document.addEventListener('touchmove', (e) => this.drag(e), { passive: false });
+        document.addEventListener('touchend', (e) => this.endDrag(e));
+    }
+
+    startDrag(e) {
+        // Only start drag on left mouse button or touch
+        if (e.type === 'mousedown' && e.button !== 0) return;
+
+        const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+
+        this.isDragging = true;
+        this.hasDragged = false;
+        this.dragStartX = clientX;
+        this.dragStartY = clientY;
+
+        const rect = this.container.getBoundingClientRect();
+        this.buttonStartX = rect.left;
+        this.buttonStartY = rect.top;
+
+        this.toggleBtn.classList.add('dragging');
+        this.container.style.transition = 'none';
+
+        // Prevent text selection during drag
+        e.preventDefault();
+    }
+
+    drag(e) {
+        if (!this.isDragging) return;
+
+        const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+        const deltaX = clientX - this.dragStartX;
+        const deltaY = clientY - this.dragStartY;
+
+        // Check if user has actually moved the button
+        if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+            this.hasDragged = true;
+        }
+
+        // Calculate new position
+        let newX = this.buttonStartX + deltaX;
+        let newY = this.buttonStartY + deltaY;
+
+        // Get button dimensions
+        const btnRect = this.toggleBtn.getBoundingClientRect();
+        const btnWidth = btnRect.width;
+        const btnHeight = btnRect.height;
+
+        // Constrain to viewport
+        const maxX = window.innerWidth - btnWidth - 10;
+        const maxY = window.innerHeight - btnHeight - 10;
+
+        newX = Math.max(10, Math.min(newX, maxX));
+        newY = Math.max(10, Math.min(newY, maxY));
+
+        // Apply position using left/top instead of right/bottom
+        this.container.style.right = 'auto';
+        this.container.style.bottom = 'auto';
+        this.container.style.left = newX + 'px';
+        this.container.style.top = newY + 'px';
+
+        e.preventDefault();
+    }
+
+    endDrag(e) {
+        if (!this.isDragging) return;
+
+        this.isDragging = false;
+        this.toggleBtn.classList.remove('dragging');
+        this.container.style.transition = '';
+
+        // Save position to localStorage
+        if (this.hasDragged) {
+            this.savePosition();
+        }
+    }
+
+    savePosition() {
+        const rect = this.container.getBoundingClientRect();
+        const position = {
+            left: rect.left,
+            top: rect.top
+        };
+        localStorage.setItem('chatbotPosition', JSON.stringify(position));
+    }
+
+    restorePosition() {
+        const saved = localStorage.getItem('chatbotPosition');
+        if (saved) {
+            try {
+                const position = JSON.parse(saved);
+
+                // Validate position is within viewport
+                const btnRect = this.toggleBtn.getBoundingClientRect();
+                const maxX = window.innerWidth - btnRect.width - 10;
+                const maxY = window.innerHeight - btnRect.height - 10;
+
+                let left = Math.max(10, Math.min(position.left, maxX));
+                let top = Math.max(10, Math.min(position.top, maxY));
+
+                this.container.style.right = 'auto';
+                this.container.style.bottom = 'auto';
+                this.container.style.left = left + 'px';
+                this.container.style.top = top + 'px';
+            } catch (e) {
+                console.error('Error restoring chatbot position:', e);
+            }
+        }
+    }
+
     toggle() {
         if (this.isOpen) {
             this.close();
@@ -129,9 +262,66 @@ class BakeAndTakeChatbot {
 
     open() {
         this.isOpen = true;
+        this.positionChatWindow();
         this.window.classList.add('open');
         this.toggleBtn.classList.add('hidden');
         this.input.focus();
+    }
+
+    positionChatWindow() {
+        const containerRect = this.container.getBoundingClientRect();
+        const btnRect = this.toggleBtn.getBoundingClientRect();
+        const padding = 20;
+        const isMobile = window.innerWidth <= 480;
+
+        // Get actual window dimensions (considering mobile responsiveness)
+        let windowWidth = isMobile ? window.innerWidth - 24 : 380;
+        let windowHeight = isMobile ? Math.min(window.innerHeight - 160, 450) : 560;
+
+        // Use fixed positioning for the chat window
+        this.window.style.position = 'fixed';
+
+        // Calculate the best position for the window
+        let top, left;
+
+        // Vertical positioning - try to position so window is visible
+        const spaceBelow = window.innerHeight - btnRect.bottom - padding;
+        const spaceAbove = btnRect.top - padding;
+
+        if (spaceBelow >= windowHeight) {
+            // Position below the button
+            top = btnRect.bottom + 10;
+        } else if (spaceAbove >= windowHeight) {
+            // Position above the button
+            top = btnRect.top - windowHeight - 10;
+        } else {
+            // Center vertically in viewport
+            top = Math.max(padding, (window.innerHeight - windowHeight) / 2);
+        }
+
+        // Horizontal positioning
+        const spaceRight = window.innerWidth - btnRect.left - padding;
+        const spaceLeft = btnRect.right - padding;
+
+        if (spaceRight >= windowWidth) {
+            // Align left edge with button left
+            left = btnRect.left;
+        } else if (spaceLeft >= windowWidth) {
+            // Align right edge with button right
+            left = btnRect.right - windowWidth;
+        } else {
+            // Center horizontally in viewport
+            left = Math.max(padding, (window.innerWidth - windowWidth) / 2);
+        }
+
+        // Ensure window stays within viewport
+        top = Math.max(padding, Math.min(top, window.innerHeight - windowHeight - padding));
+        left = Math.max(padding, Math.min(left, window.innerWidth - windowWidth - padding));
+
+        this.window.style.top = top + 'px';
+        this.window.style.left = left + 'px';
+        this.window.style.bottom = 'auto';
+        this.window.style.right = 'auto';
     }
 
     close() {

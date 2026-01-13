@@ -36,6 +36,20 @@
         0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
+.chatbot-toggle:not(.dragging) {
+    cursor: grab;
+}
+
+.chatbot-toggle.dragging {
+    cursor: grabbing;
+    transform: scale(1.05);
+    box-shadow: 0 16px 48px rgba(212, 165, 116, 0.6),
+        0 8px 20px rgba(0, 0, 0, 0.25);
+    animation: none;
+    opacity: 0.95;
+    user-select: none;
+}
+
 .chatbot-toggle.hidden {
     transform: scale(0);
     opacity: 0;
