@@ -181,10 +181,7 @@ $statusLabels = [
                         <i class="bi bi-list-check"></i>
                         <span>View Orders</span>
                     </a>
-                    <a href="index.php?page=messages" class="quick-action-btn">
-                        <i class="bi bi-envelope"></i>
-                        <span>Messages</span>
-                    </a>
+
                     <a href="index.php?page=users" class="quick-action-btn">
                         <i class="bi bi-person-plus"></i>
                         <span>Manage Users</span>
