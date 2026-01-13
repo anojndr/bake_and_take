@@ -44,6 +44,10 @@ if (!isValidEmail($orderData['email'])) {
     redirect('../index.php?page=checkout', 'Please enter a valid email address.', 'error');
 }
 
+// Normalize phone format so it matches inbound SMS webhook lookups.
+require_once 'sms_service.php';
+$orderData['phone'] = formatPhoneNumber($orderData['phone']);
+
 // Calculate totals
 $subtotal = 0;
 foreach ($cartData as $item) {
@@ -76,7 +80,7 @@ if ($pdo) {
         // Insert order with status 'pending' until confirmed
         $stmt = $pdo->prepare("
             INSERT INTO orders (
-                user_id, order_number,
+                user_id, first_name, last_name, email, phone, order_number,
                 subtotal, tax, total, status, confirmation_method, confirmation_token, created_at
             ) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, NOW())
         ");
@@ -85,6 +89,10 @@ if ($pdo) {
         
         $stmt->execute([
             $userId,
+            $orderData['first_name'],
+            $orderData['last_name'],
+            $orderData['email'],
+            $orderData['phone'],
             $orderNumber,
             $subtotal,
             $tax,
@@ -197,7 +205,6 @@ if ($pdo) {
         sendMail(SMTP_USER, $adminSubject, $adminBody);
 
         // Send SMS based on confirmation method
-        require_once 'sms_service.php';
         
         if ($confirmationMethod === 'sms') {
             // Send SMS confirmation request

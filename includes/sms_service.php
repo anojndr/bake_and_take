@@ -581,8 +581,8 @@ function logSMS($direction, $phoneNumber, $message, $status, $gatewayResponse = 
     
     try {
         $stmt = $pdo->prepare("
-            INSERT INTO sms_log (direction, phone_number, message, status, gateway_response, order_id, user_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO sms_log (direction, phone_number, message, status, gateway_response, order_id)
+            VALUES (?, ?, ?, ?, ?, ?)
         ");
         $stmt->execute([
             $direction,
@@ -590,8 +590,7 @@ function logSMS($direction, $phoneNumber, $message, $status, $gatewayResponse = 
             $message,
             $status,
             $gatewayResponse,
-            $orderId,
-            $userId
+            $orderId
         ]);
         return $pdo->lastInsertId();
     } catch (PDOException $e) {

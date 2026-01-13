@@ -37,13 +37,12 @@ try {
             $name = sanitize($_POST['name'] ?? '');
             $slug = sanitize($_POST['slug'] ?? '');
             $icon = sanitize($_POST['icon'] ?? 'bi-box');
-            $description = sanitize($_POST['description'] ?? '');
             
             // Clean slug
             $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $slug ?: $name));
             
-            $stmt = $pdo->prepare("INSERT INTO categories (name, slug, icon, description) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$name, $slug, $icon, $description]);
+            $stmt = $pdo->prepare("INSERT INTO categories (name, slug, icon) VALUES (?, ?, ?)");
+            $stmt->execute([$name, $slug, $icon]);
             
             setFlashMessage('success', 'Category added successfully!');
             break;
@@ -52,10 +51,9 @@ try {
             $id = (int)($_POST['id'] ?? 0);
             $name = sanitize($_POST['name'] ?? '');
             $icon = sanitize($_POST['icon'] ?? 'bi-box');
-            $description = sanitize($_POST['description'] ?? '');
             
-            $stmt = $pdo->prepare("UPDATE categories SET name = ?, icon = ?, description = ? WHERE id = ?");
-            $stmt->execute([$name, $icon, $description, $id]);
+            $stmt = $pdo->prepare("UPDATE categories SET name = ?, icon = ? WHERE id = ?");
+            $stmt->execute([$name, $icon, $id]);
             
             setFlashMessage('success', 'Category updated successfully!');
             break;

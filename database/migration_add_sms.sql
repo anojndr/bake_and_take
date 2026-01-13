@@ -12,11 +12,9 @@ CREATE TABLE IF NOT EXISTS sms_log (
     status ENUM('pending', 'sent', 'delivered', 'failed', 'received') DEFAULT 'pending',
     gateway_response TEXT,
     order_id INT NULL,
-    user_id INT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_phone (phone_number),
     INDEX idx_direction (direction),
     INDEX idx_status (status)

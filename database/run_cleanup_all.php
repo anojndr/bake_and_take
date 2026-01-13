@@ -4,7 +4,9 @@
  * 
  * This script safely removes all unused tables and columns:
  * - Tables: contact_messages, newsletter_subscribers
- * - Columns: users.address/city/state/zip, cart.session_id, cart_items.price, orders.payment_method/paid_at
+ * - Columns: users.address/city/state/zip, cart.session_id, cart_items.price, orders.payment_method/paid_at,
+ *            paypal_transactions.request_data/response_data/error_message, categories.description,
+ *            sms_log.user_id
  * - Redundant indexes: cart.idx_cart_user, cart_items.idx_cart_items_cart
  * 
  * Run from command line: php run_cleanup_all.php
@@ -134,6 +136,82 @@ try {
         $changes[] = "Dropped orders.paid_at column";
     } else {
         echo "   - Column orders.paid_at doesn't exist, skipping\n";
+    }
+
+    // =====================================================
+    // STEP 4b: DROP UNUSED COLUMNS FROM CATEGORIES TABLE
+    // =====================================================
+
+    echo "\n5b. Checking unused columns in categories table...\n";
+    $check = $pdo->query("SHOW COLUMNS FROM categories LIKE 'description'");
+    if ($check->rowCount() > 0) {
+        $pdo->exec("ALTER TABLE categories DROP COLUMN description");
+        echo "   ✓ Dropped categories.description column\n";
+        $changes[] = "Dropped categories.description column";
+    } else {
+        echo "   - Column categories.description doesn't exist, skipping\n";
+    }
+
+    // =====================================================
+    // STEP 5a: DROP UNUSED COLUMNS FROM SMS_LOG TABLE
+    // =====================================================
+
+    echo "\n5c. Checking unused columns in sms_log table...\n";
+    $check = $pdo->query("SHOW COLUMNS FROM sms_log LIKE 'user_id'");
+    if ($check && $check->rowCount() > 0) {
+        // Drop any foreign key that references sms_log.user_id (constraint name varies by DB).
+        try {
+            $fkStmt = $pdo->query(
+                "SELECT CONSTRAINT_NAME " .
+                "FROM information_schema.KEY_COLUMN_USAGE " .
+                "WHERE TABLE_SCHEMA = DATABASE() " .
+                "AND TABLE_NAME = 'sms_log' " .
+                "AND COLUMN_NAME = 'user_id' " .
+                "AND REFERENCED_TABLE_NAME IS NOT NULL"
+            );
+            $fkNames = $fkStmt ? $fkStmt->fetchAll(PDO::FETCH_COLUMN) : [];
+            foreach ($fkNames as $fkName) {
+                if (!empty($fkName)) {
+                    $pdo->exec("ALTER TABLE sms_log DROP FOREIGN KEY `{$fkName}`");
+                    echo "   ✓ Dropped sms_log foreign key {$fkName}\n";
+                    $changes[] = "Dropped sms_log foreign key {$fkName}";
+                }
+            }
+        } catch (PDOException $e) {
+            // Non-fatal; proceed to attempt dropping the column anyway.
+            echo "   ! Could not inspect/drop sms_log.user_id foreign key (non-fatal): {$e->getMessage()}\n";
+        }
+
+        $pdo->exec("ALTER TABLE sms_log DROP COLUMN user_id");
+        echo "   ✓ Dropped sms_log.user_id column\n";
+        $changes[] = "Dropped sms_log.user_id column";
+    } else {
+        echo "   - Column sms_log.user_id doesn't exist, skipping\n";
+    }
+
+    // =====================================================
+    // STEP 5: DROP UNUSED COLUMNS FROM PAYPAL_TRANSACTIONS
+    // =====================================================
+
+    echo "\n6. Checking unused columns in paypal_transactions table...\n";
+
+    // These columns were previously present for verbose logging but are not referenced by the codebase.
+    $paypalColumns = ['request_data', 'response_data', 'error_message'];
+
+    $tableCheck = $pdo->query("SHOW TABLES LIKE 'paypal_transactions'");
+    if ($tableCheck->rowCount() === 0) {
+        echo "   - Table paypal_transactions doesn't exist, skipping\n";
+    } else {
+        foreach ($paypalColumns as $col) {
+            $check = $pdo->query("SHOW COLUMNS FROM paypal_transactions LIKE '{$col}'");
+            if ($check->rowCount() > 0) {
+                $pdo->exec("ALTER TABLE paypal_transactions DROP COLUMN {$col}");
+                echo "   ✓ Dropped paypal_transactions.{$col} column\n";
+                $changes[] = "Dropped paypal_transactions.{$col} column";
+            } else {
+                echo "   - Column paypal_transactions.{$col} doesn't exist, skipping\n";
+            }
+        }
     }
     
     // =====================================================

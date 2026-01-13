@@ -96,11 +96,6 @@ $categories = getAllCategories();
                                style="background: var(--admin-dark); border-color: var(--admin-dark-tertiary); color: var(--admin-text);" 
                                placeholder="e.g., bi-basket" value="bi-box">
                     </div>
-                    <div class="mb-0">
-                        <label class="form-label">Description</label>
-                        <textarea name="description" class="form-control" rows="2"
-                                  style="background: var(--admin-dark); border-color: var(--admin-dark-tertiary); color: var(--admin-text);"></textarea>
-                    </div>
                 </div>
                 <div class="modal-footer" style="border-color: var(--admin-dark-tertiary);">
                     <button type="button" class="btn-admin-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -140,11 +135,6 @@ $categories = getAllCategories();
                         <input type="text" name="icon" class="form-control" 
                                value="<?php echo sanitize($category['icon']); ?>"
                                style="background: var(--admin-dark); border-color: var(--admin-dark-tertiary); color: var(--admin-text);">
-                    </div>
-                    <div class="mb-0">
-                        <label class="form-label">Description</label>
-                        <textarea name="description" class="form-control" rows="2"
-                                  style="background: var(--admin-dark); border-color: var(--admin-dark-tertiary); color: var(--admin-text);"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer" style="border-color: var(--admin-dark-tertiary);">

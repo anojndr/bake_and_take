@@ -12,6 +12,7 @@ session_start();
 require_once 'config.php';
 require_once 'functions.php';
 require_once 'secrets.php';
+require_once 'sms_service.php';
 
 // Only allow POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -110,7 +111,7 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
         'first_name' => sanitize($customerInfo['first_name']),
         'last_name' => sanitize($customerInfo['last_name']),
         'email' => sanitize($customerInfo['email']),
-        'phone' => sanitize($customerInfo['phone'])
+        'phone' => formatPhoneNumber(sanitize($customerInfo['phone']))
     ];
     
     $orderId = null;
@@ -123,7 +124,7 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
             // Insert order with PayPal details - status is 'pending' until confirmed
             $stmt = $pdo->prepare("
                 INSERT INTO orders (
-                    user_id, order_number,
+                    user_id, first_name, last_name, email, phone, order_number,
                     subtotal, tax, total, status, confirmation_method, confirmation_token, payment_status,
                     created_at
                 ) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, 'completed', NOW())
@@ -133,6 +134,10 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
             
             $stmt->execute([
                 $userId,
+                $orderData['first_name'],
+                $orderData['last_name'],
+                $orderData['email'],
+                $orderData['phone'],
                 $orderNumber,
                 $subtotal,
                 $tax,
@@ -300,7 +305,6 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
     
     // Send SMS notification based on confirmation method
     try {
-        require_once 'sms_service.php';
         
         if ($confirmationMethod === 'sms') {
             // Send SMS confirmation request

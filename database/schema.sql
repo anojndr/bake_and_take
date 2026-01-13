@@ -60,7 +60,6 @@ CREATE TABLE IF NOT EXISTS categories (
     name VARCHAR(100) NOT NULL,
     slug VARCHAR(100) NOT NULL UNIQUE,
     icon VARCHAR(50),
-    description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -185,10 +184,7 @@ CREATE TABLE IF NOT EXISTS paypal_transactions (
     currency VARCHAR(10) DEFAULT 'PHP',
     transaction_type ENUM('create_order', 'capture', 'refund', 'webhook') NOT NULL DEFAULT 'capture',
     status VARCHAR(50),
-    request_data JSON,
-    response_data JSON,
     raw_response TEXT,
-    error_message TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL,
     KEY idx_order_id (order_id)
@@ -203,11 +199,9 @@ CREATE TABLE IF NOT EXISTS sms_log (
     status ENUM('pending', 'sent', 'delivered', 'failed', 'received') DEFAULT 'pending',
     gateway_response TEXT,
     order_id INT,
-    user_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_phone (phone_number),
     INDEX idx_direction (direction),
     INDEX idx_status (status)
