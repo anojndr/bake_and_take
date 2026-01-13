@@ -51,7 +51,7 @@ if (isset($_SESSION['user_id'])) {
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Phone Number *</label>
-                                <input type="tel" class="form-control form-control-custom" id="checkout_phone" name="phone" required value="<?php echo htmlspecialchars($userData['phone'] ?? ''); ?>">
+                                <input type="tel" class="form-control form-control-custom" id="checkout_phone" name="phone" required value="<?php echo htmlspecialchars((!empty($userData['phone'])) ? $userData['phone'] : '+63'); ?>">
                             </div>
                         </div>
                     </div>
