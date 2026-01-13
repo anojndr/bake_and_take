@@ -21,7 +21,7 @@ if (!$pdo) {
 try {
     // Find user with this token
     $stmt = $pdo->prepare("
-        SELECT id, first_name, email, verification_token_expires_at, is_verified 
+        SELECT id, first_name, last_name, email, verification_token_expires_at, is_verified 
         FROM users 
         WHERE verification_token = ? AND verification_method = 'email'
     ");
@@ -53,7 +53,12 @@ try {
     ");
     $stmt->execute([$user['id']]);
     
-    redirect('../index.php?page=login', 'Email verified successfully! You can now login to your account.', 'success');
+    // Automatically log the user in
+    $_SESSION['user_id'] = $user['id'];
+    $_SESSION['user_email'] = $user['email'];
+    $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
+    
+    redirect('../index.php', 'Email verified successfully! Welcome, ' . $user['first_name'] . '!', 'success');
     
 } catch (PDOException $e) {
     error_log("Email verification error: " . $e->getMessage());

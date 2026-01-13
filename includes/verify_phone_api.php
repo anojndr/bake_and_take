@@ -46,6 +46,17 @@ switch ($action) {
         
         if ($verifyResult['success']) {
             try {
+                // Get user data for auto-login
+                $stmt = $pdo->prepare("SELECT id, first_name, last_name, email FROM users WHERE id = ?");
+                $stmt->execute([$userId]);
+                $user = $stmt->fetch();
+                
+                if (!$user) {
+                    $response['message'] = 'User not found. Please register again.';
+                    echo json_encode($response);
+                    exit;
+                }
+                
                 // Update user as verified
                 $stmt = $pdo->prepare("
                     UPDATE users 
@@ -60,12 +71,17 @@ switch ($action) {
                 unset($_SESSION['pending_verification_phone']);
                 unset($_SESSION['pending_verification_method']);
                 
-                // Set flash message for login page
-                setFlashMessage('Phone verified successfully! You can now log in.', 'success');
+                // Automatically log the user in
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['user_email'] = $user['email'];
+                $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
+                
+                // Set flash message
+                setFlashMessage('Phone verified successfully! Welcome, ' . $user['first_name'] . '!', 'success');
                 
                 $response['success'] = true;
-                $response['message'] = 'Phone verified successfully!';
-                $response['redirect'] = '../index.php?page=login';
+                $response['message'] = 'Phone verified successfully! Logging you in...';
+                $response['redirect'] = '../index.php';
                 
             } catch (PDOException $e) {
                 error_log("Phone verification DB error: " . $e->getMessage());
