@@ -49,6 +49,7 @@ if (!in_array($page, $allowedPages)) {
                     <div class="dropdown">
                         <button class="btn btn-user dropdown-toggle" type="button" data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle"></i>
+                            <i class="bi bi-chevron-down ms-1" style="font-size: 0.8rem;"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="index.php?page=orders">My Orders</a></li>

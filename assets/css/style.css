@@ -195,7 +195,9 @@ img {
 }
 
 .nav-actions .btn-user.dropdown-toggle {
-    padding: 0;
+    padding: 0 12px;
+    width: auto;
+    border-radius: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
