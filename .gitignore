@@ -76,6 +76,8 @@ debug.log
 config.local.php
 local.php
 includes/secrets.php
+includes/sms_config.php
+
 
 # Backup files
 *.bak

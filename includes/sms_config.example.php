@@ -23,12 +23,12 @@ define('SMS_GATEWAY_SEND_PATH', '/3rdparty/v1/message');
 
 // Authentication credentials for SMSGate Cloud
 // These are configured in the SMSGate Android app under Cloud server settings
-define('SMS_GATEWAY_USERNAME', 'DA3ODN');
-define('SMS_GATEWAY_PASSWORD', 'hgrbu5t-dapmxq');
+define('SMS_GATEWAY_USERNAME', 'YOUR_USERNAME_HERE');
+define('SMS_GATEWAY_PASSWORD', 'YOUR_PASSWORD_HERE');
 
 // Device ID for cloud server (required for cloud API)
 // Note: This ID is case-sensitive and must match exactly with the registered device
-define('SMS_GATEWAY_DEVICE_ID', 'FXSuQT_Re95AwJbTl41uZ');
+define('SMS_GATEWAY_DEVICE_ID', 'YOUR_DEVICE_ID_HERE');
 
 // Alternative: API Key authentication (if using token-based auth)
 define('SMS_GATEWAY_API_KEY', '');
@@ -44,7 +44,7 @@ define('SMS_GATEWAY_TIMEOUT', 30);
 // Configure the same token in the SMS Forwarder Android app
 // This secures your webhook from unauthorized access
 // Leave empty to disable authentication (not recommended for production)
-define('SMS_WEBHOOK_SECRET', '');
+define('SMS_WEBHOOK_SECRET', 'YOUR_WEBHOOK_SECRET_HERE');
 
 // Allowed IP addresses for webhook (leave empty to allow all)
 // Add your Android device's IP(s) for security
