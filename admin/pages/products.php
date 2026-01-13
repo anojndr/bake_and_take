@@ -12,9 +12,18 @@ $categories = getAllCategories();
         <h1 class="page-title">Products</h1>
         <p class="page-subtitle">Manage your bakery products and inventory</p>
     </div>
-    <button class="btn-admin-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
-        <i class="bi bi-plus-lg"></i> Add Product
-    </button>
+    <div class="d-flex gap-2">
+        <form action="includes/delete_all.php" method="POST" onsubmit="return confirm('WARNING: Are you sure you want to delete ALL products? This might affect existing orders.');">
+            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+            <input type="hidden" name="type" value="products">
+            <button type="submit" class="btn-admin-danger" style="background: var(--admin-danger); color: white; padding: 0.5rem 1rem; border-radius: 8px; border: none; cursor: pointer;">
+                <i class="bi bi-trash me-2"></i>Delete All
+            </button>
+        </form>
+        <button class="btn-admin-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
+            <i class="bi bi-plus-lg"></i> Add Product
+        </button>
+    </div>
 </div>
 
 <!-- Products Table -->

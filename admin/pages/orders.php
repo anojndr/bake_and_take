@@ -48,6 +48,13 @@ $statusLabels = [
         <h1 class="page-title">Orders</h1>
         <p class="page-subtitle">Manage and track all customer orders</p>
     </div>
+    <form action="includes/delete_all.php" method="POST" onsubmit="return confirm('WARNING: Are you sure you want to delete ALL orders? This action CANNOT be undone.');">
+        <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+        <input type="hidden" name="type" value="orders">
+        <button type="submit" class="btn-admin-danger" style="background: var(--admin-danger); color: white; padding: 0.5rem 1rem; border-radius: 8px; border: none; cursor: pointer;">
+            <i class="bi bi-trash me-2"></i>Delete All Orders
+        </button>
+    </form>
 </div>
 
 <!-- Filters -->
