@@ -44,71 +44,136 @@ function sendSMS($phoneNumber, $message, $orderId = null, $userId = null) {
     // Prepare the API request to SMSGate
     $apiUrl = SMS_GATEWAY_URL . SMS_GATEWAY_SEND_PATH;
     
-    // SMSGate Cloud API payload format (includes device ID)
+    // SMSGate Cloud API payload format
+    // - deviceId: specifies which Android device to use for sending
+    // - id: unique identifier for this specific message (prevents duplicate errors)
+    $uniqueMessageId = uniqid('sms_', true) . '_' . bin2hex(random_bytes(4));
     $payload = json_encode([
         'message' => $message,
         'phoneNumbers' => [$phoneNumber],
-        'id' => SMS_GATEWAY_DEVICE_ID
+        'deviceId' => SMS_GATEWAY_DEVICE_ID,
+        'id' => $uniqueMessageId
     ]);
     
-    // Initialize cURL
-    $ch = curl_init($apiUrl);
+    // Retry configuration
+    $maxRetries = 3;
+    $retryDelay = 1; // seconds
+    $lastError = '';
+    $lastResponse = '';
+    $lastHttpCode = 0;
     
-    // Set cURL options
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => $payload,
-        CURLOPT_HTTPHEADER => [
+    for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+        // Initialize cURL
+        $ch = curl_init($apiUrl);
+        
+        // Build headers array
+        $headers = [
             'Content-Type: application/json',
             'Accept: application/json'
-        ],
-        CURLOPT_TIMEOUT => SMS_GATEWAY_TIMEOUT,
-        CURLOPT_CONNECTTIMEOUT => 10
-    ]);
-    
-    // Add authentication
-    if (!empty(SMS_GATEWAY_API_KEY)) {
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json',
-            'Accept: application/json',
-            'Authorization: Bearer ' . SMS_GATEWAY_API_KEY
+        ];
+        
+        // Add Bearer token if API key is set
+        if (!empty(SMS_GATEWAY_API_KEY)) {
+            $headers[] = 'Authorization: Bearer ' . SMS_GATEWAY_API_KEY;
+        }
+        
+        // Set cURL options
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $payload,
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_TIMEOUT => SMS_GATEWAY_TIMEOUT,
+            CURLOPT_CONNECTTIMEOUT => 15,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 3
         ]);
-    } else if (!empty(SMS_GATEWAY_USERNAME) && !empty(SMS_GATEWAY_PASSWORD)) {
-        curl_setopt($ch, CURLOPT_USERPWD, SMS_GATEWAY_USERNAME . ':' . SMS_GATEWAY_PASSWORD);
-        curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        
+        // Add Basic Auth if no API key but username/password provided
+        if (empty(SMS_GATEWAY_API_KEY) && !empty(SMS_GATEWAY_USERNAME) && !empty(SMS_GATEWAY_PASSWORD)) {
+            curl_setopt($ch, CURLOPT_USERPWD, SMS_GATEWAY_USERNAME . ':' . SMS_GATEWAY_PASSWORD);
+            curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        }
+        
+        // Execute the request
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        $errno = curl_errno($ch);
+        curl_close($ch);
+        
+        $lastResponse = $response;
+        $lastHttpCode = $httpCode;
+        $lastError = $error;
+        
+        // Log attempt for debugging
+        error_log("SMS API Attempt $attempt: URL=$apiUrl, HTTP=$httpCode, Error=$error, Errno=$errno");
+        
+        // If successful, break out of retry loop
+        if (!$error && $httpCode >= 200 && $httpCode < 300) {
+            break;
+        }
+        
+        // Check if this is a retryable error
+        $retryableErrors = [
+            CURLE_COULDNT_CONNECT,
+            CURLE_COULDNT_RESOLVE_HOST,
+            CURLE_OPERATION_TIMEDOUT,
+            CURLE_GOT_NOTHING,
+            CURLE_RECV_ERROR,
+            CURLE_SEND_ERROR
+        ];
+        
+        $retryableHttpCodes = [408, 429, 500, 502, 503, 504];
+        
+        $shouldRetry = in_array($errno, $retryableErrors) || in_array($httpCode, $retryableHttpCodes);
+        
+        if ($attempt < $maxRetries && $shouldRetry) {
+            error_log("SMS API: Retrying in {$retryDelay}s (attempt $attempt of $maxRetries)");
+            sleep($retryDelay);
+            $retryDelay *= 2; // Exponential backoff
+        } else if (!$shouldRetry) {
+            // Non-retryable error, break immediately
+            break;
+        }
     }
     
-    // Execute the request
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $error = curl_error($ch);
-    curl_close($ch);
-    
-    // Process response
-    if ($error) {
-        updateSMSLog($smsLogId, 'failed', "cURL Error: $error");
+    // Process final response
+    if ($lastError) {
+        $errorMessage = "cURL Error after $maxRetries attempts: $lastError";
+        updateSMSLog($smsLogId, 'failed', $errorMessage);
+        error_log("SMS Send Failed: $errorMessage");
         return [
             'success' => false,
-            'message' => "Failed to connect to SMS gateway: $error",
+            'message' => "Failed to connect to SMS gateway: $lastError",
             'data' => null
         ];
     }
     
-    $responseData = json_decode($response, true);
+    $responseData = json_decode($lastResponse, true);
     
-    if ($httpCode >= 200 && $httpCode < 300) {
-        updateSMSLog($smsLogId, 'sent', $response);
+    // Check for JSON decode errors
+    if ($responseData === null && json_last_error() !== JSON_ERROR_NONE) {
+        error_log("SMS API: Invalid JSON response - " . substr($lastResponse, 0, 500));
+        $responseData = ['raw_response' => substr($lastResponse, 0, 500)];
+    }
+    
+    if ($lastHttpCode >= 200 && $lastHttpCode < 300) {
+        updateSMSLog($smsLogId, 'sent', $lastResponse);
         return [
             'success' => true,
             'message' => 'SMS sent successfully',
             'data' => $responseData
         ];
     } else {
-        updateSMSLog($smsLogId, 'failed', $response);
+        $errorMsg = $responseData['message'] ?? $responseData['error'] ?? "HTTP $lastHttpCode";
+        updateSMSLog($smsLogId, 'failed', $lastResponse);
+        error_log("SMS Gateway Error: HTTP $lastHttpCode - $errorMsg");
         return [
             'success' => false,
-            'message' => 'SMS gateway returned error: ' . ($responseData['message'] ?? 'Unknown error'),
+            'message' => 'SMS gateway returned error: ' . $errorMsg,
             'data' => $responseData
         ];
     }

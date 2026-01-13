@@ -27,7 +27,8 @@ define('SMS_GATEWAY_USERNAME', 'DA3ODN');
 define('SMS_GATEWAY_PASSWORD', 'hgrbu5t-dapmxq');
 
 // Device ID for cloud server (required for cloud API)
-define('SMS_GATEWAY_DEVICE_ID', 'FXSuQT_Re95AwJbTI41uZ');
+// Note: This ID is case-sensitive and must match exactly with the registered device
+define('SMS_GATEWAY_DEVICE_ID', 'FXSuQT_Re95AwJbTl41uZ');
 
 // Alternative: API Key authentication (if using token-based auth)
 define('SMS_GATEWAY_API_KEY', '');
