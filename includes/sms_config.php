@@ -82,7 +82,7 @@ define('SMS_DEFAULT_COUNTRY_CODE', '+63'); // Philippines
 // Order confirmation SMS template
 // Available placeholders: {name}, {order_number}, {total}, {store_name}
 define('SMS_TEMPLATE_ORDER_CONFIRM', 
-    '{store_name}: Hi {name}! Your order #{order_number} for ${total} has been received. We\'ll notify you when it\'s ready for pickup.'
+    '{store_name}: Hi {name}! Your order #{order_number} for ₱{total} has been received. We\'ll notify you when it\'s ready for pickup.'
 );
 
 // Order ready for pickup SMS template
