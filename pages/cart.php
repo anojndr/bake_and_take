@@ -94,6 +94,8 @@
 <style>
 .cart-section { background: var(--cream); min-height: 60vh; }
 
+.stock-warning { display: block; color: var(--text-light); font-size: 0.85rem; margin-top: 0.25rem; }
+
 .cart-item {
     display: flex;
     gap: 1.5rem;
@@ -271,21 +273,26 @@ function renderCartPage() {
     emptyCart.style.display = 'none';
     cartContentRow.style.display = 'flex';
     
-    container.innerHTML = cartItems.map(item => `
-        <div class="cart-item" data-id="${item.id}">
+    container.innerHTML = cartItems.map(item => {
+        const stock = item.stock || 999; // Fallback if stock not defined
+        const isAtMaxStock = item.quantity >= stock;
+        return `
+        <div class="cart-item" data-id="${item.id}" data-stock="${stock}">
             <img src="${item.image}" alt="${item.name}" class="cart-item-image" 
                  onerror="this.src='assets/images/placeholder.jpg'">
             <div class="cart-item-details">
                 <h5 class="cart-item-title">${item.name}</h5>
                 <span class="cart-item-price">₱${item.price.toFixed(2)}</span>
+                ${stock <= 10 ? `<small class="stock-warning text-muted">${stock} in stock</small>` : ''}
             </div>
             <div class="quantity-control">
                 <button class="quantity-btn quantity-minus" onclick="updateCartItem(${item.id}, ${item.quantity - 1})">
                     <i class="bi bi-dash"></i>
                 </button>
-                <input type="number" class="quantity-input" value="${item.quantity}" min="1" 
-                       onchange="updateCartItem(${item.id}, parseInt(this.value))">
-                <button class="quantity-btn quantity-plus" onclick="updateCartItem(${item.id}, ${item.quantity + 1})">
+                <input type="number" class="quantity-input" value="${item.quantity}" min="1" max="${stock}"
+                       onchange="validateAndUpdateCartItem(${item.id}, parseInt(this.value), ${stock})">
+                <button class="quantity-btn quantity-plus" onclick="validateAndUpdateCartItem(${item.id}, ${item.quantity + 1}, ${stock})" 
+                        ${isAtMaxStock ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
                     <i class="bi bi-plus"></i>
                 </button>
             </div>
@@ -294,12 +301,26 @@ function renderCartPage() {
                 <i class="bi bi-x-lg"></i>
             </button>
         </div>
-    `).join('');
+    `}).join('');
     
     updateSummary();
 }
 
 async function updateCartItem(id, quantity) {
+    await updateQuantity(id, quantity);
+    renderCartPage();
+}
+
+async function validateAndUpdateCartItem(id, quantity, maxStock) {
+    // Client-side validation
+    if (quantity > maxStock) {
+        showNotification(`Only ${maxStock} items available in stock`, 'error');
+        renderCartPage(); // Reset to current valid value
+        return;
+    }
+    if (quantity < 1) {
+        quantity = 1;
+    }
     await updateQuantity(id, quantity);
     renderCartPage();
 }

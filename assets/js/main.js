@@ -139,6 +139,15 @@ async function updateQuantity(productId, newQuantity) {
 
         if (data.success) {
             await initCart();
+        } else {
+            // Show error message (e.g., stock limit exceeded)
+            showNotification(data.message || 'Error updating quantity', 'error');
+            // Refresh cart to reset to valid quantity
+            await initCart();
+            // Re-render cart page if on cart page
+            if (typeof renderCartPage === 'function') {
+                renderCartPage();
+            }
         }
     } catch (error) {
         console.error('Error updating quantity:', error);

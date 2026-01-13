@@ -43,7 +43,7 @@ function getCartItems($pdo, $userId) {
     
     $stmt = $pdo->prepare("
         SELECT ci.id, ci.product_id, ci.quantity, ci.price,
-               p.name, p.image, p.slug
+               p.name, p.image, p.slug, p.stock
         FROM cart_items ci
         JOIN products p ON ci.product_id = p.id
         WHERE ci.cart_id = ?
@@ -60,7 +60,8 @@ function getCartItems($pdo, $userId) {
             'price' => (float)$row['price'],
             'quantity' => (int)$row['quantity'],
             'image' => 'assets/images/products/' . $row['image'],
-            'slug' => $row['slug']
+            'slug' => $row['slug'],
+            'stock' => (int)$row['stock']
         ];
     }
     
@@ -71,14 +72,16 @@ function getCartItems($pdo, $userId) {
 function addToCart($pdo, $userId, $productId, $quantity = 1) {
     $cartId = getCartId($pdo, $userId);
     
-    // Get product info
-    $stmt = $pdo->prepare("SELECT id, price FROM products WHERE id = ? AND active = TRUE");
+    // Get product info including stock
+    $stmt = $pdo->prepare("SELECT id, price, stock FROM products WHERE id = ? AND active = TRUE");
     $stmt->execute([$productId]);
     $product = $stmt->fetch();
     
     if (!$product) {
         return ['success' => false, 'message' => 'Product not found'];
     }
+    
+    $stock = (int)$product['stock'];
     
     // Check if item already in cart
     $stmt = $pdo->prepare("SELECT id, quantity FROM cart_items WHERE cart_id = ? AND product_id = ?");
@@ -88,9 +91,20 @@ function addToCart($pdo, $userId, $productId, $quantity = 1) {
     if ($existing) {
         // Update quantity
         $newQty = $existing['quantity'] + $quantity;
+        
+        // Validate against stock
+        if ($newQty > $stock) {
+            return ['success' => false, 'message' => "Only $stock items available in stock", 'stock' => $stock];
+        }
+        
         $stmt = $pdo->prepare("UPDATE cart_items SET quantity = ?, updated_at = NOW() WHERE id = ?");
         $stmt->execute([$newQty, $existing['id']]);
     } else {
+        // Validate quantity against stock
+        if ($quantity > $stock) {
+            return ['success' => false, 'message' => "Only $stock items available in stock", 'stock' => $stock];
+        }
+        
         // Add new item
         $stmt = $pdo->prepare("INSERT INTO cart_items (cart_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
         $stmt->execute([$cartId, $productId, $quantity, $product['price']]);
@@ -108,6 +122,22 @@ function updateCartQuantity($pdo, $userId, $productId, $quantity) {
         $stmt = $pdo->prepare("DELETE FROM cart_items WHERE cart_id = ? AND product_id = ?");
         $stmt->execute([$cartId, $productId]);
         return ['success' => true, 'message' => 'Item removed from cart'];
+    }
+    
+    // Get product stock
+    $stmt = $pdo->prepare("SELECT stock FROM products WHERE id = ?");
+    $stmt->execute([$productId]);
+    $product = $stmt->fetch();
+    
+    if (!$product) {
+        return ['success' => false, 'message' => 'Product not found'];
+    }
+    
+    $stock = (int)$product['stock'];
+    
+    // Validate against stock
+    if ($quantity > $stock) {
+        return ['success' => false, 'message' => "Only $stock items available in stock", 'stock' => $stock];
     }
     
     $stmt = $pdo->prepare("UPDATE cart_items SET quantity = ?, updated_at = NOW() WHERE cart_id = ? AND product_id = ?");
