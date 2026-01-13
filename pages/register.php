@@ -68,12 +68,12 @@
                 </div>
             </div>
             
-            <!-- Phone Field (shown when phone verification is selected) -->
-            <div class="mt-3" id="phone-field" style="display: none;">
-                <label class="form-label">Phone Number <span class="text-muted">(for verification)</span></label>
+            <!-- Phone Field (always required) -->
+            <div class="mt-3" id="phone-field">
+                <label class="form-label">Phone Number</label>
                 <div class="phone-input-wrapper">
                     <span class="phone-prefix">+63</span>
-                    <input type="tel" class="form-control form-control-custom phone-input" name="phone" id="phone" placeholder="9XX XXX XXXX" maxlength="10" pattern="[0-9]{10}">
+                    <input type="tel" class="form-control form-control-custom phone-input" name="phone" id="phone" placeholder="9XX XXX XXXX" maxlength="10" pattern="[0-9]{10}" required>
                 </div>
                 <small class="text-muted">Enter your 10-digit Philippine mobile number</small>
             </div>
@@ -415,16 +415,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Check the radio input
             const radio = this.querySelector('input[type="radio"]');
             radio.checked = true;
-            
-            // Show/hide phone field based on selection
-            const method = this.dataset.method;
-            if (method === 'phone') {
-                phoneField.style.display = 'block';
-                phoneInput.required = true;
-            } else {
-                phoneField.style.display = 'none';
-                phoneInput.required = false;
-            }
         });
     });
     
@@ -434,14 +424,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const option = this.closest('.verification-option');
             verificationOptions.forEach(opt => opt.classList.remove('selected'));
             option.classList.add('selected');
-            
-            if (this.value === 'phone') {
-                phoneField.style.display = 'block';
-                phoneInput.required = true;
-            } else {
-                phoneField.style.display = 'none';
-                phoneInput.required = false;
-            }
         });
     });
     

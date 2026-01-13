@@ -30,7 +30,7 @@ if (!empty($phone)) {
 }
 
 // Validation
-if (empty($firstName) || empty($lastName) || empty($email) || empty($password)) {
+if (empty($firstName) || empty($lastName) || empty($email) || empty($phone) || empty($password)) {
     redirect('../index.php?page=register', 'Please fill in all required fields.', 'error');
 }
 
@@ -38,9 +38,9 @@ if (!isValidEmail($email)) {
     redirect('../index.php?page=register', 'Please enter a valid email address.', 'error');
 }
 
-// If phone verification is selected, phone number is required
-if ($verificationMethod === 'phone' && empty($phone)) {
-    redirect('../index.php?page=register', 'Phone number is required for phone verification.', 'error');
+// Phone number validation
+if (empty($phone)) {
+    redirect('../index.php?page=register', 'Phone number is required.', 'error');
 }
 
 if (strlen($password) < 8) {
