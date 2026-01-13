@@ -136,10 +136,6 @@ if (!in_array($page, $allowedPages)) {
                     <span>Contact</span>
                 </a>
                 <?php if (isset($_SESSION['user_id'])): ?>
-                <a href="index.php?page=profile" class="mobile-more-item <?php echo $page === 'profile' ? 'active' : ''; ?>">
-                    <i class="bi bi-person-gear"></i>
-                    <span>My Profile</span>
-                </a>
                 <a href="index.php?page=orders" class="mobile-more-item <?php echo $page === 'orders' ? 'active' : ''; ?>">
                     <i class="bi bi-bag"></i>
                     <span>My Orders</span>

@@ -14,6 +14,8 @@ class BakeAndTakeChatbot {
         this.buttonStartX = 0;
         this.buttonStartY = 0;
         this.hasDragged = false;
+        this.isTouchDevice = false;
+        this.touchStartTime = 0;
         this.init();
     }
 
@@ -155,6 +157,10 @@ class BakeAndTakeChatbot {
         this.dragStartX = clientX;
         this.dragStartY = clientY;
 
+        // Track if this is a touch event for tap detection
+        this.isTouchDevice = e.type === 'touchstart';
+        this.touchStartTime = Date.now();
+
         const rect = this.container.getBoundingClientRect();
         this.buttonStartX = rect.left;
         this.buttonStartY = rect.top;
@@ -211,6 +217,19 @@ class BakeAndTakeChatbot {
         this.isDragging = false;
         this.toggleBtn.classList.remove('dragging');
         this.container.style.transition = '';
+
+        // On touch devices, detect tap (short touch without drag movement)
+        // This is needed because e.preventDefault() on touchstart suppresses the click event
+        if (this.isTouchDevice && !this.hasDragged) {
+            const touchDuration = Date.now() - this.touchStartTime;
+            // If touch was short (< 300ms) and didn't drag, treat as a tap
+            if (touchDuration < 300) {
+                this.toggle();
+            }
+        }
+
+        // Reset touch tracking
+        this.isTouchDevice = false;
     }
 
     toggle() {
@@ -226,7 +245,12 @@ class BakeAndTakeChatbot {
         this.positionChatWindow();
         this.window.classList.add('open');
         this.toggleBtn.classList.add('hidden');
-        this.input.focus();
+
+        // Only auto-focus on desktop to prevent keyboard popup on mobile
+        const isMobile = window.innerWidth <= 480 || 'ontouchstart' in window;
+        if (!isMobile) {
+            this.input.focus();
+        }
     }
 
     positionChatWindow() {
