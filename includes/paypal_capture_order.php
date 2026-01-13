@@ -226,8 +226,9 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
         }
         
         if ($confirmationMethod === 'email') {
-            // Email confirmation - send confirmation link (use production domain)
-            $confirmationUrl = 'https://bakeandtake.xyz/includes/confirm_order.php?token=' . $confirmationToken;
+            // Email confirmation - send confirmation link (dynamically detect localhost or domain)
+            $siteUrl = getCurrentSiteUrl();
+            $confirmationUrl = $siteUrl . '/includes/confirm_order.php?token=' . $confirmationToken;
             
             $orderSubject = "Bake & Take - Please Confirm Your Order #{$orderNumber}";
             $orderBody = "
@@ -274,6 +275,7 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
         sendMail($orderData['email'], $orderSubject, $orderBody);
         
         // Email to admin - inform about pending order
+        $siteUrl = getCurrentSiteUrl();
         $adminSubject = "New PayPal Order #{$orderNumber} - Awaiting Customer Confirmation";
         $adminBody = "
             <h2>New Order Received (Pending Confirmation)</h2>
@@ -288,7 +290,7 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
             <p><strong>Phone:</strong> {$orderData['phone']}</p>
             <p><strong>Total:</strong> ₱" . number_format($total, 2) . "</p>
             <p><em>The customer will confirm this order via {$confirmationMethod}. You'll be notified when confirmed.</em></p>
-            <a href='" . SITE_URL . "/admin/orders.php?id={$orderId}'>View Order</a>
+            <a href='{$siteUrl}/admin/orders.php?id={$orderId}'>View Order</a>
         ";
         sendMail(SMTP_USER, $adminSubject, $adminBody);
         

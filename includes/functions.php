@@ -257,6 +257,32 @@ function isValidEmail($email) {
     return filter_var($email, FILTER_VALIDATE_EMAIL) !== false; 
 }
 
+/**
+ * Get the current site URL dynamically
+ * Detects whether we're on localhost or a domain
+ */
+function getCurrentSiteUrl() {
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    
+    // Check if we're on localhost
+    if (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false) {
+        // Extract the path for localhost (e.g., /bake_and_take)
+        $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+        $basePath = dirname(dirname($scriptName)); // Go up two levels from includes/
+        
+        // Clean up the path
+        if ($basePath === '/' || $basePath === '\\') {
+            $basePath = '';
+        }
+        
+        return $protocol . '://' . $host . $basePath;
+    } else {
+        // For production domain, just use protocol and host
+        return $protocol . '://' . $host;
+    }
+}
+
 function generateCSRFToken() {
     if (!isset($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));

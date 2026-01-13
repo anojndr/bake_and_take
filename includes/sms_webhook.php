@@ -254,6 +254,8 @@ function handleConfirmReply($phoneNumber) {
             // Notify admin about the confirmation
             try {
                 require_once __DIR__ . '/mailer.php';
+                require_once __DIR__ . '/functions.php';
+                $siteUrl = getCurrentSiteUrl();
                 $adminSubject = "Order #{$pendingOrder['order_number']} Confirmed by Customer";
                 $adminBody = "
                     <h2>Order Confirmed</h2>
@@ -262,7 +264,7 @@ function handleConfirmReply($phoneNumber) {
                     <p><strong>Confirmation Method:</strong> SMS</p>
                     <p><strong>Phone:</strong> {$pendingOrder['phone']}</p>
                     <p><strong>Total:</strong> ₱" . number_format($pendingOrder['total'], 2) . "</p>
-                    <a href='" . SITE_URL . "/admin/orders.php?id={$pendingOrder['id']}'>View Order</a>
+                    <a href='{$siteUrl}/admin/orders.php?id={$pendingOrder['id']}'>View Order</a>
                 ";
                 sendMail(SMTP_USER, $adminSubject, $adminBody);
             } catch (Exception $e) {

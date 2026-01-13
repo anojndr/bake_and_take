@@ -91,6 +91,7 @@ try {
     sendOrderStatusSMS($smsOrderData, 'confirmed');
     
     // Notify admin
+    $siteUrl = getCurrentSiteUrl();
     $adminSubject = "Order #{$order['order_number']} Confirmed by Customer";
     $adminBody = "
         <h2>Order Confirmed</h2>
@@ -98,7 +99,7 @@ try {
         <p><strong>Order #:</strong> {$order['order_number']}</p>
         <p><strong>Confirmation Method:</strong> Email</p>
         <p><strong>Total:</strong> ₱" . number_format($order['total'], 2) . "</p>
-        <a href='" . SITE_URL . "/admin/orders.php?id={$order['id']}'>View Order</a>
+        <a href='{$siteUrl}/admin/orders.php?id={$order['id']}'>View Order</a>
     ";
     sendMail(SMTP_USER, $adminSubject, $adminBody);
     
