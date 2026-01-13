@@ -4,7 +4,8 @@
  * 
  * This script safely removes all unused tables and columns:
  * - Tables: contact_messages, newsletter_subscribers
- * - Columns: users.address/city/state/zip, cart.session_id, orders.payment_method/paid_at
+ * - Columns: users.address/city/state/zip, cart.session_id, cart_items.price, orders.payment_method/paid_at
+ * - Redundant indexes: cart.idx_cart_user, cart_items.idx_cart_items_cart
  * 
  * Run from command line: php run_cleanup_all.php
  */
@@ -78,6 +79,37 @@ try {
         $changes[] = "Dropped cart.session_id column";
     } else {
         echo "   - Column doesn't exist, skipping\n";
+    }
+
+    // Drop legacy cart indexes that are redundant with existing UNIQUE keys
+    echo "\n4b. Checking redundant indexes on cart tables...\n";
+    $check = $pdo->query("SHOW INDEX FROM cart WHERE Key_name = 'idx_cart_user'");
+    if ($check->rowCount() > 0) {
+        $pdo->exec("DROP INDEX idx_cart_user ON cart");
+        echo "   ✓ Dropped cart.idx_cart_user index\n";
+        $changes[] = "Dropped cart.idx_cart_user index";
+    } else {
+        echo "   - Index cart.idx_cart_user doesn't exist, skipping\n";
+    }
+
+    $check = $pdo->query("SHOW INDEX FROM cart_items WHERE Key_name = 'idx_cart_items_cart'");
+    if ($check->rowCount() > 0) {
+        $pdo->exec("DROP INDEX idx_cart_items_cart ON cart_items");
+        echo "   ✓ Dropped cart_items.idx_cart_items_cart index\n";
+        $changes[] = "Dropped cart_items.idx_cart_items_cart index";
+    } else {
+        echo "   - Index cart_items.idx_cart_items_cart doesn't exist, skipping\n";
+    }
+
+    // Drop legacy cart_items.price column (price is read from products)
+    echo "\n4c. Checking price column in cart_items table...\n";
+    $check = $pdo->query("SHOW COLUMNS FROM cart_items LIKE 'price'");
+    if ($check->rowCount() > 0) {
+        $pdo->exec("ALTER TABLE cart_items DROP COLUMN price");
+        echo "   ✓ Dropped cart_items.price column\n";
+        $changes[] = "Dropped cart_items.price column";
+    } else {
+        echo "   - Column cart_items.price doesn't exist, skipping\n";
     }
     
     // =====================================================

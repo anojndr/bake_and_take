@@ -4,7 +4,7 @@ require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
 $page = isset($_GET['page']) ? $_GET['page'] : 'home';
-$allowedPages = ['home', 'menu', 'about', 'contact', 'cart', 'checkout', 'login', 'register', 'order-success', 'order-confirmed', 'email-confirmed', 'orders', 'privacy-policy', 'terms-of-service', 'verify-phone'];
+$allowedPages = ['home', 'menu', 'about', 'contact', 'cart', 'checkout', 'login', 'register', 'forgot-password', 'reset-password', 'order-success', 'order-confirmed', 'email-confirmed', 'orders', 'profile', 'privacy-policy', 'terms-of-service', 'verify-phone'];
 
 if (!in_array($page, $allowedPages)) {
     $page = 'home';
@@ -52,9 +52,10 @@ if (!in_array($page, $allowedPages)) {
                             <i class="bi bi-chevron-down ms-1" style="font-size: 0.8rem;"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="index.php?page=orders">My Orders</a></li>
+                            <li><a class="dropdown-item" href="index.php?page=profile"><i class="bi bi-person-gear me-2"></i>My Profile</a></li>
+                            <li><a class="dropdown-item" href="index.php?page=orders"><i class="bi bi-bag me-2"></i>My Orders</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="includes/logout.php">Logout</a></li>
+                            <li><a class="dropdown-item" href="includes/logout.php"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                         </ul>
                     </div>
                 <?php else: ?>
@@ -100,7 +101,7 @@ if (!in_array($page, $allowedPages)) {
             <?php endif; ?>
         </a>
         <?php if (isset($_SESSION['user_id'])): ?>
-        <a href="index.php?page=orders" class="mobile-nav-item <?php echo $page === 'orders' ? 'active' : ''; ?>">
+        <a href="index.php?page=profile" class="mobile-nav-item <?php echo $page === 'profile' ? 'active' : ''; ?>">
             <i class="bi bi-person"></i>
             <span>Account</span>
         </a>
@@ -135,7 +136,11 @@ if (!in_array($page, $allowedPages)) {
                     <span>Contact</span>
                 </a>
                 <?php if (isset($_SESSION['user_id'])): ?>
-                <a href="index.php?page=orders" class="mobile-more-item">
+                <a href="index.php?page=profile" class="mobile-more-item <?php echo $page === 'profile' ? 'active' : ''; ?>">
+                    <i class="bi bi-person-gear"></i>
+                    <span>My Profile</span>
+                </a>
+                <a href="index.php?page=orders" class="mobile-more-item <?php echo $page === 'orders' ? 'active' : ''; ?>">
                     <i class="bi bi-bag"></i>
                     <span>My Orders</span>
                 </a>
@@ -175,6 +180,7 @@ if (!in_array($page, $allowedPages)) {
                         <li><a href="index.php?page=about">About Us</a></li>
                         <li><a href="index.php?page=contact">Contact</a></li>
                         <?php if (isset($_SESSION['user_id'])): ?>
+                        <li><a href="index.php?page=profile">My Profile</a></li>
                         <li><a href="index.php?page=orders">My Orders</a></li>
                         <?php endif; ?>
                     </ul>

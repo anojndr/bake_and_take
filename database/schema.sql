@@ -13,8 +13,40 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL,
     phone VARCHAR(20),
     is_admin BOOLEAN DEFAULT FALSE,
+    is_verified BOOLEAN DEFAULT FALSE,
+    verification_method ENUM('email', 'phone') NULL,
+    verification_token VARCHAR(255) NULL,
+    verification_token_expires_at TIMESTAMP NULL,
+    email_verified BOOLEAN DEFAULT FALSE,
+    phone_verified BOOLEAN DEFAULT FALSE,
+
+    -- Pending email change (two-step: verify old email via OTP, then verify new email via link)
+    pending_email VARCHAR(100) NULL,
+    pending_email_token VARCHAR(255) NULL,
+    pending_email_expires TIMESTAMP NULL,
+    pending_email_old_otp VARCHAR(10) NULL,
+    email_change_step VARCHAR(20) NULL,
+    email_change_cancel_token VARCHAR(255) NULL,
+
+    -- Pending phone change (multi-step OTP + recovery)
+    pending_phone VARCHAR(20) NULL,
+    pending_phone_otp VARCHAR(10) NULL,
+    pending_phone_expires TIMESTAMP NULL,
+    phone_change_step VARCHAR(20) NULL,
+    phone_recovery_token VARCHAR(255) NULL,
+
+    -- Password reset (store only a hash of the token)
+    password_reset_token_hash CHAR(64) NULL,
+    password_reset_expires_at TIMESTAMP NULL,
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    KEY idx_verification_token (verification_token),
+    KEY idx_pending_email_token (pending_email_token),
+    KEY idx_pending_phone (pending_phone),
+    KEY idx_email_cancel_token (email_change_cancel_token),
+    KEY idx_password_reset_token_hash (password_reset_token_hash)
 );
 
 -- Create default admin account (password: admin123)
@@ -53,15 +85,24 @@ CREATE TABLE IF NOT EXISTS products (
 CREATE TABLE IF NOT EXISTS orders (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
+    first_name VARCHAR(50) NULL,
+    last_name VARCHAR(50) NULL,
+    email VARCHAR(100) NULL,
+    phone VARCHAR(20) NULL,
     order_number VARCHAR(20) NOT NULL UNIQUE,
     subtotal DECIMAL(10, 2) NOT NULL,
     tax DECIMAL(10, 2) DEFAULT 0,
     total DECIMAL(10, 2) NOT NULL,
-    status ENUM('pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled') DEFAULT 'confirmed',
+    status ENUM('pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled') DEFAULT 'pending',
+    confirmation_method ENUM('sms', 'email') DEFAULT NULL,
+    confirmation_token VARCHAR(64) DEFAULT NULL,
+    confirmed_at TIMESTAMP NULL,
     payment_status ENUM('pending', 'completed', 'failed', 'refunded') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    KEY idx_confirmation_token (confirmation_token),
+    KEY idx_orders_phone_status (phone, status)
 );
 
 -- Order items table
@@ -96,7 +137,8 @@ CREATE TABLE IF NOT EXISTS cart_items (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (cart_id) REFERENCES cart(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_cart_product (cart_id, product_id)  -- Prevent duplicate products in same cart
+    UNIQUE KEY unique_cart_product (cart_id, product_id),  -- Prevent duplicate products in same cart
+    KEY idx_cart_items_product (product_id)
 );
 
 -- Insert default categories
@@ -104,7 +146,10 @@ INSERT INTO categories (name, slug, icon) VALUES
 ('Artisan Breads', 'breads', 'bi-basket'),
 ('Pastries', 'pastries', 'bi-egg-fried'),
 ('Cakes', 'cakes', 'bi-cake2'),
-('Cookies & Treats', 'cookies', 'bi-cookie');
+('Cookies & Treats', 'cookies', 'bi-cookie')
+ON DUPLICATE KEY UPDATE
+    name = VALUES(name),
+    icon = VALUES(icon);
 
 -- Insert sample products
 -- Prices in Philippine Peso (₱) - Updated based on market research from local bakeries
@@ -120,7 +165,14 @@ INSERT INTO products (category_id, name, slug, description, price, image, featur
 (1, 'Ciabatta', 'ciabatta', 'Italian bread with large air pockets and crispy crust.', 120.00, 'ciabatta.jpg', FALSE),
 (2, 'Danish Pastry', 'danish-pastry', 'Fruit-topped danish with vanilla custard.', 140.00, 'danish.jpg', FALSE),
 (3, 'Chocolate Truffle Cake', 'chocolate-truffle-cake', 'Decadent chocolate cake with ganache. Serves 10-12.', 1700.00, 'truffle-cake.jpg', TRUE),
-(4, 'Oatmeal Raisin Cookies', 'oatmeal-raisin-cookies', 'Wholesome oatmeal cookies with plump raisins.', 75.00, 'oatmeal-raisin.jpg', FALSE);
+(4, 'Oatmeal Raisin Cookies', 'oatmeal-raisin-cookies', 'Wholesome oatmeal cookies with plump raisins.', 75.00, 'oatmeal-raisin.jpg', FALSE)
+ON DUPLICATE KEY UPDATE
+    category_id = VALUES(category_id),
+    name = VALUES(name),
+    description = VALUES(description),
+    price = VALUES(price),
+    image = VALUES(image),
+    featured = VALUES(featured);
 
 -- PayPal transactions table - logs all PayPal API interactions
 CREATE TABLE IF NOT EXISTS paypal_transactions (
@@ -131,7 +183,7 @@ CREATE TABLE IF NOT EXISTS paypal_transactions (
     paypal_payer_id VARCHAR(100),
     amount DECIMAL(10, 2),
     currency VARCHAR(10) DEFAULT 'PHP',
-    transaction_type ENUM('create_order', 'capture', 'refund', 'webhook') NOT NULL,
+    transaction_type ENUM('create_order', 'capture', 'refund', 'webhook') NOT NULL DEFAULT 'capture',
     status VARCHAR(50),
     request_data JSON,
     response_data JSON,
@@ -139,7 +191,7 @@ CREATE TABLE IF NOT EXISTS paypal_transactions (
     error_message TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL,
-    INDEX idx_order_id (order_id)
+    KEY idx_order_id (order_id)
 );
 
 -- SMS log table - tracks all SMS messages sent/received
