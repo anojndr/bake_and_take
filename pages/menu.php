@@ -112,11 +112,11 @@ function buildPaginationUrl($page, $category = null, $search = '', $priceMin = n
 
                     <h4 class="filter-title">Categories</h4>
                     
-                    <!-- Mobile Category Dropdown (shown on mobile) -->
-                    <div class="mobile-category-dropdown d-none mb-3">
-                        <select class="form-select form-select-lg" id="mobileCategorySelect" onchange="window.location.href=this.value">
+                    <!-- Category Dropdown -->
+                    <div class="category-dropdown-wrapper mb-3">
+                        <select class="form-select category-select" id="categorySelect" onchange="window.location.href=this.value">
                             <option value="index.php?page=menu<?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) : ''; ?>" <?php echo !$selectedCategory ? 'selected' : ''; ?>>
-                                All Products (<?php echo getProductCountByCategory(); ?>)
+                                🏷️ All Products (<?php echo getProductCountByCategory(); ?>)
                             </option>
                             <?php foreach ($allCategories as $slug => $category): ?>
                             <option value="index.php?page=menu&category=<?php echo $slug; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) : ''; ?>" <?php echo $selectedCategory === $slug ? 'selected' : ''; ?>>
@@ -125,26 +125,6 @@ function buildPaginationUrl($page, $category = null, $search = '', $priceMin = n
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    
-                    <!-- Desktop Category List (hidden on mobile) -->
-                    <ul class="category-filter">
-                        <li>
-                            <a href="index.php?page=menu<?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) : ''; ?>" class="<?php echo !$selectedCategory ? 'active' : ''; ?>">
-                                <i class="bi bi-grid me-2"></i> All Products
-                                <span class="count"><?php echo getProductCountByCategory(); ?></span>
-                            </a>
-                        </li>
-                        <?php foreach ($allCategories as $slug => $category): ?>
-                        <li>
-                            <a href="index.php?page=menu&category=<?php echo $slug; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) : ''; ?>" 
-                               class="<?php echo $selectedCategory === $slug ? 'active' : ''; ?>">
-                                <i class="bi <?php echo $category['icon']; ?> me-2"></i>
-                                <?php echo $category['name']; ?>
-                                <span class="count"><?php echo getProductCountByCategory($slug); ?></span>
-                            </a>
-                        </li>
-                        <?php endforeach; ?>
-                    </ul>
                     
                     <h4 class="filter-title mt-4">Price Range</h4>
                     <form action="index.php" method="GET" class="price-filter-form" id="priceFilterForm">
@@ -335,38 +315,50 @@ function buildPaginationUrl($page, $category = null, $search = '', $priceMin = n
     border-bottom: 2px solid var(--accent);
 }
 
-.category-filter {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+/* Category Dropdown Styles */
+.category-dropdown-wrapper {
+    position: relative;
 }
 
-.category-filter li { margin-bottom: 0.5rem; }
+.category-select {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    padding-right: 2.5rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    background: var(--cream);
+    border: 2px solid var(--cream-dark);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236B5344' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 14px;
+}
 
-.category-filter a {
-    display: flex;
-    align-items: center;
+.category-select:hover {
+    border-color: var(--primary);
+    background-color: var(--white);
+}
+
+.category-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    background-color: var(--white);
+    box-shadow: 0 0 0 4px rgba(212, 165, 116, 0.2);
+}
+
+.category-select option {
     padding: 0.75rem 1rem;
-    color: var(--text-secondary);
-    border-radius: var(--radius-sm);
-    transition: var(--transition);
+    font-size: 0.95rem;
+    background: var(--white);
+    color: var(--text-primary);
 }
-
-.category-filter a:hover,
-.category-filter a.active {
-    background: var(--accent);
-    color: var(--primary-dark);
-}
-
-.category-filter .count {
-    margin-left: auto;
-    background: var(--cream-dark);
-    padding: 0.15rem 0.5rem;
-    border-radius: 50px;
-    font-size: 0.8rem;
-}
-
-.category-filter a.active .count { background: var(--primary-light); }
 
 /* Price Range Min/Max Inputs */
 .price-range-inputs {
