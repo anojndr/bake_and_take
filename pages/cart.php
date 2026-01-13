@@ -248,6 +248,10 @@
 </style>
 
 <script>
+// Debounce timers for quantity updates
+const quantityUpdateTimers = {};
+const pendingQuantities = {};
+
 document.addEventListener('DOMContentLoaded', async function() {
     // Wait for main.js initCart to complete, then render
     // Use a small delay to ensure the async initCart has finished
@@ -275,9 +279,11 @@ function renderCartPage() {
     
     container.innerHTML = cartItems.map(item => {
         const stock = item.stock || 999; // Fallback if stock not defined
-        const isAtMaxStock = item.quantity >= stock;
+        // Use pending quantity if exists, otherwise use item quantity
+        const displayQuantity = pendingQuantities[item.id] !== undefined ? pendingQuantities[item.id] : item.quantity;
+        const isAtMaxStock = displayQuantity >= stock;
         return `
-        <div class="cart-item" data-id="${item.id}" data-stock="${stock}">
+        <div class="cart-item" data-id="${item.id}" data-stock="${stock}" data-price="${item.price}">
             <img src="${item.image}" alt="${item.name}" class="cart-item-image" 
                  onerror="this.src='assets/images/placeholder.jpg'">
             <div class="cart-item-details">
@@ -286,17 +292,18 @@ function renderCartPage() {
                 ${stock <= 10 ? `<small class="stock-warning text-muted">${stock} in stock</small>` : ''}
             </div>
             <div class="quantity-control">
-                <button class="quantity-btn quantity-minus" onclick="updateCartItem(${item.id}, ${item.quantity - 1})">
+                <button class="quantity-btn quantity-minus" onclick="handleQuantityChange(${item.id}, -1, ${stock}, ${item.price})" 
+                        ${displayQuantity <= 1 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
                     <i class="bi bi-dash"></i>
                 </button>
-                <input type="number" class="quantity-input" value="${item.quantity}" min="1" max="${stock}"
-                       onchange="validateAndUpdateCartItem(${item.id}, parseInt(this.value), ${stock})">
-                <button class="quantity-btn quantity-plus" onclick="validateAndUpdateCartItem(${item.id}, ${item.quantity + 1}, ${stock})" 
+                <input type="number" class="quantity-input" id="qty-${item.id}" value="${displayQuantity}" min="1" max="${stock}"
+                       onchange="handleDirectInput(${item.id}, parseInt(this.value), ${stock}, ${item.price})">
+                <button class="quantity-btn quantity-plus" onclick="handleQuantityChange(${item.id}, 1, ${stock}, ${item.price})" 
                         ${isAtMaxStock ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
                     <i class="bi bi-plus"></i>
                 </button>
             </div>
-            <span class="cart-item-total">₱${(item.price * item.quantity).toFixed(2)}</span>
+            <span class="cart-item-total" id="total-${item.id}">₱${(item.price * displayQuantity).toFixed(2)}</span>
             <button class="remove-item" onclick="removeCartItem(${item.id})" title="Remove">
                 <i class="bi bi-x-lg"></i>
             </button>
@@ -306,26 +313,142 @@ function renderCartPage() {
     updateSummary();
 }
 
-async function updateCartItem(id, quantity) {
-    await updateQuantity(id, quantity);
-    renderCartPage();
+// Instant UI update without waiting for server
+function updateItemUI(id, quantity, price, stock) {
+    const qtyInput = document.getElementById(`qty-${id}`);
+    const totalSpan = document.getElementById(`total-${id}`);
+    const cartItem = document.querySelector(`.cart-item[data-id="${id}"]`);
+    
+    if (qtyInput) qtyInput.value = quantity;
+    if (totalSpan) totalSpan.textContent = `₱${(price * quantity).toFixed(2)}`;
+    
+    // Update button states
+    if (cartItem) {
+        const minusBtn = cartItem.querySelector('.quantity-minus');
+        const plusBtn = cartItem.querySelector('.quantity-plus');
+        
+        if (minusBtn) {
+            minusBtn.disabled = quantity <= 1;
+            minusBtn.style.opacity = quantity <= 1 ? '0.5' : '';
+            minusBtn.style.cursor = quantity <= 1 ? 'not-allowed' : '';
+        }
+        if (plusBtn) {
+            plusBtn.disabled = quantity >= stock;
+            plusBtn.style.opacity = quantity >= stock ? '0.5' : '';
+            plusBtn.style.cursor = quantity >= stock ? 'not-allowed' : '';
+        }
+    }
+    
+    updateSummaryOptimistic();
 }
 
-async function validateAndUpdateCartItem(id, quantity, maxStock) {
-    // Client-side validation
-    if (quantity > maxStock) {
-        showNotification(`Only ${maxStock} items available in stock`, 'error');
-        renderCartPage(); // Reset to current valid value
+// Update summary based on current UI values
+function updateSummaryOptimistic() {
+    let subtotal = 0;
+    document.querySelectorAll('.cart-item').forEach(item => {
+        const price = parseFloat(item.dataset.price);
+        const qtyInput = item.querySelector('.quantity-input');
+        const qty = parseInt(qtyInput?.value) || 0;
+        subtotal += price * qty;
+    });
+    
+    const tax = subtotal * 0.08;
+    const total = subtotal + tax;
+    
+    document.getElementById('subtotal').textContent = '₱' + subtotal.toFixed(2);
+    document.getElementById('tax').textContent = '₱' + tax.toFixed(2);
+    document.getElementById('total').textContent = '₱' + total.toFixed(2);
+}
+
+// Handle +/- button clicks with debouncing
+function handleQuantityChange(id, delta, stock, price) {
+    const currentQty = pendingQuantities[id] !== undefined ? pendingQuantities[id] : 
+                       parseInt(document.getElementById(`qty-${id}`)?.value) || 1;
+    let newQty = currentQty + delta;
+    
+    // Validate bounds
+    if (newQty < 1) newQty = 1;
+    if (newQty > stock) {
+        showNotification(`Only ${stock} items available in stock`, 'error');
         return;
     }
-    if (quantity < 1) {
-        quantity = 1;
+    
+    // Store pending quantity
+    pendingQuantities[id] = newQty;
+    
+    // Instant UI update
+    updateItemUI(id, newQty, price, stock);
+    
+    // Debounce the actual API call (wait 400ms after last click)
+    if (quantityUpdateTimers[id]) {
+        clearTimeout(quantityUpdateTimers[id]);
     }
-    await updateQuantity(id, quantity);
-    renderCartPage();
+    
+    quantityUpdateTimers[id] = setTimeout(async () => {
+        await syncQuantityToServer(id, newQty);
+    }, 400);
+}
+
+// Handle direct input in the quantity field
+function handleDirectInput(id, quantity, stock, price) {
+    if (isNaN(quantity) || quantity < 1) quantity = 1;
+    if (quantity > stock) {
+        showNotification(`Only ${stock} items available in stock`, 'error');
+        quantity = stock;
+    }
+    
+    pendingQuantities[id] = quantity;
+    updateItemUI(id, quantity, price, stock);
+    
+    if (quantityUpdateTimers[id]) {
+        clearTimeout(quantityUpdateTimers[id]);
+    }
+    
+    quantityUpdateTimers[id] = setTimeout(async () => {
+        await syncQuantityToServer(id, quantity);
+    }, 400);
+}
+
+// Sync quantity to server
+async function syncQuantityToServer(id, quantity) {
+    try {
+        const formData = new FormData();
+        formData.append('action', 'update');
+        formData.append('product_id', id);
+        formData.append('quantity', quantity);
+
+        const response = await fetch('includes/cart_api.php', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            // Update local cart silently
+            await initCart();
+            // Clear pending quantity
+            delete pendingQuantities[id];
+        } else {
+            showNotification(data.message || 'Error updating quantity', 'error');
+            delete pendingQuantities[id];
+            renderCartPage(); // Reset to server state
+        }
+    } catch (error) {
+        console.error('Error updating quantity:', error);
+        showNotification('Error updating quantity', 'error');
+        delete pendingQuantities[id];
+        renderCartPage();
+    }
 }
 
 async function removeCartItem(id) {
+    // Clear any pending updates for this item
+    if (quantityUpdateTimers[id]) {
+        clearTimeout(quantityUpdateTimers[id]);
+        delete quantityUpdateTimers[id];
+    }
+    delete pendingQuantities[id];
+    
     await removeFromCart(id);
     renderCartPage();
     showNotification('Item removed from cart', 'info');
