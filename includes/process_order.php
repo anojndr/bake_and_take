@@ -63,18 +63,30 @@ $total = $subtotal + $deliveryFee + $tax;
 // Generate unique order number
 $orderNumber = strtoupper(substr(md5(uniqid(rand(), true)), 0, 8));
 
+// Get confirmation method (default to SMS)
+$confirmationMethod = sanitize($_POST['confirmation_method'] ?? 'sms');
+if (!in_array($confirmationMethod, ['sms', 'email'])) {
+    $confirmationMethod = 'sms';
+}
+
+// Generate confirmation token for email confirmations
+$confirmationToken = null;
+if ($confirmationMethod === 'email') {
+    $confirmationToken = bin2hex(random_bytes(32));
+}
+
 // Save to database
 if ($pdo) {
     try {
         $pdo->beginTransaction();
         
-        // Insert order
+        // Insert order with status 'pending' until confirmed
         $stmt = $pdo->prepare("
             INSERT INTO orders (
                 user_id, order_number, first_name, last_name, email, phone,
                 delivery_method, address, city, state, zip, instructions,
-                subtotal, delivery_fee, tax, total, status, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', NOW())
+                subtotal, delivery_fee, tax, total, status, confirmation_method, confirmation_token, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, NOW())
         ");
         
         $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
@@ -95,7 +107,9 @@ if ($pdo) {
             $subtotal,
             $deliveryFee,
             $tax,
-            $total
+            $total,
+            $confirmationMethod,
+            $confirmationToken
         ]);
         
         $orderId = $pdo->lastInsertId();
@@ -124,61 +138,103 @@ if ($pdo) {
         $_SESSION['last_order'] = [
             'order_number' => $orderNumber,
             'order_id' => $orderId,
-            'total' => $total
+            'total' => $total,
+            'confirmation_method' => $confirmationMethod
         ];
 
-        // Send Order Confirmation Email
-        require_once 'mailer.php';
-        $orderSubject = "Bake & Take - Order Confirmation #{$orderNumber}";
-        $orderBody = "
-            <h2>Thank you for your order!</h2>
-            <p>Hi {$orderData['first_name']},</p>
-            <p>Your order <strong>#{$orderNumber}</strong> has been received and is being processed.</p>
-            <p>It will be ready for pickup at our store.</p>
-            <p><strong>Total:</strong> ₱" . number_format($total, 2) . "</p>
-            <br>
-            <h3>Order Details</h3>
-            <ul>
-        ";
-        
+        // Build order items HTML
+        $orderItemsHtml = '';
         foreach ($cartData as $item) {
-            $orderBody .= "<li>{$item['quantity']}x {$item['name']} - ₱" . number_format($item['price'] * $item['quantity'], 2) . "</li>";
+            $orderItemsHtml .= "<li>{$item['quantity']}x {$item['name']} - ₱" . number_format($item['price'] * $item['quantity'], 2) . "</li>";
         }
+
+        // Send Order Confirmation Email based on confirmation method
+        require_once 'mailer.php';
         
-        $orderBody .= "
-            </ul>
-            <p>We will notify you when your order is ready for pickup.</p>
-            <br>
-            <p>Best regards,<br>Bake & Take Team</p>
-        ";
+        if ($confirmationMethod === 'email') {
+            // Email confirmation - send confirmation link
+            $confirmationUrl = SITE_URL . '/includes/confirm_order.php?token=' . $confirmationToken;
+            
+            $orderSubject = "Bake & Take - Please Confirm Your Order #{$orderNumber}";
+            $orderBody = "
+                <h2>Please Confirm Your Order</h2>
+                <p>Hi {$orderData['first_name']},</p>
+                <p>Thank you for your order!</p>
+                <p>To complete your order, please click the button below to confirm:</p>
+                <p style='margin: 30px 0;'>
+                    <a href='{$confirmationUrl}' style='background-color: #8B4513; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;'>
+                        Confirm My Order
+                    </a>
+                </p>
+                <p><strong>Order #:</strong> {$orderNumber}</p>
+                <p><strong>Total:</strong> ₱" . number_format($total, 2) . "</p>
+                <br>
+                <h3>Order Details</h3>
+                <ul>{$orderItemsHtml}</ul>
+                <br>
+                <p><em>If you did not place this order, please ignore this email.</em></p>
+                <br>
+                <p>Best regards,<br>Bake & Take Team</p>
+            ";
+        } else {
+            // SMS confirmation - just send receipt email
+            $orderSubject = "Bake & Take - Order #{$orderNumber} Awaiting Confirmation";
+            $orderBody = "
+                <h2>Order Received - Awaiting Your Confirmation</h2>
+                <p>Hi {$orderData['first_name']},</p>
+                <p>Thank you for your order!</p>
+                <p><strong>Please check your phone!</strong> We've sent you an SMS to confirm your order. Simply reply <strong>CONFIRM</strong> to complete your order.</p>
+                <p><strong>Order #:</strong> {$orderNumber}</p>
+                <p><strong>Total:</strong> ₱" . number_format($total, 2) . "</p>
+                <br>
+                <h3>Order Details</h3>
+                <ul>{$orderItemsHtml}</ul>
+                <p>Once you confirm via SMS, we'll start preparing your order for pickup.</p>
+                <br>
+                <p>Best regards,<br>Bake & Take Team</p>
+            ";
+        }
         
         // Send email to Customer
         sendMail($orderData['email'], $orderSubject, $orderBody);
 
         // Send email to Admin
-        $adminSubject = "New Order #{$orderNumber}";
+        $adminSubject = "New Order #{$orderNumber} - Awaiting Customer Confirmation";
         $adminBody = "
-            <h2>New Order Received</h2>
+            <h2>New Order Received (Pending Confirmation)</h2>
             <p><strong>Order #:</strong> {$orderNumber}</p>
+            <p><strong>Status:</strong> Pending Customer Confirmation</p>
+            <p><strong>Confirmation Method:</strong> " . ucfirst($confirmationMethod) . "</p>
             <p><strong>Method:</strong> Pickup</p>
             <p><strong>Customer:</strong> {$orderData['first_name']} {$orderData['last_name']}</p>
             <p><strong>Email:</strong> {$orderData['email']}</p>
+            <p><strong>Phone:</strong> {$orderData['phone']}</p>
             <p><strong>Total:</strong> ₱" . number_format($total, 2) . "</p>
+            <p><em>The customer will confirm this order via {$confirmationMethod}. You'll be notified when confirmed.</em></p>
             <a href='" . SITE_URL . "/admin/orders.php?id={$orderId}'>View Order</a>
         ";
         sendMail(SMTP_USER, $adminSubject, $adminBody);
 
-        // Send SMS Order Confirmation
+        // Send SMS based on confirmation method
         require_once 'sms_service.php';
-        $smsOrderData = [
-            'first_name' => $orderData['first_name'],
-            'phone' => $orderData['phone'],
-            'order_number' => $orderNumber,
-            'total' => $total,
-            'order_id' => $orderId,
-            'user_id' => $userId
-        ];
-        sendOrderConfirmationSMS($smsOrderData);
+        
+        if ($confirmationMethod === 'sms') {
+            // Send SMS confirmation request
+            $smsOrderData = [
+                'first_name' => $orderData['first_name'],
+                'phone' => $orderData['phone'],
+                'order_number' => $orderNumber,
+                'total' => $total,
+                'order_id' => $orderId,
+                'user_id' => $userId,
+                'items' => $cartData
+            ];
+            sendOrderConfirmationRequestSMS($smsOrderData);
+        } else {
+            // For email confirmation, send a simple SMS notification
+            $smsMessage = SMS_SENDER_NAME . ": Hi {$orderData['first_name']}! Your order #{$orderNumber} is awaiting confirmation. Please check your email and click the confirmation link.";
+            sendSMS($orderData['phone'], $smsMessage, $orderId, $userId);
+        }
         
     } catch (PDOException $e) {
         $pdo->rollBack();

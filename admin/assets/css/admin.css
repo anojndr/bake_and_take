@@ -680,6 +680,17 @@ body {
     background: rgba(239, 68, 68, 0.1);
 }
 
+.btn-action-success:hover,
+.btn-action.btn-action-success:hover {
+    border-color: #28a745;
+    color: #28a745;
+    background: rgba(40, 167, 69, 0.1);
+}
+
+.btn-action-success {
+    color: #28a745;
+}
+
 /* =====================================================
    ADMIN BUTTONS
    ===================================================== */

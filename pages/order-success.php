@@ -4,17 +4,30 @@ $lastOrder = $_SESSION['last_order'] ?? null;
 $orderNumber = $lastOrder['order_number'] ?? strtoupper(substr(md5(time()), 0, 8));
 $orderTotal = $lastOrder['total'] ?? 0;
 $paypalCaptureId = $lastOrder['paypal_capture_id'] ?? null;
+$confirmationMethod = $lastOrder['confirmation_method'] ?? 'sms';
 ?>
 
 <div class="success-container">
     <div class="success-card">
-        <div class="success-icon">
-            <i class="bi bi-check-circle-fill"></i>
+        <div class="success-icon pending">
+            <i class="bi bi-hourglass-split"></i>
         </div>
-        <h1>Order Confirmed!</h1>
+        <h1>Order Placed!</h1>
         <p class="order-number">Order #<?php echo htmlspecialchars($orderNumber); ?></p>
         
-        <p class="success-message">Thank you for your order! We've received your order and will begin preparing your delicious treats right away.</p>
+        <div class="confirmation-pending-notice">
+            <i class="bi bi-exclamation-circle"></i>
+            <div>
+                <strong>Action Required: Confirm Your Order</strong>
+                <?php if ($confirmationMethod === 'sms'): ?>
+                <p>We've sent you an SMS. Please reply <strong>CONFIRM</strong> to complete your order.</p>
+                <?php else: ?>
+                <p>We've sent you an email. Please click the confirmation link to complete your order.</p>
+                <?php endif; ?>
+            </div>
+        </div>
+        
+        <p class="success-message">Thank you for your order! Your payment has been received. Once you confirm, we'll begin preparing your delicious treats.</p>
         
         <?php if ($orderTotal > 0): ?>
         <div class="order-total-display">
@@ -34,17 +47,17 @@ $paypalCaptureId = $lastOrder['paypal_capture_id'] ?? null;
             </div>
             <?php endif; ?>
             <div class="detail-item">
-                <i class="bi bi-clock"></i>
+                <i class="bi bi-<?php echo $confirmationMethod === 'sms' ? 'phone' : 'envelope'; ?>"></i>
                 <div>
-                    <strong>Estimated Ready Time</strong>
-                    <span>30-45 minutes</span>
+                    <strong>Confirmation Method</strong>
+                    <span><?php echo $confirmationMethod === 'sms' ? 'Reply CONFIRM to SMS' : 'Click link in email'; ?></span>
                 </div>
             </div>
             <div class="detail-item">
-                <i class="bi bi-envelope"></i>
+                <i class="bi bi-clock"></i>
                 <div>
-                    <strong>Confirmation Email</strong>
-                    <span>Sent to your email</span>
+                    <strong>Estimated Ready Time</strong>
+                    <span>30-45 minutes after confirmation</span>
                 </div>
             </div>
             <div class="detail-item">
@@ -96,6 +109,40 @@ $paypalCaptureId = $lastOrder['paypal_capture_id'] ?? null;
     justify-content: center;
     margin: 0 auto 2rem;
     animation: scaleIn 0.5s ease-out;
+}
+
+.success-icon.pending {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+}
+
+.confirmation-pending-notice {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    text-align: left;
+}
+
+.confirmation-pending-notice i {
+    font-size: 1.5rem;
+    color: #856404;
+    flex-shrink: 0;
+}
+
+.confirmation-pending-notice strong {
+    color: #856404;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.confirmation-pending-notice p {
+    margin: 0;
+    color: #856404;
+    font-size: 0.9rem;
 }
 
 .success-icon i {

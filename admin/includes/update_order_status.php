@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $orderId = filter_input(INPUT_POST, 'order_id', FILTER_VALIDATE_INT);
 $status = filter_input(INPUT_POST, 'status', FILTER_SANITIZE_SPECIAL_CHARS);
 
-$validStatuses = ['confirmed', 'preparing', 'ready', 'delivered', 'cancelled'];
+$validStatuses = ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled'];
 
 if (!$orderId || !in_array($status, $validStatuses)) {
     echo json_encode(['success' => false, 'message' => 'Invalid parameters']);
@@ -48,8 +48,16 @@ try {
     $oldStatus = $order['status'];
     
     // Update the order status
-    $stmt = $pdo->prepare("UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?");
-    $stmt->execute([$status, $orderId]);
+    $updateFields = "status = ?, updated_at = NOW()";
+    $updateParams = [$status, $orderId];
+    
+    // If manually confirming a pending order, also set confirmed_at
+    if ($status === 'confirmed' && $oldStatus === 'pending') {
+        $updateFields = "status = ?, confirmed_at = NOW(), updated_at = NOW()";
+    }
+    
+    $stmt = $pdo->prepare("UPDATE orders SET $updateFields WHERE id = ?");
+    $stmt->execute($updateParams);
     
     if ($stmt->rowCount() > 0) {
         

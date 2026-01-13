@@ -43,7 +43,8 @@ define('SMS_GATEWAY_TIMEOUT', 30);
 // Webhook authentication token
 // Configure the same token in the SMS Forwarder Android app
 // This secures your webhook from unauthorized access
-define('SMS_WEBHOOK_SECRET', 'your-secret-token-here');
+// Leave empty to disable authentication (not recommended for production)
+define('SMS_WEBHOOK_SECRET', '');
 
 // Allowed IP addresses for webhook (leave empty to allow all)
 // Add your Android device's IP(s) for security
@@ -99,5 +100,21 @@ define('SMS_TEMPLATE_OTP',
 // Order status update template
 define('SMS_TEMPLATE_ORDER_STATUS', 
     '{store_name}: Order #{order_number} status: {status}'
+);
+
+// Order confirmation request SMS template
+// Sent when order is placed with status 'pending' to request confirmation
+// Available placeholders: {name}, {order_number}, {total}, {items}, {store_name}
+define('SMS_TEMPLATE_ORDER_CONFIRM_REQUEST', 
+    '{store_name}: Hi {name}! Please confirm your order #{order_number} for ₱{total}.
+
+Items: {items}
+
+Reply CONFIRM to confirm your order.'
+);
+
+// Order confirmed via reply SMS template
+define('SMS_TEMPLATE_ORDER_CONFIRMED', 
+    '{store_name}: Your order #{order_number} has been confirmed! We\'ll notify you when it\'s ready for pickup.'
 );
 ?>

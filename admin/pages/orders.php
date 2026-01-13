@@ -32,8 +32,9 @@ if ($pdo) {
     }
 }
 
-$statusOptions = ['confirmed', 'preparing', 'ready', 'delivered', 'cancelled'];
+$statusOptions = ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled'];
 $statusLabels = [
+    'pending' => 'Pending',
     'confirmed' => 'Confirmed',
     'preparing' => 'Preparing',
     'ready' => 'Ready',
@@ -128,6 +129,11 @@ $statusLabels = [
                         </td>
                         <td>
                             <div class="action-buttons">
+                                <?php if ($order['status'] === 'pending'): ?>
+                                <button class="btn-action btn-action-success" title="Confirm Order" onclick="confirmOrder(<?php echo $order['id']; ?>, '<?php echo sanitize($order['order_number']); ?>')">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                                <?php endif; ?>
                                 <button class="btn-action" title="View Details" data-bs-toggle="modal" data-bs-target="#orderModal<?php echo $order['id']; ?>">
                                     <i class="bi bi-eye"></i>
                                 </button>
@@ -179,6 +185,29 @@ $statusLabels = [
                         <p class="mb-1">
                             <strong>Method:</strong> <?php echo ucfirst($order['delivery_method']); ?>
                         </p>
+                        <p class="mb-1">
+                            <strong>Status:</strong> 
+                            <span class="badge bg-<?php 
+                                echo $order['status'] === 'pending' ? 'warning' : 
+                                    ($order['status'] === 'confirmed' ? 'primary' : 
+                                    ($order['status'] === 'preparing' ? 'info' : 
+                                    ($order['status'] === 'ready' ? 'success' : 
+                                    ($order['status'] === 'cancelled' ? 'danger' : 'secondary')))); 
+                            ?>">
+                                <?php echo $statusLabels[$order['status']] ?? ucfirst($order['status']); ?>
+                            </span>
+                        </p>
+                        <?php if (isset($order['confirmation_method']) && $order['confirmation_method']): ?>
+                        <p class="mb-1">
+                            <strong>Confirmation:</strong> 
+                            <?php echo ucfirst($order['confirmation_method']); ?>
+                            <?php if (isset($order['confirmed_at']) && $order['confirmed_at']): ?>
+                                <span class="text-success ms-1"><i class="bi bi-check-circle"></i> Confirmed</span>
+                            <?php elseif ($order['status'] === 'pending'): ?>
+                                <span class="text-warning ms-1"><i class="bi bi-clock"></i> Awaiting</span>
+                            <?php endif; ?>
+                        </p>
+                        <?php endif; ?>
                         <?php if ($order['delivery_method'] === 'delivery' && $order['address']): ?>
                         <p class="mb-0">
                             <?php echo sanitize($order['address']); ?><br>
@@ -298,6 +327,62 @@ function deleteOrder(orderId, orderNumber) {
                 Swal.fire({
                     title: 'Error!',
                     text: 'An error occurred while deleting the order.',
+                    icon: 'error',
+                    background: 'var(--admin-dark-secondary)',
+                    color: 'var(--admin-text)'
+                });
+            });
+        }
+    });
+}
+
+function confirmOrder(orderId, orderNumber) {
+    Swal.fire({
+        title: 'Confirm Order?',
+        html: `Are you sure you want to manually confirm order <strong>#${orderNumber}</strong>?<br><small class="text-muted">This will notify the customer that their order is confirmed.</small>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, confirm it!',
+        cancelButtonText: 'Cancel',
+        background: 'var(--admin-dark-secondary)',
+        color: 'var(--admin-text)'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('includes/confirm_order.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'order_id=' + orderId
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Confirmed!',
+                        text: data.message || 'Order has been confirmed.',
+                        icon: 'success',
+                        background: 'var(--admin-dark-secondary)',
+                        color: 'var(--admin-text)'
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: data.message || 'Failed to confirm order.',
+                        icon: 'error',
+                        background: 'var(--admin-dark-secondary)',
+                        color: 'var(--admin-text)'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'An error occurred while confirming the order.',
                     icon: 'error',
                     background: 'var(--admin-dark-secondary)',
                     color: 'var(--admin-text)'

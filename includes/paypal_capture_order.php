@@ -42,6 +42,18 @@ foreach ($requiredFields as $field) {
     }
 }
 
+// Get confirmation method (default to SMS if not specified)
+$confirmationMethod = $customerInfo['confirmation_method'] ?? 'sms';
+if (!in_array($confirmationMethod, ['sms', 'email'])) {
+    $confirmationMethod = 'sms';
+}
+
+// Generate confirmation token for email confirmations
+$confirmationToken = null;
+if ($confirmationMethod === 'email') {
+    $confirmationToken = bin2hex(random_bytes(32));
+}
+
 // Get pending order from session
 $pendingOrder = $_SESSION['pending_paypal_order'] ?? null;
 if (!$pendingOrder || $pendingOrder['paypal_order_id'] !== $paypalOrderId) {
@@ -109,15 +121,15 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
         try {
             $pdo->beginTransaction();
             
-            // Insert order with PayPal details
+            // Insert order with PayPal details - status is 'pending' until confirmed
             $stmt = $pdo->prepare("
                 INSERT INTO orders (
                     user_id, order_number, first_name, last_name, email, phone,
                     delivery_method, address, city, state, zip, instructions,
-                    subtotal, delivery_fee, tax, total, status, payment_status,
+                    subtotal, delivery_fee, tax, total, status, confirmation_method, confirmation_token, payment_status,
                     paypal_order_id, paypal_payer_id, paypal_capture_id, paypal_payment_status,
                     created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, 'pickup', '', '', '', '', ?, ?, 0, ?, ?, 'confirmed', 'verified', ?, ?, ?, ?, NOW())
+                ) VALUES (?, ?, ?, ?, ?, ?, 'pickup', '', '', '', '', ?, ?, 0, ?, ?, 'pending', ?, ?, 'completed', ?, ?, ?, ?, NOW())
             ");
             
             $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
@@ -133,6 +145,8 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
                 $subtotal,
                 $tax,
                 $total,
+                $confirmationMethod,
+                $confirmationToken,
                 $paypalOrderId,
                 $paypalPayerId,
                 $paypalCaptureId,
@@ -208,7 +222,8 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
         'order_id' => $orderId,
         'total' => $total,
         'paypal_order_id' => $paypalOrderId,
-        'paypal_capture_id' => $paypalCaptureId
+        'paypal_capture_id' => $paypalCaptureId,
+        'confirmation_method' => $confirmationMethod
     ];
     
     // Clear pending order
@@ -218,44 +233,75 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
     try {
         require_once 'mailer.php';
         
-        // Email to customer
-        $orderSubject = "Bake & Take - Order Confirmation #{$orderNumber}";
-        $orderBody = "
-            <h2>Thank you for your order!</h2>
-            <p>Hi {$orderData['first_name']},</p>
-            <p>Your order <strong>#{$orderNumber}</strong> has been received and payment confirmed via PayPal.</p>
-            <p>It will be ready for pickup at our store.</p>
-            <p><strong>Total:</strong> ₱" . number_format($total, 2) . "</p>
-            <p><strong>PayPal Transaction ID:</strong> {$paypalCaptureId}</p>
-            <br>
-            <h3>Order Details</h3>
-            <ul>
-        ";
-        
+        // Build order items HTML
+        $orderItemsHtml = '';
         foreach ($cartData as $item) {
-            $orderBody .= "<li>{$item['quantity']}x {$item['name']} - ₱" . number_format($item['price'] * $item['quantity'], 2) . "</li>";
+            $orderItemsHtml .= "<li>{$item['quantity']}x {$item['name']} - ₱" . number_format($item['price'] * $item['quantity'], 2) . "</li>";
         }
         
-        $orderBody .= "
-            </ul>
-            <p>We will notify you when your order is ready for pickup.</p>
-            <br>
-            <p>Best regards,<br>Bake & Take Team</p>
-        ";
+        if ($confirmationMethod === 'email') {
+            // Email confirmation - send confirmation link
+            $confirmationUrl = SITE_URL . '/includes/confirm_order.php?token=' . $confirmationToken;
+            
+            $orderSubject = "Bake & Take - Please Confirm Your Order #{$orderNumber}";
+            $orderBody = "
+                <h2>Please Confirm Your Order</h2>
+                <p>Hi {$orderData['first_name']},</p>
+                <p>Thank you for your order! Your payment has been received via PayPal.</p>
+                <p>To complete your order, please click the button below to confirm:</p>
+                <p style='margin: 30px 0;'>
+                    <a href='{$confirmationUrl}' style='background-color: #8B4513; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;'>
+                        Confirm My Order
+                    </a>
+                </p>
+                <p><strong>Order #:</strong> {$orderNumber}</p>
+                <p><strong>Total:</strong> ₱" . number_format($total, 2) . "</p>
+                <p><strong>PayPal Transaction ID:</strong> {$paypalCaptureId}</p>
+                <br>
+                <h3>Order Details</h3>
+                <ul>{$orderItemsHtml}</ul>
+                <br>
+                <p><em>If you did not place this order, please ignore this email.</em></p>
+                <br>
+                <p>Best regards,<br>Bake & Take Team</p>
+            ";
+        } else {
+            // SMS confirmation - just send receipt email, confirmation will be via SMS
+            $orderSubject = "Bake & Take - Order #{$orderNumber} Awaiting Confirmation";
+            $orderBody = "
+                <h2>Order Received - Awaiting Your Confirmation</h2>
+                <p>Hi {$orderData['first_name']},</p>
+                <p>Thank you for your order! Your payment has been received via PayPal.</p>
+                <p><strong>Please check your phone!</strong> We've sent you an SMS to confirm your order. Simply reply <strong>CONFIRM</strong> to complete your order.</p>
+                <p><strong>Order #:</strong> {$orderNumber}</p>
+                <p><strong>Total:</strong> ₱" . number_format($total, 2) . "</p>
+                <p><strong>PayPal Transaction ID:</strong> {$paypalCaptureId}</p>
+                <br>
+                <h3>Order Details</h3>
+                <ul>{$orderItemsHtml}</ul>
+                <p>Once you confirm via SMS, we'll start preparing your order for pickup.</p>
+                <br>
+                <p>Best regards,<br>Bake & Take Team</p>
+            ";
+        }
         
         sendMail($orderData['email'], $orderSubject, $orderBody);
         
-        // Email to admin
-        $adminSubject = "New PayPal Order #{$orderNumber}";
+        // Email to admin - inform about pending order
+        $adminSubject = "New PayPal Order #{$orderNumber} - Awaiting Customer Confirmation";
         $adminBody = "
-            <h2>New Order Received (PayPal)</h2>
+            <h2>New Order Received (Pending Confirmation)</h2>
             <p><strong>Order #:</strong> {$orderNumber}</p>
+            <p><strong>Status:</strong> Pending Customer Confirmation</p>
+            <p><strong>Confirmation Method:</strong> " . ucfirst($confirmationMethod) . "</p>
             <p><strong>Payment Method:</strong> PayPal</p>
             <p><strong>PayPal Transaction:</strong> {$paypalCaptureId}</p>
             <p><strong>Method:</strong> Pickup</p>
             <p><strong>Customer:</strong> {$orderData['first_name']} {$orderData['last_name']}</p>
             <p><strong>Email:</strong> {$orderData['email']}</p>
+            <p><strong>Phone:</strong> {$orderData['phone']}</p>
             <p><strong>Total:</strong> ₱" . number_format($total, 2) . "</p>
+            <p><em>The customer will confirm this order via {$confirmationMethod}. You'll be notified when confirmed.</em></p>
             <a href='" . SITE_URL . "/admin/orders.php?id={$orderId}'>View Order</a>
         ";
         sendMail(SMTP_USER, $adminSubject, $adminBody);
@@ -264,18 +310,27 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
         error_log('Email sending failed: ' . $e->getMessage());
     }
     
-    // Send SMS notification
+    // Send SMS notification based on confirmation method
     try {
         require_once 'sms_service.php';
-        $smsOrderData = [
-            'first_name' => $orderData['first_name'],
-            'phone' => $orderData['phone'],
-            'order_number' => $orderNumber,
-            'total' => $total,
-            'order_id' => $orderId,
-            'user_id' => $userId ?? null
-        ];
-        sendOrderConfirmationSMS($smsOrderData);
+        
+        if ($confirmationMethod === 'sms') {
+            // Send SMS confirmation request
+            $smsOrderData = [
+                'first_name' => $orderData['first_name'],
+                'phone' => $orderData['phone'],
+                'order_number' => $orderNumber,
+                'total' => $total,
+                'order_id' => $orderId,
+                'user_id' => $userId ?? null,
+                'items' => $cartData
+            ];
+            sendOrderConfirmationRequestSMS($smsOrderData);
+        } else {
+            // For email confirmation, send a simple SMS notification that confirmation email was sent
+            $smsMessage = SMS_SENDER_NAME . ": Hi {$orderData['first_name']}! Your order #{$orderNumber} is awaiting confirmation. Please check your email and click the confirmation link.";
+            sendSMS($orderData['phone'], $smsMessage, $orderId, $userId ?? null);
+        }
     } catch (Exception $e) {
         error_log('SMS sending failed: ' . $e->getMessage());
     }

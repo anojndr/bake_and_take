@@ -444,6 +444,81 @@ function sendOrderStatusSMS($orderData, $status) {
 }
 
 /**
+ * Send order confirmation request SMS
+ * This is sent when an order is placed to request the customer to confirm
+ * 
+ * @param array $orderData Order data containing name, phone, order_number, total, items
+ * @return array Result of sendSMS
+ */
+function sendOrderConfirmationRequestSMS($orderData) {
+    if (!SMS_ORDER_NOTIFICATIONS_ENABLED) {
+        return ['success' => false, 'message' => 'Order SMS notifications disabled'];
+    }
+    
+    // Format items list for SMS (keep it short)
+    $itemsList = '';
+    if (!empty($orderData['items']) && is_array($orderData['items'])) {
+        $itemNames = [];
+        foreach ($orderData['items'] as $item) {
+            $itemNames[] = $item['quantity'] . 'x ' . $item['name'];
+        }
+        $itemsList = implode(', ', $itemNames);
+        // Truncate if too long
+        if (strlen($itemsList) > 80) {
+            $itemsList = substr($itemsList, 0, 77) . '...';
+        }
+    }
+    
+    $message = str_replace(
+        ['{name}', '{order_number}', '{total}', '{items}', '{store_name}'],
+        [
+            $orderData['first_name'],
+            $orderData['order_number'],
+            number_format($orderData['total'], 2),
+            $itemsList,
+            SMS_SENDER_NAME
+        ],
+        SMS_TEMPLATE_ORDER_CONFIRM_REQUEST
+    );
+    
+    return sendSMS(
+        $orderData['phone'],
+        $message,
+        $orderData['order_id'] ?? null,
+        $orderData['user_id'] ?? null
+    );
+}
+
+/**
+ * Send order confirmed notification SMS
+ * This is sent after the customer confirms their order via SMS reply
+ * 
+ * @param array $orderData Order data containing phone, order_number
+ * @return array Result of sendSMS
+ */
+function sendOrderConfirmedSMS($orderData) {
+    if (!SMS_ORDER_NOTIFICATIONS_ENABLED) {
+        return ['success' => false, 'message' => 'Order SMS notifications disabled'];
+    }
+    
+    $message = str_replace(
+        ['{order_number}', '{store_name}'],
+        [
+            $orderData['order_number'],
+            SMS_SENDER_NAME
+        ],
+        SMS_TEMPLATE_ORDER_CONFIRMED
+    );
+    
+    return sendSMS(
+        $orderData['phone'],
+        $message,
+        $orderData['order_id'] ?? null,
+        $orderData['user_id'] ?? null
+    );
+}
+
+/**
  * Format phone number to international format
  * 
  * @param string $phone Phone number

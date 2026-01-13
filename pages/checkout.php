@@ -84,6 +84,34 @@ if (isset($_SESSION['user_id'])) {
                         <textarea class="form-control form-control-custom" id="checkout_instructions" name="instructions" rows="3" placeholder="Any special requests or notes for your order..."></textarea>
                     </div>
                     
+                    <!-- Order Confirmation Method -->
+                    <div class="checkout-card mb-4">
+                        <h4><i class="bi bi-check-circle me-2"></i>Order Confirmation</h4>
+                        <p class="text-muted mb-3">Choose how you'd like to confirm your order. We'll send you a confirmation request after payment.</p>
+                        <div class="confirmation-options">
+                            <label class="confirmation-option">
+                                <input type="radio" name="confirmation_method" value="sms" checked>
+                                <div class="option-content">
+                                    <div class="option-icon"><i class="bi bi-phone"></i></div>
+                                    <div class="option-details">
+                                        <strong>SMS Confirmation</strong>
+                                        <span>Reply "CONFIRM" to the SMS we send you</span>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="confirmation-option">
+                                <input type="radio" name="confirmation_method" value="email">
+                                <div class="option-content">
+                                    <div class="option-icon"><i class="bi bi-envelope"></i></div>
+                                    <div class="option-details">
+                                        <strong>Email Confirmation</strong>
+                                        <span>Click the confirmation link in your email</span>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
                     <!-- Payment Section -->
                     <div class="checkout-card">
                         <h4><i class="bi bi-wallet2 me-2"></i>Payment Method</h4>
@@ -200,6 +228,51 @@ if (isset($_SESSION['user_id'])) {
 .option-details strong { display: block; color: var(--dark); }
 .option-details span { font-size: 0.85rem; color: var(--text-light); }
 .option-price { font-weight: 600; color: var(--secondary); }
+
+/* Confirmation Method Options */
+.confirmation-options { display: flex; flex-direction: column; gap: 1rem; }
+
+.confirmation-option {
+    cursor: pointer;
+}
+
+.confirmation-option input { display: none; }
+
+.confirmation-option .option-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border: 2px solid var(--cream-dark);
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+}
+
+.confirmation-option input:checked + .option-content {
+    border-color: var(--primary);
+    background: var(--accent);
+}
+
+.confirmation-option .option-icon {
+    width: 45px;
+    height: 45px;
+    background: var(--cream-dark);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: var(--secondary);
+    transition: var(--transition);
+}
+
+.confirmation-option input:checked + .option-content .option-icon {
+    background: var(--primary);
+    color: var(--white);
+}
+
+.confirmation-option .option-details strong { display: block; color: var(--dark); font-size: 0.95rem; }
+.confirmation-option .option-details span { font-size: 0.8rem; color: var(--text-light); }
 
 .order-summary-card {
     background: var(--white);
@@ -411,6 +484,7 @@ function validateCustomerInfo() {
     const lastName = document.getElementById('checkout_last_name').value.trim();
     const email = document.getElementById('checkout_email').value.trim();
     const phone = document.getElementById('checkout_phone').value.trim();
+    const confirmationMethod = document.querySelector('input[name="confirmation_method"]:checked')?.value || 'sms';
     
     if (!firstName || !lastName || !email || !phone) {
         showPayPalError('Please fill in all required contact information fields before proceeding with payment.');
@@ -429,7 +503,8 @@ function validateCustomerInfo() {
         last_name: lastName,
         email: email,
         phone: phone,
-        instructions: document.getElementById('checkout_instructions').value.trim()
+        instructions: document.getElementById('checkout_instructions').value.trim(),
+        confirmation_method: confirmationMethod
     };
 }
 
