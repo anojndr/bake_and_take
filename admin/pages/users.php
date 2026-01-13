@@ -178,17 +178,7 @@ if ($pdo) {
                     </div>
                 </div>
                 
-                <?php if ($user['address']): ?>
-                <div class="mt-3 p-3 rounded" style="background: var(--admin-dark);">
-                    <div style="color: var(--admin-text-muted); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.5rem;">Address</div>
-                    <div style="font-size: 0.9rem;">
-                        <?php echo sanitize($user['address']); ?>
-                        <?php if ($user['city'] || $user['state'] || $user['zip']): ?>
-                        <br><?php echo sanitize(trim($user['city'] . ', ' . $user['state'] . ' ' . $user['zip'], ', ')); ?>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                <?php endif; ?>
+
             </div>
             <div class="modal-footer" style="border-color: var(--admin-dark-tertiary);">
                 <button type="button" class="btn-admin-secondary" data-bs-dismiss="modal">Close</button>

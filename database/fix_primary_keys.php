@@ -1,0 +1,135 @@
+<?php
+/**
+ * Fix Database Primary Keys
+ * Renames table_name_id to id for consistency
+ */
+
+require_once __DIR__ . '/../includes/config.php';
+
+// Check if run from browser or CLI
+$isCli = (php_sapi_name() === 'cli');
+$eol = $isCli ? "\n" : "<br>";
+
+if ($isCli) {
+    echo "Starting Primary Key Fixer..." . $eol;
+} else {
+    echo "<html><body style='font-family: monospace; background: #1a1a1a; color: #0f0; padding: 20px;'>";
+    echo "<h3>Starting Primary Key Fixer...</h3>";
+}
+
+if (!$pdo) {
+    die("Error: Could not connect to database.$eol");
+}
+
+try {
+    // Disable FK checks to allow modifications
+    $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
+    echo "Foreign key checks disabled.$eol";
+
+    // 1. Rename Primary Keys to 'id'
+    $tables = [
+        'users', 'categories', 'products', 'orders', 
+        'order_items', 'cart', 'cart_items', 
+        'paypal_transactions', 'sms_log', 'sms_otp'
+    ];
+
+    foreach ($tables as $table) {
+        // Check if table exists
+        try {
+            $stmt = $pdo->query("SHOW TABLES LIKE '$table'");
+            if ($stmt->rowCount() == 0) continue;
+        } catch (Exception $e) { continue; }
+
+        // Get current PK
+        $stmt = $pdo->query("SHOW KEYS FROM `$table` WHERE Key_name = 'PRIMARY'");
+        $pkRow = $stmt->fetch();
+        $pk = $pkRow['Column_name'] ?? null;
+
+        if (!$pk) {
+            echo "Skipping $table: No primary key found.$eol";
+            continue;
+        }
+
+        if ($pk === 'id') {
+            echo "Table $table: Already uses 'id'.$eol";
+            continue;
+        }
+
+        echo "Table $table: Renaming $pk -> id... ";
+        
+        // Get column details to preserve attributes (Type, Extra like auto_increment)
+        $colStmt = $pdo->query("SHOW COLUMNS FROM `$table` WHERE Field = '$pk'");
+        $colData = $colStmt->fetch();
+        $type = $colData['Type'];
+        $extra = $colData['Extra']; // e.g. auto_increment
+        
+        try {
+            $pdo->exec("ALTER TABLE `$table` CHANGE `$pk` `id` $type $extra");
+            echo "Success!$eol";
+        } catch (Exception $e) {
+            echo "Failed: " . $e->getMessage() . $eol;
+        }
+    }
+
+    echo "$eol--- updating foreign key references ---$eol$eol";
+
+    // 2. Refresh Foreign Keys
+    // We scan for any FKs that are NOT pointing to 'id' column in the referenced table
+    // (excluding cases where the referenced column really shouldn't be 'id', but here all parent PKs are 'id')
+    
+    $stmt = $pdo->prepare("
+        SELECT TABLE_NAME, CONSTRAINT_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
+        FROM information_schema.KEY_COLUMN_USAGE
+        WHERE REFERENCED_TABLE_SCHEMA = DATABASE()
+        AND REFERENCED_TABLE_NAME IS NOT NULL
+        AND REFERENCED_COLUMN_NAME != 'id'
+    ");
+    $stmt->execute();
+    $fks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($fks as $fk) {
+        $table = $fk['TABLE_NAME'];
+        $constraint = $fk['CONSTRAINT_NAME'];
+        $col = $fk['COLUMN_NAME'];
+        $refTable = $fk['REFERENCED_TABLE_NAME'];
+        
+        echo "Fixing FK $constraint ($table.$col -> $refTable)... ";
+
+        // Determine correct ON DELETE rule based on schema knowledge
+        $onDelete = 'RESTRICT'; // Default safe fallback
+        
+        // Rules from schema.sql
+        if ($refTable === 'users' && in_array($table, ['orders', 'sms_log', 'products'])) $onDelete = 'SET NULL';
+        if ($refTable === 'users' && $table === 'cart') $onDelete = 'CASCADE';
+        
+        if ($refTable === 'orders' && in_array($table, ['paypal_transactions', 'sms_log'])) $onDelete = 'SET NULL';
+        if ($refTable === 'orders' && $table === 'order_items') $onDelete = 'CASCADE';
+        
+        if ($refTable === 'products' && $table === 'order_items') $onDelete = 'SET NULL';
+        if ($refTable === 'products' && $table === 'cart_items') $onDelete = 'CASCADE';
+        
+        if ($refTable === 'cart' && $table === 'cart_items') $onDelete = 'CASCADE';
+        if ($refTable === 'categories' && $table === 'products') $onDelete = 'SET NULL';
+
+        try {
+            // Drop old FK
+            $pdo->exec("ALTER TABLE `$table` DROP FOREIGN KEY `$constraint`");
+            
+            // Add new FK pointing to 'id'
+            $pdo->exec("ALTER TABLE `$table` ADD CONSTRAINT `$constraint` 
+                       FOREIGN KEY (`$col`) REFERENCES `$refTable`(`id`) ON DELETE $onDelete");
+            
+            echo "Done (ON DELETE $onDelete)$eol";
+        } catch (Exception $e) {
+            echo "Error: " . $e->getMessage() . $eol;
+        }
+    }
+
+    // Re-enable FK checks
+    $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
+    echo "$eolComplete! All primary keys should now be 'id'.$eol";
+
+} catch (Exception $e) {
+    echo "Critical Error: " . $e->getMessage() . $eol;
+}
+?>
