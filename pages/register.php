@@ -97,7 +97,7 @@
             <div class="form-check mt-4">
                 <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
                 <label class="form-check-label" for="terms">
-                    I agree to the <a href="index.php?page=terms-of-service" class="terms-link">Terms of Service</a> and <a href="index.php?page=privacy-policy" class="terms-link">Privacy Policy</a>
+                    I agree to the <a href="index.php?page=terms-of-service" class="terms-link" target="_blank" rel="noopener noreferrer">Terms of Service</a> and <a href="index.php?page=privacy-policy" class="terms-link" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
                 </label>
             </div>
             

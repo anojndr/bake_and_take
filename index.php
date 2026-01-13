@@ -217,8 +217,8 @@ if (!in_array($page, $allowedPages)) {
                     <p class="copyright">&copy; 2026 Bake & Take. All rights reserved.</p>
                 </div>
                 <div class="col-md-6 text-md-end">
-                    <a href="index.php?page=privacy-policy" class="footer-link me-3">Privacy Policy</a>
-                    <a href="index.php?page=terms-of-service" class="footer-link">Terms of Service</a>
+                    <a href="index.php?page=privacy-policy" class="footer-link me-3" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                    <a href="index.php?page=terms-of-service" class="footer-link" target="_blank" rel="noopener noreferrer">Terms of Service</a>
                 </div>
             </div>
         </div>
