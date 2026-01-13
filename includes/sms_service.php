@@ -44,10 +44,11 @@ function sendSMS($phoneNumber, $message, $orderId = null, $userId = null) {
     // Prepare the API request to SMSGate
     $apiUrl = SMS_GATEWAY_URL . SMS_GATEWAY_SEND_PATH;
     
-    // SMSGate API payload format
+    // SMSGate Cloud API payload format (includes device ID)
     $payload = json_encode([
         'message' => $message,
-        'phoneNumbers' => [$phoneNumber]
+        'phoneNumbers' => [$phoneNumber],
+        'id' => SMS_GATEWAY_DEVICE_ID
     ]);
     
     // Initialize cURL

@@ -10,21 +10,24 @@
  */
 
 // ============================================
-// OUTBOUND SMS SETTINGS (SMSGate)
+// OUTBOUND SMS SETTINGS (SMSGate Cloud)
 // ============================================
 
-// SMSGate API endpoint (your Android device running SMSGate)
-// This should be the IP address of your Android device on the local network
-// Local: http://192.168.100.159:8080 | Public: http://136.158.78.144:8080
-define('SMS_GATEWAY_URL', 'http://192.168.100.159:8080');
+// SMSGate Cloud API endpoint
+// Using cloud server instead of local server for better reliability
+// Cloud: https://api.sms-gate.app | Local (old): http://192.168.100.159:8080
+define('SMS_GATEWAY_URL', 'https://api.sms-gate.app');
 
 // SMSGate API endpoint path for sending messages
-define('SMS_GATEWAY_SEND_PATH', '/message');
+define('SMS_GATEWAY_SEND_PATH', '/3rdparty/v1/message');
 
-// Authentication credentials for SMSGate
-// Configure these in the SMSGate Android app settings
-define('SMS_GATEWAY_USERNAME', 'sms');
-define('SMS_GATEWAY_PASSWORD', 'ih4pzqry');
+// Authentication credentials for SMSGate Cloud
+// These are configured in the SMSGate Android app under Cloud server settings
+define('SMS_GATEWAY_USERNAME', 'DA3ODN');
+define('SMS_GATEWAY_PASSWORD', 'hgrbu5t-dapmxq');
+
+// Device ID for cloud server (required for cloud API)
+define('SMS_GATEWAY_DEVICE_ID', 'FXSuQT_Re95AwJbTI41uZ');
 
 // Alternative: API Key authentication (if using token-based auth)
 define('SMS_GATEWAY_API_KEY', '');
