@@ -110,8 +110,7 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
         'first_name' => sanitize($customerInfo['first_name']),
         'last_name' => sanitize($customerInfo['last_name']),
         'email' => sanitize($customerInfo['email']),
-        'phone' => sanitize($customerInfo['phone']),
-        'instructions' => sanitize($customerInfo['instructions'] ?? '')
+        'phone' => sanitize($customerInfo['phone'])
     ];
     
     $orderId = null;
@@ -124,12 +123,10 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
             // Insert order with PayPal details - status is 'pending' until confirmed
             $stmt = $pdo->prepare("
                 INSERT INTO orders (
-                    user_id, order_number, first_name, last_name, email, phone,
-                    delivery_method, address, city, state, zip, instructions,
-                    subtotal, delivery_fee, tax, total, status, confirmation_method, confirmation_token, payment_status,
-                    paypal_order_id, paypal_payer_id, paypal_capture_id, paypal_payment_status,
+                    user_id, order_number,
+                    subtotal, tax, total, status, confirmation_method, confirmation_token, payment_status,
                     created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, 'pickup', '', '', '', '', ?, ?, 0, ?, ?, 'pending', ?, ?, 'completed', ?, ?, ?, ?, NOW())
+                ) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, 'completed', NOW())
             ");
             
             $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
@@ -137,28 +134,19 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
             $stmt->execute([
                 $userId,
                 $orderNumber,
-                $orderData['first_name'],
-                $orderData['last_name'],
-                $orderData['email'],
-                $orderData['phone'],
-                $orderData['instructions'],
                 $subtotal,
                 $tax,
                 $total,
                 $confirmationMethod,
-                $confirmationToken,
-                $paypalOrderId,
-                $paypalPayerId,
-                $paypalCaptureId,
-                $paypalPaymentStatus
+                $confirmationToken
             ]);
             
             $orderId = $pdo->lastInsertId();
             
             // Insert order items
             $itemStmt = $pdo->prepare("
-                INSERT INTO order_items (order_id, product_id, product_name, quantity, price, total)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO order_items (order_id, product_id, quantity, price)
+                VALUES (?, ?, ?, ?)
             ");
             
             foreach ($cartData as $item) {
@@ -166,10 +154,8 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
                 $itemStmt->execute([
                     $orderId,
                     isset($item['id']) ? intval($item['id']) : null,
-                    $item['name'],
                     intval($item['quantity']),
-                    floatval($item['price']),
-                    $itemTotal
+                    floatval($item['price'])
                 ]);
                 
                 // Decrease stock for the product

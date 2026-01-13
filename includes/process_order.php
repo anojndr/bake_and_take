@@ -28,12 +28,6 @@ $orderData = [
     'last_name' => sanitize($_POST['last_name'] ?? ''),
     'email' => sanitize($_POST['email'] ?? ''),
     'phone' => sanitize($_POST['phone'] ?? ''),
-    'delivery_method' => 'pickup', // Force pickup
-    'address' => '',
-    'city' => '',
-    'state' => '',
-    'zip' => '',
-    'instructions' => sanitize($_POST['instructions'] ?? ''),
     'order_date' => date('Y-m-d H:i:s')
 ];
 
@@ -56,9 +50,8 @@ foreach ($cartData as $item) {
     $subtotal += floatval($item['price']) * intval($item['quantity']);
 }
 
-$deliveryFee = 0.00;
 $tax = $subtotal * 0.08;
-$total = $subtotal + $deliveryFee + $tax;
+$total = $subtotal + $tax;
 
 // Generate unique order number
 $orderNumber = strtoupper(substr(md5(uniqid(rand(), true)), 0, 8));
@@ -83,10 +76,9 @@ if ($pdo) {
         // Insert order with status 'pending' until confirmed
         $stmt = $pdo->prepare("
             INSERT INTO orders (
-                user_id, order_number, first_name, last_name, email, phone,
-                delivery_method, address, city, state, zip, instructions,
-                subtotal, delivery_fee, tax, total, status, confirmation_method, confirmation_token, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, NOW())
+                user_id, order_number,
+                subtotal, tax, total, status, confirmation_method, confirmation_token, created_at
+            ) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, NOW())
         ");
         
         $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
@@ -94,18 +86,7 @@ if ($pdo) {
         $stmt->execute([
             $userId,
             $orderNumber,
-            $orderData['first_name'],
-            $orderData['last_name'],
-            $orderData['email'],
-            $orderData['phone'],
-            $orderData['delivery_method'],
-            $orderData['address'],
-            $orderData['city'],
-            $orderData['state'],
-            $orderData['zip'],
-            $orderData['instructions'],
             $subtotal,
-            $deliveryFee,
             $tax,
             $total,
             $confirmationMethod,
@@ -116,8 +97,8 @@ if ($pdo) {
         
         // Insert order items
         $itemStmt = $pdo->prepare("
-            INSERT INTO order_items (order_id, product_id, product_name, quantity, price, total)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO order_items (order_id, product_id, quantity, price)
+            VALUES (?, ?, ?, ?)
         ");
         
         foreach ($cartData as $item) {
@@ -125,10 +106,8 @@ if ($pdo) {
             $itemStmt->execute([
                 $orderId,
                 isset($item['id']) ? intval($item['id']) : null,
-                $item['name'],
                 intval($item['quantity']),
-                floatval($item['price']),
-                $itemTotal
+                floatval($item['price'])
             ]);
         }
         

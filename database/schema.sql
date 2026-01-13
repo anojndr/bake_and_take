@@ -54,30 +54,14 @@ CREATE TABLE IF NOT EXISTS orders (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
     order_number VARCHAR(20) NOT NULL UNIQUE,
-    first_name VARCHAR(50) NOT NULL,
-    last_name VARCHAR(50) NOT NULL,
-    email VARCHAR(100) NOT NULL,
-    phone VARCHAR(20) NOT NULL,
-    delivery_method ENUM('delivery', 'pickup') DEFAULT 'pickup',
-    address TEXT,
-    city VARCHAR(50),
-    state VARCHAR(50),
-    zip VARCHAR(20),
-    instructions TEXT,
     subtotal DECIMAL(10, 2) NOT NULL,
-    delivery_fee DECIMAL(10, 2) DEFAULT 0,
     tax DECIMAL(10, 2) DEFAULT 0,
     total DECIMAL(10, 2) NOT NULL,
     status ENUM('pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled') DEFAULT 'confirmed',
     payment_status ENUM('pending', 'completed', 'failed', 'refunded') DEFAULT 'pending',
-    paypal_order_id VARCHAR(100),
-    paypal_payer_id VARCHAR(100),
-    paypal_capture_id VARCHAR(100),
-    paypal_payment_status VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-    INDEX idx_paypal_order_id (paypal_order_id)
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- Order items table
@@ -85,10 +69,8 @@ CREATE TABLE IF NOT EXISTS order_items (
     id INT AUTO_INCREMENT PRIMARY KEY,
     order_id INT NOT NULL,
     product_id INT,
-    product_name VARCHAR(200) NOT NULL,
     quantity INT NOT NULL,
     price DECIMAL(10, 2) NOT NULL,
-    total DECIMAL(10, 2) NOT NULL,
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
 );
@@ -110,7 +92,6 @@ CREATE TABLE IF NOT EXISTS cart_items (
     cart_id INT NOT NULL,
     product_id INT NOT NULL,
     quantity INT NOT NULL DEFAULT 1,
-    price DECIMAL(10, 2) NOT NULL,  -- Price at the time of adding to cart
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (cart_id) REFERENCES cart(id) ON DELETE CASCADE,

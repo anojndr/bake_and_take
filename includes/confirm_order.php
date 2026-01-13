@@ -23,11 +23,14 @@ if (!$pdo) {
 
 try {
     // Find the order with this confirmation token
+    // Find the order with this confirmation token
     $stmt = $pdo->prepare("
-        SELECT * FROM orders 
-        WHERE confirmation_token = ? 
-        AND status = 'pending'
-        AND confirmation_method = 'email'
+        SELECT o.*, u.first_name, u.last_name, u.email, u.phone
+        FROM orders o
+        JOIN users u ON o.user_id = u.id
+        WHERE o.confirmation_token = ? 
+        AND o.status = 'pending'
+        AND o.confirmation_method = 'email'
     ");
     $stmt->execute([$token]);
     $order = $stmt->fetch();

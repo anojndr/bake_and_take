@@ -42,8 +42,8 @@ function getCartItems($pdo, $userId) {
     $cartId = getCartId($pdo, $userId);
     
     $stmt = $pdo->prepare("
-        SELECT ci.id, ci.product_id, ci.quantity, ci.price,
-               p.name, p.image, p.slug, p.stock
+        SELECT ci.id, ci.product_id, ci.quantity,
+               p.price, p.name, p.image, p.slug, p.stock
         FROM cart_items ci
         JOIN products p ON ci.product_id = p.id
         WHERE ci.cart_id = ?
@@ -106,8 +106,8 @@ function addToCart($pdo, $userId, $productId, $quantity = 1) {
         }
         
         // Add new item
-        $stmt = $pdo->prepare("INSERT INTO cart_items (cart_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$cartId, $productId, $quantity, $product['price']]);
+        $stmt = $pdo->prepare("INSERT INTO cart_items (cart_id, product_id, quantity) VALUES (?, ?, ?)");
+        $stmt->execute([$cartId, $productId, $quantity]);
     }
     
     return ['success' => true, 'message' => 'Item added to cart'];

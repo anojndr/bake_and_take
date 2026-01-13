@@ -101,12 +101,7 @@ if ($pdo) {
                                     <span><?php echo htmlspecialchars($order['items_summary'] ?? 'Order items'); ?></span>
                                 </div>
                                 
-                                <div class="order-meta">
-                                    <div class="order-delivery">
-                                        <i class="bi bi-<?php echo $order['delivery_method'] === 'delivery' ? 'truck' : 'shop'; ?> me-1"></i>
-                                        <?php echo $order['delivery_method'] === 'delivery' ? 'Home Delivery' : 'Store Pickup'; ?>
-                                    </div>
-                                </div>
+
                             </div>
                             
                             <div class="order-card-footer">
@@ -604,15 +599,7 @@ async function viewOrderDetails(orderId) {
                     ${order.phone}
                 </p>
             </div>
-            <div class="detail-block">
-                <h6><i class="bi bi-${order.delivery_method === 'delivery' ? 'truck' : 'shop'}"></i> ${order.delivery_method === 'delivery' ? 'Delivery Address' : 'Pickup Location'}</h6>
-                <p>
-                    ${order.delivery_method === 'delivery' 
-                        ? `${order.address || ''}<br>${order.city || ''}${order.state ? ', ' + order.state : ''} ${order.zip || ''}`
-                        : 'PUP Sto. Tomas, Batangas'}
-                    ${order.instructions ? `<br><small class="text-muted">Note: ${order.instructions}</small>` : ''}
-                </p>
-            </div>
+
         </div>
         
         <div class="order-items-list">
@@ -625,10 +612,7 @@ async function viewOrderDetails(orderId) {
                 <span>Subtotal</span>
                 <span>₱${parseFloat(order.subtotal).toFixed(2)}</span>
             </div>
-            <div class="totals-row">
-                <span>Delivery Fee</span>
-                <span>${parseFloat(order.delivery_fee) > 0 ? '₱' + parseFloat(order.delivery_fee).toFixed(2) : 'Free'}</span>
-            </div>
+
             <div class="totals-row">
                 <span>Tax</span>
                 <span>₱${parseFloat(order.tax).toFixed(2)}</span>

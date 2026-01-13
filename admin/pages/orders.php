@@ -11,9 +11,11 @@ if ($pdo) {
     try {
         $sql = "
             SELECT o.*, 
-                   CONCAT(o.first_name, ' ', o.last_name) as customer_name,
+                   CONCAT(u.first_name, ' ', u.last_name) as customer_name,
+                   u.email, u.phone,
                    (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) as item_count
             FROM orders o
+            JOIN users u ON o.user_id = u.id
         ";
         
         if ($statusFilter) {
@@ -164,7 +166,12 @@ $statusLabels = [
     $orderItems = [];
     if ($pdo) {
         try {
-            $stmt = $pdo->prepare("SELECT * FROM order_items WHERE order_id = ?");
+            $stmt = $pdo->prepare("
+                SELECT oi.*, COALESCE(p.name, 'Unknown Product') as product_name 
+                FROM order_items oi
+                LEFT JOIN products p ON oi.product_id = p.id
+                WHERE oi.order_id = ?
+            ");
             $stmt->execute([$order['id']]);
             $orderItems = $stmt->fetchAll();
         } catch (PDOException $e) {}
@@ -183,15 +190,12 @@ $statusLabels = [
                 <div class="row g-4">
                     <div class="col-md-6">
                         <h6 style="color: var(--admin-text-muted);">Customer Details</h6>
-                        <p class="mb-1"><strong><?php echo sanitize($order['first_name'] . ' ' . $order['last_name']); ?></strong></p>
+                        <p class="mb-1"><strong><?php echo sanitize($order['customer_name']); ?></strong></p>
                         <p class="mb-1"><?php echo sanitize($order['email']); ?></p>
                         <p class="mb-0"><?php echo sanitize($order['phone']); ?></p>
                     </div>
                     <div class="col-md-6">
-                        <h6 style="color: var(--admin-text-muted);">Pickup Details</h6>
-                        <p class="mb-1">
-                            <strong>Method:</strong> <?php echo ucfirst($order['delivery_method']); ?>
-                        </p>
+                        <h6 style="color: var(--admin-text-muted);">Order Status</h6>
                         <p class="mb-1">
                             <strong>Status:</strong> 
                             <span class="badge bg-<?php 
@@ -215,12 +219,7 @@ $statusLabels = [
                             <?php endif; ?>
                         </p>
                         <?php endif; ?>
-                        <?php if ($order['delivery_method'] === 'delivery' && $order['address']): ?>
-                        <p class="mb-0">
-                            <?php echo sanitize($order['address']); ?><br>
-                            <?php echo sanitize($order['city'] . ', ' . $order['state'] . ' ' . $order['zip']); ?>
-                        </p>
-                        <?php endif; ?>
+
                     </div>
                 </div>
                 
@@ -242,7 +241,7 @@ $statusLabels = [
                             <td><?php echo sanitize($item['product_name']); ?></td>
                             <td class="text-center"><?php echo $item['quantity']; ?></td>
                             <td class="text-end"><?php echo formatPrice($item['price']); ?></td>
-                            <td class="text-end"><?php echo formatPrice($item['total']); ?></td>
+                            <td class="text-end"><?php echo formatPrice($item['price'] * $item['quantity']); ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -251,12 +250,7 @@ $statusLabels = [
                             <td colspan="3" class="text-end">Subtotal:</td>
                             <td class="text-end"><?php echo formatPrice($order['subtotal']); ?></td>
                         </tr>
-                        <?php if ($order['delivery_fee'] > 0): ?>
-                        <tr>
-                            <td colspan="3" class="text-end">Delivery Fee:</td>
-                            <td class="text-end"><?php echo formatPrice($order['delivery_fee']); ?></td>
-                        </tr>
-                        <?php endif; ?>
+
                         <?php if ($order['tax'] > 0): ?>
                         <tr>
                             <td colspan="3" class="text-end">Tax:</td>
@@ -270,12 +264,7 @@ $statusLabels = [
                     </tfoot>
                 </table>
                 
-                <?php if ($order['instructions']): ?>
-                <div class="mt-3 p-3" style="background: var(--admin-dark); border-radius: var(--radius-md);">
-                    <h6 style="color: var(--admin-text-muted);">Special Instructions</h6>
-                    <p class="mb-0"><?php echo nl2br(sanitize($order['instructions'])); ?></p>
-                </div>
-                <?php endif; ?>
+
             </div>
             <div class="modal-footer" style="border-color: var(--admin-dark-tertiary);">
                 <button type="button" class="btn-admin-secondary" data-bs-dismiss="modal">Close</button>
