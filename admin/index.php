@@ -89,7 +89,7 @@ if (!in_array($page, $allowedPages)) {
         </nav>
         
         <div class="sidebar-footer">
-            <a href="../index.php" class="btn btn-outline-light btn-sm w-100">
+            <a href="../index.php" class="btn btn-outline-light btn-sm w-100" target="_blank">
                 <i class="bi bi-house me-2"></i>View Site
             </a>
         </div>
