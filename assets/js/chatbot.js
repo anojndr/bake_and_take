@@ -21,7 +21,6 @@ class BakeAndTakeChatbot {
         this.createChatbotUI();
         this.attachEventListeners();
         this.attachDragListeners();
-        this.restorePosition();
         this.addWelcomeMessage();
     }
 
@@ -212,44 +211,6 @@ class BakeAndTakeChatbot {
         this.isDragging = false;
         this.toggleBtn.classList.remove('dragging');
         this.container.style.transition = '';
-
-        // Save position to localStorage
-        if (this.hasDragged) {
-            this.savePosition();
-        }
-    }
-
-    savePosition() {
-        const rect = this.container.getBoundingClientRect();
-        const position = {
-            left: rect.left,
-            top: rect.top
-        };
-        localStorage.setItem('chatbotPosition', JSON.stringify(position));
-    }
-
-    restorePosition() {
-        const saved = localStorage.getItem('chatbotPosition');
-        if (saved) {
-            try {
-                const position = JSON.parse(saved);
-
-                // Validate position is within viewport
-                const btnRect = this.toggleBtn.getBoundingClientRect();
-                const maxX = window.innerWidth - btnRect.width - 10;
-                const maxY = window.innerHeight - btnRect.height - 10;
-
-                let left = Math.max(10, Math.min(position.left, maxX));
-                let top = Math.max(10, Math.min(position.top, maxY));
-
-                this.container.style.right = 'auto';
-                this.container.style.bottom = 'auto';
-                this.container.style.left = left + 'px';
-                this.container.style.top = top + 'px';
-            } catch (e) {
-                console.error('Error restoring chatbot position:', e);
-            }
-        }
     }
 
     toggle() {
