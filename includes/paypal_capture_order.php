@@ -240,8 +240,8 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
         }
         
         if ($confirmationMethod === 'email') {
-            // Email confirmation - send confirmation link
-            $confirmationUrl = SITE_URL . '/includes/confirm_order.php?token=' . $confirmationToken;
+            // Email confirmation - send confirmation link (use production domain)
+            $confirmationUrl = 'https://bakeandtake.xyz/includes/confirm_order.php?token=' . $confirmationToken;
             
             $orderSubject = "Bake & Take - Please Confirm Your Order #{$orderNumber}";
             $orderBody = "

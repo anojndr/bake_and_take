@@ -99,13 +99,14 @@ try {
     ";
     sendMail(SMTP_USER, $adminSubject, $adminBody);
     
-    // Redirect to success page with message
-    $_SESSION['order_confirmed'] = [
+    // Store order info in session for the confirmation page
+    $_SESSION['email_order_confirmed'] = [
         'order_number' => $order['order_number'],
         'total' => $order['total']
     ];
     
-    redirect('../index.php?page=order-confirmed', 'Your order has been confirmed successfully!', 'success');
+    // Redirect to email confirmation success page
+    redirect('../index.php?page=email-confirmed', 'Your order has been confirmed successfully!', 'success');
     
 } catch (PDOException $e) {
     error_log("Order confirmation error: " . $e->getMessage());
