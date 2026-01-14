@@ -272,7 +272,12 @@ function maskPhone($phone) {
                             
                             <div class="form-field">
                                 <label>Current Password <span class="required">*</span></label>
-                                <input type="password" name="current_password" class="form-input" placeholder="Enter your password" required>
+                                <div class="password-input-wrapper">
+                                    <input type="password" name="current_password" id="email_change_password" class="form-input has-toggle" placeholder="Enter your password" required>
+                                    <button type="button" class="password-toggle" onclick="togglePassword('email_change_password')" aria-label="Show password">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
                             </div>
                             
                             <div class="form-field">
@@ -423,7 +428,12 @@ function maskPhone($phone) {
                             
                             <div class="form-field">
                                 <label>Current Password <span class="required">*</span></label>
-                                <input type="password" name="current_password" class="form-input" placeholder="Enter your password" required>
+                                <div class="password-input-wrapper">
+                                    <input type="password" name="current_password" id="phone_change_password" class="form-input has-toggle" placeholder="Enter your password" required>
+                                    <button type="button" class="password-toggle" onclick="togglePassword('phone_change_password')" aria-label="Show password">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
                             </div>
                             
                             <div class="form-field">
@@ -458,17 +468,32 @@ function maskPhone($phone) {
                             
                             <div class="form-field">
                                 <label>Current Password <span class="required">*</span></label>
-                                <input type="password" name="current_password" class="form-input" placeholder="Enter current password" required>
+                                <div class="password-input-wrapper">
+                                    <input type="password" name="current_password" id="current_password" class="form-input has-toggle" placeholder="Enter current password" required>
+                                    <button type="button" class="password-toggle" onclick="togglePassword('current_password')" aria-label="Show password">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
                             </div>
                             
                             <div class="form-field">
                                 <label>New Password <span class="required">*</span></label>
-                                <input type="password" name="new_password" class="form-input" placeholder="Min 8 characters" required minlength="8">
+                                <div class="password-input-wrapper">
+                                    <input type="password" name="new_password" id="new_password" class="form-input has-toggle" placeholder="Min 8 characters" required minlength="8">
+                                    <button type="button" class="password-toggle" onclick="togglePassword('new_password')" aria-label="Show password">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
                             </div>
                             
                             <div class="form-field">
                                 <label>Confirm New Password <span class="required">*</span></label>
-                                <input type="password" name="confirm_password" class="form-input" placeholder="Repeat new password" required>
+                                <div class="password-input-wrapper">
+                                    <input type="password" name="confirm_password" id="profile_confirm_password" class="form-input has-toggle" placeholder="Repeat new password" required>
+                                    <button type="button" class="password-toggle" onclick="togglePassword('profile_confirm_password')" aria-label="Show password">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
                             </div>
                             
                             <div class="form-actions">

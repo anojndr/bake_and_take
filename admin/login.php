@@ -182,6 +182,24 @@ if (isset($_GET['error'])) {
         .back-link i {
             margin-right: 0.5rem;
         }
+        
+        /* Password Toggle */
+        .password-toggle-btn {
+            background: var(--admin-dark-secondary);
+            border-color: var(--admin-dark-tertiary);
+            color: var(--admin-text-muted);
+            transition: all 0.2s ease;
+        }
+        
+        .password-toggle-btn:hover {
+            background: var(--admin-dark-tertiary);
+            border-color: var(--admin-primary);
+            color: var(--admin-primary);
+        }
+        
+        .password-toggle-btn:focus {
+            box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.25);
+        }
     </style>
 </head>
 <body>
@@ -215,7 +233,10 @@ if (isset($_GET['error'])) {
                     <label class="form-label">Password</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                        <input type="password" name="password" class="form-control" placeholder="Enter your password" required>
+                        <input type="password" name="password" id="admin_password" class="form-control" placeholder="Enter your password" required>
+                        <button type="button" class="btn btn-outline-secondary password-toggle-btn" onclick="togglePassword('admin_password')" aria-label="Show password">
+                            <i class="bi bi-eye"></i>
+                        </button>
                     </div>
                 </div>
                 
@@ -229,5 +250,25 @@ if (isset($_GET['error'])) {
             <i class="bi bi-arrow-left"></i>Back to Main Site
         </a>
     </div>
+    
+    <script>
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const button = input.parentElement.querySelector('.password-toggle-btn');
+            const icon = button.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+                button.setAttribute('aria-label', 'Hide password');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+                button.setAttribute('aria-label', 'Show password');
+            }
+        }
+    </script>
 </body>
 </html>

@@ -34,7 +34,10 @@ $token = $_GET['token'] ?? '';
                     <label class="form-label">New Password</label>
                     <div class="input-icon-wrapper">
                         <i class="bi bi-lock input-icon"></i>
-                        <input type="password" class="form-control form-control-custom with-icon" name="password" placeholder="Min 8 characters" required minlength="8">
+                        <input type="password" class="form-control form-control-custom with-icon has-toggle" name="password" id="reset_password" placeholder="Min 8 characters" required minlength="8">
+                        <button type="button" class="password-toggle" onclick="togglePassword('reset_password')" aria-label="Show password">
+                            <i class="bi bi-eye"></i>
+                        </button>
                     </div>
                 </div>
 
@@ -42,7 +45,10 @@ $token = $_GET['token'] ?? '';
                     <label class="form-label">Confirm New Password</label>
                     <div class="input-icon-wrapper">
                         <i class="bi bi-lock-fill input-icon"></i>
-                        <input type="password" class="form-control form-control-custom with-icon" name="confirm_password" placeholder="Repeat new password" required minlength="8">
+                        <input type="password" class="form-control form-control-custom with-icon has-toggle" name="confirm_password" id="reset_confirm_password" placeholder="Repeat new password" required minlength="8">
+                        <button type="button" class="password-toggle" onclick="togglePassword('reset_confirm_password')" aria-label="Show password">
+                            <i class="bi bi-eye"></i>
+                        </button>
                     </div>
                 </div>
 

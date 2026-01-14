@@ -1757,3 +1757,53 @@ img {
         font-size: 0.9rem;
     }
 }
+
+/* =====================================================
+   PASSWORD TOGGLE
+   ===================================================== */
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px 8px;
+    font-size: 1.1rem;
+    transition: var(--transition);
+    z-index: 5;
+}
+
+.password-toggle:hover {
+    color: var(--primary);
+}
+
+.password-toggle:focus {
+    outline: none;
+    color: var(--primary);
+}
+
+.input-icon-wrapper .form-control.has-toggle {
+    padding-right: 45px;
+}
+
+/* Password input wrapper for profile page */
+.password-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input-wrapper .form-input {
+    padding-right: 45px;
+    width: 100%;
+}
+
+.password-input-wrapper .password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+}

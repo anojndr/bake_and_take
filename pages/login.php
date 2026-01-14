@@ -29,7 +29,10 @@
                 <label class="form-label">Password</label>
                 <div class="input-icon-wrapper">
                     <i class="bi bi-lock input-icon"></i>
-                    <input type="password" class="form-control form-control-custom with-icon" name="password" placeholder="••••••••" required>
+                    <input type="password" class="form-control form-control-custom with-icon has-toggle" name="password" id="password" placeholder="••••••••" required>
+                    <button type="button" class="password-toggle" onclick="togglePassword('password')" aria-label="Show password">
+                        <i class="bi bi-eye"></i>
+                    </button>
                 </div>
             </div>
             

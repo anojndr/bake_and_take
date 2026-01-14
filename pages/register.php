@@ -82,7 +82,10 @@
                 <label class="form-label">Password</label>
                 <div class="input-icon-wrapper">
                     <i class="bi bi-lock input-icon"></i>
-                    <input type="password" class="form-control form-control-custom with-icon" name="password" placeholder="Min 8 characters" required minlength="8">
+                    <input type="password" class="form-control form-control-custom with-icon has-toggle" name="password" id="reg_password" placeholder="Min 8 characters" required minlength="8">
+                    <button type="button" class="password-toggle" onclick="togglePassword('reg_password')" aria-label="Show password">
+                        <i class="bi bi-eye"></i>
+                    </button>
                 </div>
             </div>
             
@@ -90,7 +93,10 @@
                 <label class="form-label">Confirm Password</label>
                 <div class="input-icon-wrapper">
                     <i class="bi bi-lock-fill input-icon"></i>
-                    <input type="password" class="form-control form-control-custom with-icon" name="confirm_password" placeholder="Repeat password" required>
+                    <input type="password" class="form-control form-control-custom with-icon has-toggle" name="confirm_password" id="reg_confirm_password" placeholder="Repeat password" required>
+                    <button type="button" class="password-toggle" onclick="togglePassword('reg_confirm_password')" aria-label="Show password">
+                        <i class="bi bi-eye"></i>
+                    </button>
                 </div>
             </div>
             
