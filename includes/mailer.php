@@ -29,6 +29,10 @@ function sendMail($to, $subject, $body, $isHtml = true) {
         $mail->Password   = SMTP_PASS;
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = SMTP_PORT;
+        
+        // Performance: Set reasonable timeouts (in seconds)
+        $mail->Timeout    = 10;  // Connection timeout (default was 300)
+        $mail->SMTPDebug  = SMTP::DEBUG_OFF;  // Disable debug output
 
         // Recipients
         $mail->setFrom(SMTP_USER, SMTP_FROM_NAME);
