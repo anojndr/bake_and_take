@@ -7,9 +7,10 @@ error_reporting(E_ALL);
 ob_start();
 
 // Enable CORS to allow other websites to access this API
-header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Origin: https://bakeandtake.xyz");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Credentials: true");
 header("Content-Type: application/json; charset=UTF-8");
 
 // Handle preflight OPTIONS request

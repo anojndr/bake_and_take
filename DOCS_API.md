@@ -3,8 +3,10 @@
 This API allows external applications to authenticate users against the Bake & Take user database. This enables "Login with Bake & Take" functionality across different platforms.
 
 ## Base URL
-Assuming the site is hosted at `https://bakeandtake.com`:
-`https://bakeandtake.com/api`
+`https://bakeandtake.xyz/api`
+
+## CORS Policy
+This API only accepts requests from `https://bakeandtake.xyz`. Requests from other origins will be blocked by CORS policy.
 
 ## Authentication Endpoint
 
@@ -86,11 +88,12 @@ The request must contain a JSON object with the following fields:
 ```javascript
 const loginUser = async (email, password) => {
     try {
-        const response = await fetch('http://localhost/bake_and_take/api/login.php', {
+        const response = await fetch('https://bakeandtake.xyz/api/login.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({ email, password })
         });
 
@@ -112,7 +115,7 @@ loginUser('customer@example.com', 'mypassword');
 
 ### cURL
 ```bash
-curl -X POST http://localhost/bake_and_take/api/login.php \
+curl -X POST https://bakeandtake.xyz/api/login.php \
 -H "Content-Type: application/json" \
 -d '{"email":"customer@example.com", "password":"mypassword"}'
 ```
