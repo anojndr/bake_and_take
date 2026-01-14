@@ -241,11 +241,12 @@ The 5 team members who developed this project are:
 - If asked about a product not in our menu, let them know we don't carry it but suggest similar items we do have
 EOT;
 
-// Ollama API configuration
-$ollamaUrl = 'http://localhost:11434/v1/chat/completions';
+// Ollama API configuration - using native endpoint for think control
+$ollamaUrl = 'http://localhost:11434/api/chat';
 $model = 'qwen3:0.6b';
 
 // Prepare the request to Ollama
+// Setting 'think' to false disables reasoning trace for faster responses
 $requestData = [
     'model' => $model,
     'messages' => [
@@ -258,7 +259,11 @@ $requestData = [
             'content' => $userMessage
         ]
     ],
-    'temperature' => 0.7
+    'think' => false,
+    'stream' => false,
+    'options' => [
+        'temperature' => 0.7
+    ]
 ];
 
 // Initialize cURL
@@ -309,10 +314,11 @@ if ($httpCode !== 200) {
     exit;
 }
 
-// Parse the response
+// Parse the response (native Ollama API format)
 $responseData = json_decode($response, true);
 
-if (!isset($responseData['choices'][0]['message']['content'])) {
+// Native Ollama API returns message.content (not choices[0].message.content)
+if (!isset($responseData['message']['content'])) {
     http_response_code(500);
     echo json_encode([
         'success' => false,
@@ -323,7 +329,7 @@ if (!isset($responseData['choices'][0]['message']['content'])) {
     exit;
 }
 
-$assistantMessage = $responseData['choices'][0]['message']['content'];
+$assistantMessage = $responseData['message']['content'];
 
 // Clean up the response - remove thinking tags if present (qwen3 sometimes includes these)
 $assistantMessage = preg_replace('/<think>.*?<\/think>/s', '', $assistantMessage);
