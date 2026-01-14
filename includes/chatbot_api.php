@@ -77,7 +77,9 @@ function buildProductsInfo() {
             foreach ($products as $product) {
                 $price = formatPrice($product['price']);
                 $featured = !empty($product['featured']) ? ' [BESTSELLER]' : '';
-                $productsInfo .= "- **{$product['name']}**{$featured}: {$product['description']} - {$price}\n";
+                $stock = isset($product['stock']) ? (int)$product['stock'] : 0;
+                $stockStatus = $stock > 5 ? "({$stock} in stock)" : ($stock > 0 ? "(Only {$stock} left!)" : "(OUT OF STOCK)");
+                $productsInfo .= "- **{$product['name']}**{$featured}: {$product['description']} - {$price} {$stockStatus}\n";
             }
         }
     } catch (Exception $e) {
@@ -86,7 +88,9 @@ function buildProductsInfo() {
             foreach ($PRODUCTS as $product) {
                 $price = '₱' . number_format($product['price'], 2);
                 $featured = !empty($product['featured']) ? ' [BESTSELLER]' : '';
-                $productsInfo .= "- **{$product['name']}**{$featured}: {$product['description']} - {$price}\n";
+                $stock = isset($product['stock']) ? (int)$product['stock'] : 0;
+                $stockStatus = $stock > 5 ? "({$stock} in stock)" : ($stock > 0 ? "(Only {$stock} left!)" : "(OUT OF STOCK)");
+                $productsInfo .= "- **{$product['name']}**{$featured}: {$product['description']} - {$price} {$stockStatus}\n";
             }
         }
     }
@@ -110,7 +114,9 @@ function buildFeaturedProductsInfo() {
         $featuredInfo = "";
         foreach ($featuredProducts as $product) {
             $price = formatPrice($product['price']);
-            $featuredInfo .= "- **{$product['name']}** - {$product['description']} ({$price})\n";
+            $stock = isset($product['stock']) ? (int)$product['stock'] : 0;
+            $stockStatus = $stock > 5 ? "({$stock} in stock)" : ($stock > 0 ? "(Only {$stock} left!)" : "(OUT OF STOCK)");
+            $featuredInfo .= "- **{$product['name']}** - {$product['description']} ({$price}) {$stockStatus}\n";
         }
         
         return $featuredInfo;
@@ -121,7 +127,9 @@ function buildFeaturedProductsInfo() {
             foreach ($PRODUCTS as $product) {
                 if (!empty($product['featured'])) {
                     $price = '₱' . number_format($product['price'], 2);
-                    $featuredInfo .= "- **{$product['name']}** - {$product['description']} ({$price})\n";
+                    $stock = isset($product['stock']) ? (int)$product['stock'] : 0;
+                    $stockStatus = $stock > 5 ? "({$stock} in stock)" : ($stock > 0 ? "(Only {$stock} left!)" : "(OUT OF STOCK)");
+                    $featuredInfo .= "- **{$product['name']}** - {$product['description']} ({$price}) {$stockStatus}\n";
                 }
             }
             return $featuredInfo ?: "All our products are special!";
@@ -238,6 +246,8 @@ The 5 team members who developed this project are:
 - Use emojis sparingly to be welcoming 🍞🥐🎂
 - Keep responses concise but informative
 - When asked about products, provide accurate prices from the database
+- Always inform customers about stock availability when discussing products. If an item is out of stock, let them know and suggest alternatives
+- For low stock items, create urgency by mentioning limited availability
 - If asked about a product not in our menu, let them know we don't carry it but suggest similar items we do have
 EOT;
 
