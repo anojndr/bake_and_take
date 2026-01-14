@@ -82,7 +82,7 @@ if ($pdo) {
             INSERT INTO orders (
                 user_id, first_name, last_name, email, phone, order_number,
                 subtotal, tax, total, status, confirmation_method, confirmation_token, created_at
-            ) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, NOW())
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, NOW())
         ");
         
         $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;

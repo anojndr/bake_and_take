@@ -127,7 +127,7 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
                     user_id, first_name, last_name, email, phone, order_number,
                     subtotal, tax, total, status, confirmation_method, confirmation_token, payment_status,
                     created_at
-                ) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, 'completed', NOW())
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, 'completed', NOW())
             ");
             
             $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
