@@ -56,6 +56,8 @@ $editMode = isset($_GET['edit']) && $_GET['edit'] === 'profile';
 $editEmailMode = isset($_GET['edit']) && $_GET['edit'] === 'email';
 $editPhoneMode = isset($_GET['edit']) && $_GET['edit'] === 'phone';
 $editPasswordMode = isset($_GET['edit']) && $_GET['edit'] === 'password';
+$verifyPhoneMode = isset($_GET['action']) && $_GET['action'] === 'verify_phone';
+$verifyEmailMode = isset($_GET['action']) && $_GET['action'] === 'verify_email';
 
 $flash = getFlashMessage();
 
@@ -477,6 +479,145 @@ function maskPhone($phone) {
                     </div>
                 </div>
                 
+                <?php elseif ($verifyPhoneMode): ?>
+                <!-- ============ VERIFY PHONE VIEW ============ -->
+                <div class="content-card">
+                    <div class="content-card-header">
+                        <h2>Verify Phone Number</h2>
+                        <a href="index.php?page=profile" class="back-link"><i class="bi bi-arrow-left"></i> Back to Profile</a>
+                    </div>
+                    <div class="content-card-body">
+                        <?php 
+                        $phoneVerifyStep = $_SESSION['phone_verify_step'] ?? 'send_otp';
+                        ?>
+                        
+                        <?php if ($phoneVerifyStep === 'send_otp'): ?>
+                        <!-- Step 1: Send OTP -->
+                        <div class="verification-info-box">
+                            <i class="bi bi-phone-vibrate"></i>
+                            <div>
+                                <strong>Verify Your Phone Number</strong>
+                                <p>We'll send a verification code to: <strong><?php echo htmlspecialchars($user['phone']); ?></strong></p>
+                            </div>
+                        </div>
+                        
+                        <form action="includes/process_profile.php" method="POST" class="verify-phone-form">
+                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                            <input type="hidden" name="action" value="send_phone_verification_otp">
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="btn-save-changes">
+                                    <i class="bi bi-send"></i> SEND VERIFICATION CODE
+                                </button>
+                                <a href="index.php?page=profile" class="btn-cancel">Cancel</a>
+                            </div>
+                        </form>
+                        
+                        <?php elseif ($phoneVerifyStep === 'verify_otp'): ?>
+                        <!-- Step 2: Enter OTP -->
+                        <div class="verification-alert success">
+                            <i class="bi bi-check-circle"></i>
+                            <div>
+                                <strong>Code Sent!</strong>
+                                <p>We sent a 6-digit verification code to: <strong><?php echo htmlspecialchars($user['phone']); ?></strong></p>
+                            </div>
+                        </div>
+                        
+                        <form action="includes/process_profile.php" method="POST" class="otp-form">
+                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                            <input type="hidden" name="action" value="verify_phone_otp">
+                            <div class="form-field">
+                                <label>Enter Verification Code</label>
+                                <input type="text" name="otp_code" class="form-input otp-input" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]{6}" required autofocus>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-save-changes">VERIFY PHONE</button>
+                            </div>
+                        </form>
+                        
+                        <div class="otp-actions">
+                            <form action="includes/process_profile.php" method="POST" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                                <input type="hidden" name="action" value="resend_phone_verification_otp">
+                                <button type="submit" class="btn-text-link"><i class="bi bi-arrow-repeat"></i> Resend Code</button>
+                            </form>
+                            
+                            <form action="includes/process_profile.php" method="POST" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                                <input type="hidden" name="action" value="cancel_phone_verification">
+                                <button type="submit" class="btn-text-link text-danger"><i class="bi bi-x-circle"></i> Cancel</button>
+                            </form>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                
+                <?php elseif ($verifyEmailMode): ?>
+                <!-- ============ VERIFY EMAIL VIEW ============ -->
+                <div class="content-card">
+                    <div class="content-card-header">
+                        <h2>Verify Email Address</h2>
+                        <a href="index.php?page=profile" class="back-link"><i class="bi bi-arrow-left"></i> Back to Profile</a>
+                    </div>
+                    <div class="content-card-body">
+                        <?php 
+                        $emailVerifyStep = $_SESSION['email_verify_step'] ?? 'send_link';
+                        ?>
+                        
+                        <?php if ($emailVerifyStep === 'send_link'): ?>
+                        <!-- Step 1: Send Verification Link -->
+                        <div class="verification-info-box email">
+                            <i class="bi bi-envelope-check"></i>
+                            <div>
+                                <strong>Verify Your Email Address</strong>
+                                <p>We'll send a verification link to: <strong><?php echo htmlspecialchars($user['email']); ?></strong></p>
+                            </div>
+                        </div>
+                        
+                        <form action="includes/process_profile.php" method="POST" class="verify-phone-form">
+                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                            <input type="hidden" name="action" value="send_email_verification_link">
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="btn-save-changes">
+                                    <i class="bi bi-send"></i> SEND VERIFICATION LINK
+                                </button>
+                                <a href="index.php?page=profile" class="btn-cancel">Cancel</a>
+                            </div>
+                        </form>
+                        
+                        <?php elseif ($emailVerifyStep === 'check_inbox'): ?>
+                        <!-- Step 2: Check Inbox -->
+                        <div class="verification-alert success">
+                            <i class="bi bi-envelope-open"></i>
+                            <div>
+                                <strong>Verification Link Sent!</strong>
+                                <p>We sent a verification link to: <strong><?php echo htmlspecialchars($user['email']); ?></strong></p>
+                                <small>Please check your inbox and click the link to verify your email.</small>
+                            </div>
+                        </div>
+                        
+                        <div class="email-verify-instructions">
+                            <p><i class="bi bi-info-circle"></i> Didn't receive the email? Check your spam folder or click below to resend.</p>
+                        </div>
+                        
+                        <div class="otp-actions">
+                            <form action="includes/process_profile.php" method="POST" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                                <input type="hidden" name="action" value="resend_email_verification_link">
+                                <button type="submit" class="btn-text-link"><i class="bi bi-arrow-repeat"></i> Resend Link</button>
+                            </form>
+                            
+                            <form action="includes/process_profile.php" method="POST" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                                <input type="hidden" name="action" value="cancel_email_verification">
+                                <button type="submit" class="btn-text-link text-danger"><i class="bi bi-x-circle"></i> Cancel</button>
+                            </form>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                
                 <?php else: ?>
                 <!-- ============ DASHBOARD VIEW ============ -->
                 <h1 class="page-title">Manage My Account</h1>
@@ -512,6 +653,11 @@ function maskPhone($phone) {
                                         <?php endif; ?>
                                     </p>
                                     <p class="address-details"><?php echo htmlspecialchars($user['email']); ?></p>
+                                    <?php if (!$user['email_verified']): ?>
+                                    <a href="index.php?page=profile&action=verify_email" class="verify-now-btn">
+                                        <i class="bi bi-shield-check"></i> Verify Now
+                                    </a>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="address-column">
                                     <h4>Phone Status</h4>
@@ -523,6 +669,11 @@ function maskPhone($phone) {
                                         <?php endif; ?>
                                     </p>
                                     <p class="address-details"><?php echo htmlspecialchars($user['phone'] ?? 'Not set'); ?></p>
+                                    <?php if (!$user['phone_verified'] && $user['phone']): ?>
+                                    <a href="index.php?page=profile&action=verify_phone" class="verify-now-btn">
+                                        <i class="bi bi-shield-check"></i> Verify Now
+                                    </a>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -931,6 +1082,115 @@ function maskPhone($phone) {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
+}
+
+/* Verify Now Button */
+.verify-now-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    transition: var(--transition);
+    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25);
+}
+
+.verify-now-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35);
+}
+
+.verify-now-btn i {
+    font-size: 0.9rem;
+}
+
+/* Verification Info Box */
+.verification-info-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 1px solid #bbf7d0;
+    border-radius: var(--radius-md);
+    margin-bottom: 1.5rem;
+}
+
+.verification-info-box > i {
+    font-size: 2rem;
+    color: #16a34a;
+    flex-shrink: 0;
+}
+
+.verification-info-box strong {
+    display: block;
+    color: #15803d;
+    margin-bottom: 0.35rem;
+    font-size: 1.05rem;
+}
+
+.verification-info-box p {
+    color: #166534;
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+/* OTP Actions */
+.otp-actions {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--cream-dark);
+}
+
+.verify-phone-form .form-actions {
+    margin-top: 1rem;
+}
+
+/* Email Verification Styles */
+.verification-info-box.email {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #bfdbfe;
+}
+
+.verification-info-box.email > i {
+    color: #2563eb;
+}
+
+.verification-info-box.email strong {
+    color: #1d4ed8;
+}
+
+.verification-info-box.email p {
+    color: #1e40af;
+}
+
+.email-verify-instructions {
+    margin-top: 1.5rem;
+    padding: 1rem 1.25rem;
+    background: #f8fafc;
+    border-radius: var(--radius-md);
+    border-left: 3px solid #2563eb;
+}
+
+.email-verify-instructions p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.email-verify-instructions i {
+    color: #2563eb;
 }
 
 /* Recent Orders Panel */

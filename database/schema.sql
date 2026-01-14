@@ -35,6 +35,10 @@ CREATE TABLE IF NOT EXISTS users (
     phone_change_step VARCHAR(20) NULL,
     phone_recovery_token VARCHAR(255) NULL,
 
+    -- Email verification for existing users
+    email_verify_token VARCHAR(255) NULL,
+    email_verify_expires TIMESTAMP NULL,
+
     -- Password reset (store only a hash of the token)
     password_reset_token_hash CHAR(64) NULL,
     password_reset_expires_at TIMESTAMP NULL,

@@ -83,6 +83,36 @@ try {
         case 'change_password':
             handlePasswordChange($pdo, $userId);
             break;
+        
+        // Phone verification for existing users
+        case 'send_phone_verification_otp':
+            handleSendPhoneVerificationOtp($pdo, $userId);
+            break;
+            
+        case 'verify_phone_otp':
+            handleVerifyPhoneOtp($pdo, $userId);
+            break;
+            
+        case 'resend_phone_verification_otp':
+            handleResendPhoneVerificationOtp($pdo, $userId);
+            break;
+            
+        case 'cancel_phone_verification':
+            handleCancelPhoneVerification($pdo, $userId);
+            break;
+        
+        // Email verification for existing users
+        case 'send_email_verification_link':
+            handleSendEmailVerificationLink($pdo, $userId);
+            break;
+            
+        case 'resend_email_verification_link':
+            handleResendEmailVerificationLink($pdo, $userId);
+            break;
+            
+        case 'cancel_email_verification':
+            handleCancelEmailVerification($pdo, $userId);
+            break;
             
         default:
             redirect('../index.php?page=profile', 'Invalid action.', 'error');
@@ -969,6 +999,268 @@ function getPhoneRecoveryEmailTemplate($firstName, $newPhone, $recoveryUrl) {
                 
                 <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">
                     This is an automated email from ' . SITE_NAME . '.<br>
+                    &copy; ' . date('Y') . ' ' . SITE_NAME . '. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>';
+}
+
+/**
+ * Handle sending OTP for phone verification (verifying existing phone)
+ */
+function handleSendPhoneVerificationOtp($pdo, $userId) {
+    // Get user
+    $stmt = $pdo->prepare("SELECT phone, phone_verified FROM users WHERE id = ?");
+    $stmt->execute([$userId]);
+    $user = $stmt->fetch();
+    
+    if (empty($user['phone'])) {
+        redirect('../index.php?page=profile', 'No phone number found. Please add a phone number first.', 'error');
+    }
+    
+    if ($user['phone_verified']) {
+        redirect('../index.php?page=profile', 'Your phone number is already verified.', 'info');
+    }
+    
+    // Send OTP to the user's phone
+    $otpResult = sendOTP($user['phone'], 'phone_verify', $userId);
+    
+    if ($otpResult['success']) {
+        // Set session variable to track verification step
+        $_SESSION['phone_verify_step'] = 'verify_otp';
+        $_SESSION['phone_verify_phone'] = $user['phone'];
+        
+        redirect('../index.php?page=profile&action=verify_phone', 'Verification code sent to ' . $user['phone'] . '. Please enter the code to verify your phone.', 'success');
+    } else {
+        error_log("Phone verification OTP send failed: " . ($otpResult['message'] ?? 'Unknown error'));
+        redirect('../index.php?page=profile&action=verify_phone', 'Failed to send verification code. Please try again.', 'error');
+    }
+}
+
+/**
+ * Handle verifying OTP for phone verification
+ */
+function handleVerifyPhoneOtp($pdo, $userId) {
+    $otpCode = trim($_POST['otp_code'] ?? '');
+    
+    if (empty($otpCode) || !preg_match('/^[0-9]{6}$/', $otpCode)) {
+        redirect('../index.php?page=profile&action=verify_phone', 'Please enter a valid 6-digit code.', 'error');
+    }
+    
+    // Get user
+    $stmt = $pdo->prepare("SELECT phone, phone_verified FROM users WHERE id = ?");
+    $stmt->execute([$userId]);
+    $user = $stmt->fetch();
+    
+    if (empty($user['phone'])) {
+        unset($_SESSION['phone_verify_step']);
+        unset($_SESSION['phone_verify_phone']);
+        redirect('../index.php?page=profile', 'No phone number found.', 'error');
+    }
+    
+    if ($user['phone_verified']) {
+        unset($_SESSION['phone_verify_step']);
+        unset($_SESSION['phone_verify_phone']);
+        redirect('../index.php?page=profile', 'Your phone number is already verified.', 'info');
+    }
+    
+    // Verify OTP
+    $verifyResult = verifyOTP($user['phone'], $otpCode);
+    
+    if ($verifyResult['success']) {
+        // Update user as phone verified
+        $stmt = $pdo->prepare("UPDATE users SET phone_verified = TRUE WHERE id = ?");
+        $stmt->execute([$userId]);
+        
+        // Clear session variables
+        unset($_SESSION['phone_verify_step']);
+        unset($_SESSION['phone_verify_phone']);
+        
+        redirect('../index.php?page=profile', 'Phone number verified successfully! Your account is now fully verified.', 'success');
+    } else {
+        redirect('../index.php?page=profile&action=verify_phone', $verifyResult['message'] ?? 'Invalid verification code. Please try again.', 'error');
+    }
+}
+
+/**
+ * Handle resending OTP for phone verification
+ */
+function handleResendPhoneVerificationOtp($pdo, $userId) {
+    // Get user
+    $stmt = $pdo->prepare("SELECT phone, phone_verified FROM users WHERE id = ?");
+    $stmt->execute([$userId]);
+    $user = $stmt->fetch();
+    
+    if (empty($user['phone'])) {
+        unset($_SESSION['phone_verify_step']);
+        redirect('../index.php?page=profile', 'No phone number found.', 'error');
+    }
+    
+    if ($user['phone_verified']) {
+        unset($_SESSION['phone_verify_step']);
+        redirect('../index.php?page=profile', 'Your phone number is already verified.', 'info');
+    }
+    
+    // Send new OTP
+    $otpResult = sendOTP($user['phone'], 'phone_verify', $userId);
+    
+    if ($otpResult['success']) {
+        $_SESSION['phone_verify_step'] = 'verify_otp';
+        redirect('../index.php?page=profile&action=verify_phone', 'New verification code sent to ' . $user['phone'] . '.', 'success');
+    } else {
+        redirect('../index.php?page=profile&action=verify_phone', 'Failed to resend code. Please try again.', 'error');
+    }
+}
+
+/**
+ * Handle canceling phone verification
+ */
+function handleCancelPhoneVerification($pdo, $userId) {
+    unset($_SESSION['phone_verify_step']);
+    unset($_SESSION['phone_verify_phone']);
+    redirect('../index.php?page=profile', 'Phone verification cancelled.', 'info');
+}
+
+/**
+ * Handle sending email verification link (verifying existing email)
+ */
+function handleSendEmailVerificationLink($pdo, $userId) {
+    // Get user
+    $stmt = $pdo->prepare("SELECT email, email_verified, first_name FROM users WHERE id = ?");
+    $stmt->execute([$userId]);
+    $user = $stmt->fetch();
+    
+    if (empty($user['email'])) {
+        redirect('../index.php?page=profile', 'No email address found.', 'error');
+    }
+    
+    if ($user['email_verified']) {
+        redirect('../index.php?page=profile', 'Your email address is already verified.', 'info');
+    }
+    
+    // Generate verification token
+    $verifyToken = bin2hex(random_bytes(32));
+    $expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
+    
+    // Store verification token
+    $stmt = $pdo->prepare("
+        UPDATE users 
+        SET email_verify_token = ?, email_verify_expires = ?
+        WHERE id = ?
+    ");
+    $stmt->execute([$verifyToken, $expiresAt, $userId]);
+    
+    // Generate verification URL
+    $baseUrl = getCurrentSiteUrl();
+    $verifyUrl = $baseUrl . '/includes/verify_existing_email.php?token=' . $verifyToken;
+    
+    // Send verification email
+    $subject = '✉️ Verify Your Email Address - ' . SITE_NAME;
+    $body = getEmailVerificationTemplate($user['first_name'], $user['email'], $verifyUrl);
+    $result = sendMail($user['email'], $subject, $body);
+    
+    if ($result['success']) {
+        $_SESSION['email_verify_step'] = 'check_inbox';
+        redirect('../index.php?page=profile&action=verify_email', 'Verification link sent to ' . $user['email'] . '. Please check your inbox.', 'success');
+    } else {
+        error_log("Email verification send failed: " . $result['message']);
+        redirect('../index.php?page=profile&action=verify_email', 'Failed to send verification email. Please try again.', 'error');
+    }
+}
+
+/**
+ * Handle resending email verification link
+ */
+function handleResendEmailVerificationLink($pdo, $userId) {
+    // Get user
+    $stmt = $pdo->prepare("SELECT email, email_verified, first_name FROM users WHERE id = ?");
+    $stmt->execute([$userId]);
+    $user = $stmt->fetch();
+    
+    if (empty($user['email'])) {
+        unset($_SESSION['email_verify_step']);
+        redirect('../index.php?page=profile', 'No email address found.', 'error');
+    }
+    
+    if ($user['email_verified']) {
+        unset($_SESSION['email_verify_step']);
+        redirect('../index.php?page=profile', 'Your email address is already verified.', 'info');
+    }
+    
+    // Generate new verification token
+    $verifyToken = bin2hex(random_bytes(32));
+    $expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
+    
+    // Store verification token
+    $stmt = $pdo->prepare("
+        UPDATE users 
+        SET email_verify_token = ?, email_verify_expires = ?
+        WHERE id = ?
+    ");
+    $stmt->execute([$verifyToken, $expiresAt, $userId]);
+    
+    // Generate verification URL
+    $baseUrl = getCurrentSiteUrl();
+    $verifyUrl = $baseUrl . '/includes/verify_existing_email.php?token=' . $verifyToken;
+    
+    // Send verification email
+    $subject = '✉️ Verify Your Email Address - ' . SITE_NAME;
+    $body = getEmailVerificationTemplate($user['first_name'], $user['email'], $verifyUrl);
+    $result = sendMail($user['email'], $subject, $body);
+    
+    if ($result['success']) {
+        $_SESSION['email_verify_step'] = 'check_inbox';
+        redirect('../index.php?page=profile&action=verify_email', 'New verification link sent to ' . $user['email'] . '.', 'success');
+    } else {
+        redirect('../index.php?page=profile&action=verify_email', 'Failed to resend verification email. Please try again.', 'error');
+    }
+}
+
+/**
+ * Handle canceling email verification
+ */
+function handleCancelEmailVerification($pdo, $userId) {
+    unset($_SESSION['email_verify_step']);
+    redirect('../index.php?page=profile', 'Email verification cancelled.', 'info');
+}
+
+/**
+ * Generate email verification template
+ */
+function getEmailVerificationTemplate($firstName, $email, $verifyUrl) {
+    return '
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Verify Your Email Address</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #D4A574 0%, #B8896A 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                <h1 style="color: white; margin: 0; font-size: 28px;">🍞 ' . SITE_NAME . '</h1>
+            </div>
+            <div style="background: white; padding: 40px 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h2 style="color: #2C1810; margin-top: 0;">Hi ' . htmlspecialchars($firstName) . '!</h2>
+                <p style="color: #666; line-height: 1.6;">
+                    Please verify your email address to complete your account setup and unlock all features.
+                </p>
+                <p style="color: #666; line-height: 1.6;">
+                    Email to verify: <strong>' . htmlspecialchars($email) . '</strong>
+                </p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="' . $verifyUrl . '" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: white; padding: 15px 35px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block;">Verify Email Address</a>
+                </div>
+                <p style="color: #999; font-size: 14px; line-height: 1.6;">
+                    If you didn\'t request this verification, you can safely ignore this email.
+                </p>
+                <p style="color: #999; font-size: 14px;">
+                    This link expires in 24 hours.
+                </p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">
                     &copy; ' . date('Y') . ' ' . SITE_NAME . '. All rights reserved.
                 </p>
             </div>
