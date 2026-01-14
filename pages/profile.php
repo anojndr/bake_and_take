@@ -30,339 +30,368 @@ if (!$user) {
     exit;
 }
 
+// Fetch recent orders (last 3)
+$recentOrders = [];
+if ($pdo) {
+    try {
+        $stmt = $pdo->prepare("
+            SELECT o.id, o.order_number, o.created_at, o.total, o.status,
+                   GROUP_CONCAT(CONCAT(oi.product_name, ' x', oi.quantity) SEPARATOR ', ') as items_summary
+            FROM orders o
+            LEFT JOIN order_items oi ON o.id = oi.order_id
+            WHERE o.user_id = ?
+            GROUP BY o.id
+            ORDER BY o.created_at DESC
+            LIMIT 3
+        ");
+        $stmt->execute([$_SESSION['user_id']]);
+        $recentOrders = $stmt->fetchAll();
+    } catch (PDOException $e) {
+        // Handle error silently
+    }
+}
+
+// Determine which view to show
+$editMode = isset($_GET['edit']) && $_GET['edit'] === 'profile';
+$editEmailMode = isset($_GET['edit']) && $_GET['edit'] === 'email';
+$editPhoneMode = isset($_GET['edit']) && $_GET['edit'] === 'phone';
+$editPasswordMode = isset($_GET['edit']) && $_GET['edit'] === 'password';
+
 $flash = getFlashMessage();
+
+// Helper function to mask email
+function maskEmail($email) {
+    $parts = explode('@', $email);
+    if (count($parts) !== 2) return $email;
+    $name = $parts[0];
+    $domain = $parts[1];
+    $maskedName = substr($name, 0, 2) . str_repeat('*', max(strlen($name) - 2, 3));
+    return $maskedName . '@' . $domain;
+}
+
+// Helper function to mask phone
+function maskPhone($phone) {
+    if (strlen($phone) < 6) return $phone;
+    return substr($phone, 0, 4) . str_repeat('*', strlen($phone) - 6) . substr($phone, -2);
+}
 ?>
 
 <!-- Page Header -->
 <header class="page-header">
     <div class="container">
-        <h1>My Profile</h1>
+        <h1><?php 
+            if ($editMode) echo 'Edit Profile';
+            elseif ($editEmailMode) echo 'Change Email';
+            elseif ($editPhoneMode) echo 'Change Phone';
+            elseif ($editPasswordMode) echo 'Change Password';
+            else echo 'My Account';
+        ?></h1>
         <div class="breadcrumb-custom">
             <a href="index.php">Home</a>
             <span>/</span>
-            <span>Profile</span>
+            <a href="index.php?page=profile">Profile</a>
+            <?php if ($editMode || $editEmailMode || $editPhoneMode || $editPasswordMode): ?>
+            <span>/</span>
+            <span><?php 
+                if ($editMode) echo 'Edit Profile';
+                elseif ($editEmailMode) echo 'Change Email';
+                elseif ($editPhoneMode) echo 'Change Phone';
+                elseif ($editPasswordMode) echo 'Change Password';
+            ?></span>
+            <?php endif; ?>
         </div>
     </div>
 </header>
 
 <!-- Profile Section -->
-<section class="section profile-section">
+<section class="lazada-profile-section">
     <div class="container">
-        <div class="profile-container">
-            <?php if ($flash): ?>
-            <div class="alert-custom alert-<?php echo $flash['type']; ?>">
-                <i class="bi bi-<?php echo $flash['type'] === 'success' ? 'check-circle' : ($flash['type'] === 'info' ? 'info-circle' : 'exclamation-circle'); ?>"></i>
-                <?php echo $flash['message']; ?>
-            </div>
-            <?php endif; ?>
-            
-            <!-- Profile Header Card -->
-            <div class="profile-header-card">
-                <div class="profile-avatar">
-                    <i class="bi bi-person-circle"></i>
-                </div>
-                <div class="profile-header-info">
-                    <h2><?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?></h2>
-                    <p class="profile-email"><?php echo htmlspecialchars($user['email']); ?></p>
-                    <div class="profile-badges">
-                        <?php if ($user['email_verified']): ?>
-                        <span class="badge badge-verified"><i class="bi bi-envelope-check me-1"></i>Email Verified</span>
-                        <?php else: ?>
-                        <span class="badge badge-unverified"><i class="bi bi-envelope-exclamation me-1"></i>Email Not Verified</span>
-                        <?php endif; ?>
-                        
-                        <?php if ($user['phone_verified']): ?>
-                        <span class="badge badge-verified"><i class="bi bi-phone-vibrate me-1"></i>Phone Verified</span>
-                        <?php else: ?>
-                        <span class="badge badge-unverified"><i class="bi bi-phone me-1"></i>Phone Not Verified</span>
+        <div class="lazada-profile-layout">
+            <!-- Sidebar Navigation -->
+            <aside class="profile-sidebar">
+                <div class="sidebar-user-header">
+                    <div class="sidebar-avatar">
+                        <i class="bi bi-person-circle"></i>
+                    </div>
+                    <div class="sidebar-user-info">
+                        <span class="sidebar-greeting">Hello, <?php echo htmlspecialchars($user['first_name']); ?></span>
+                        <?php if ($user['email_verified'] && $user['phone_verified']): ?>
+                        <span class="verified-badge"><i class="bi bi-patch-check-fill"></i> Verified Account</span>
                         <?php endif; ?>
                     </div>
                 </div>
-                <div class="profile-member-since">
-                    <i class="bi bi-calendar3"></i>
-                    <span>Member since <?php echo date('F Y', strtotime($user['created_at'])); ?></span>
-                </div>
-            </div>
-            
-            <!-- Profile Settings -->
-            <div class="profile-content-grid">
-                <!-- Personal Information Card -->
-                <div class="profile-card">
-                    <div class="profile-card-header">
-                        <h3><i class="bi bi-person me-2"></i>Personal Information</h3>
+                
+                <nav class="sidebar-nav">
+                    <div class="nav-section">
+                        <h4 class="nav-section-title">
+                            <i class="bi bi-person-gear"></i>
+                            Manage My Account
+                        </h4>
+                        <ul class="nav-links">
+                            <li><a href="index.php?page=profile" class="<?php echo !$editMode && !$editEmailMode && !$editPhoneMode && !$editPasswordMode ? 'active' : ''; ?>">My Profile</a></li>
+                            <li><a href="index.php?page=profile&edit=password" class="<?php echo $editPasswordMode ? 'active' : ''; ?>">Change Password</a></li>
+                        </ul>
                     </div>
-                    <div class="profile-card-body">
-                        <form action="includes/process_profile.php" method="POST" id="personalInfoForm">
+                    
+                    <div class="nav-section">
+                        <h4 class="nav-section-title">
+                            <i class="bi bi-bag"></i>
+                            My Orders
+                        </h4>
+                        <ul class="nav-links">
+                            <li><a href="index.php?page=orders">Order History</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="nav-section">
+                        <a href="includes/logout.php" class="nav-logout">
+                            <i class="bi bi-box-arrow-right"></i>
+                            Logout
+                        </a>
+                    </div>
+                </nav>
+            </aside>
+            
+            <!-- Main Content Area -->
+            <main class="profile-main-content">
+                <?php if ($flash): ?>
+                <div class="alert-lazada alert-<?php echo $flash['type']; ?>">
+                    <i class="bi bi-<?php echo $flash['type'] === 'success' ? 'check-circle-fill' : ($flash['type'] === 'info' ? 'info-circle-fill' : 'exclamation-circle-fill'); ?>"></i>
+                    <?php echo $flash['message']; ?>
+                </div>
+                <?php endif; ?>
+                
+                <?php if ($editMode): ?>
+                <!-- ============ EDIT PROFILE VIEW ============ -->
+                <div class="content-card">
+                    <div class="content-card-header">
+                        <h2>Edit Profile</h2>
+                    </div>
+                    <div class="content-card-body">
+                        <form action="includes/process_profile.php" method="POST" class="edit-profile-form" id="editProfileForm">
                             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                            <input type="hidden" name="action" value="update_name">
+                            <input type="hidden" name="action" value="update_profile">
                             
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">First Name</label>
-                                    <input type="text" class="form-control form-control-custom" name="first_name" 
-                                           value="<?php echo htmlspecialchars($user['first_name']); ?>" required>
+                            <div class="form-row three-cols">
+                                <!-- Full Name -->
+                                <div class="form-field">
+                                    <label>Full Name</label>
+                                    <div class="input-with-clear">
+                                        <input type="text" name="full_name" value="<?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?>" class="form-input">
+                                        <button type="button" class="clear-btn" onclick="this.previousElementSibling.value=''"><i class="bi bi-x-circle"></i></button>
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Last Name</label>
-                                    <input type="text" class="form-control form-control-custom" name="last_name" 
-                                           value="<?php echo htmlspecialchars($user['last_name']); ?>" required>
+                                
+                                <!-- Email Address -->
+                                <div class="form-field">
+                                    <label>Email Address <a href="index.php?page=profile&edit=email" class="change-link">Change</a></label>
+                                    <div class="static-value"><?php echo htmlspecialchars(maskEmail($user['email'])); ?></div>
+                                </div>
+                                
+                                <!-- Mobile -->
+                                <div class="form-field">
+                                    <label>Mobile <a href="index.php?page=profile&edit=phone" class="change-link">Change</a></label>
+                                    <div class="static-value"><?php echo htmlspecialchars($user['phone'] ? maskPhone($user['phone']) : 'Not set'); ?></div>
                                 </div>
                             </div>
                             
-                            <div class="form-group mt-3">
-                                <label class="form-label">Confirm Password <span class="text-danger">*</span></label>
-                                <div class="input-icon-wrapper">
-                                    <i class="bi bi-lock input-icon"></i>
-                                    <input type="password" class="form-control form-control-custom with-icon" 
-                                           name="current_password" placeholder="Enter your password to confirm" required>
-                                </div>
-                                <small class="form-text text-muted">Required to save changes to your name.</small>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-save-changes">SAVE CHANGES</button>
+                                <a href="index.php?page=profile" class="btn-cancel">Cancel</a>
                             </div>
-                            
-                            <button type="submit" class="btn btn-primary-profile mt-4">
-                                <i class="bi bi-check-lg me-2"></i>Save Changes
-                            </button>
                         </form>
                     </div>
                 </div>
                 
-                <!-- Email Settings Card -->
-                <div class="profile-card">
-                    <div class="profile-card-header">
-                        <h3><i class="bi bi-envelope me-2"></i>Email Address</h3>
-                        <?php if ($user['email_verified']): ?>
-                        <span class="status-badge status-verified"><i class="bi bi-check-circle me-1"></i>Verified</span>
-                        <?php endif; ?>
+                <?php elseif ($editEmailMode): ?>
+                <!-- ============ CHANGE EMAIL VIEW ============ -->
+                <div class="content-card">
+                    <div class="content-card-header">
+                        <h2>Change Email Address</h2>
+                        <a href="index.php?page=profile" class="back-link"><i class="bi bi-arrow-left"></i> Back to Profile</a>
                     </div>
-                    <div class="profile-card-body">
-                        <div class="current-value-display">
-                            <span class="value-label">Current Email</span>
-                            <span class="value-text"><?php echo htmlspecialchars($user['email']); ?></span>
-                        </div>
-                        
+                    <div class="content-card-body">
                         <?php if ($user['pending_email'] && strtotime($user['pending_email_expires']) > time()): ?>
                             <?php if (($user['email_change_step'] ?? '') === 'verify_old'): ?>
-                            <div class="pending-change-alert alert-step1">
+                            <!-- Step 1: Verify current email -->
+                            <div class="verification-alert info">
                                 <i class="bi bi-shield-lock"></i>
                                 <div>
                                     <strong>Step 1: Verify Your Current Email</strong>
-                                    <p>We sent a 6-digit code to your current email: <strong><?php echo htmlspecialchars($user['email']); ?></strong></p>
-                                    <p class="small text-muted mt-1">New email pending: <?php echo htmlspecialchars($user['pending_email']); ?></p>
-                                    <small>Expires: <?php echo date('M j, Y g:i A', strtotime($user['pending_email_expires'])); ?></small>
+                                    <p>We sent a 6-digit code to: <strong><?php echo htmlspecialchars($user['email']); ?></strong></p>
+                                    <small>New email pending: <?php echo htmlspecialchars($user['pending_email']); ?></small>
                                 </div>
                             </div>
-
-                            <form action="includes/process_profile.php" method="POST" class="otp-form mt-3">
+                            
+                            <form action="includes/process_profile.php" method="POST" class="otp-form">
                                 <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                 <input type="hidden" name="action" value="verify_old_email_code">
-                                <div class="form-group">
-                                    <label class="form-label">Enter Code from Current Email</label>
-                                    <div class="otp-input-group">
-                                        <input type="text" class="form-control form-control-custom otp-input" 
-                                               name="otp_code" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]{6}" required>
-                                        <button type="submit" class="btn btn-primary-profile">
-                                            <i class="bi bi-arrow-right"></i> Next
-                                        </button>
-                                    </div>
+                                <div class="form-field">
+                                    <label>Enter Code from Current Email</label>
+                                    <input type="text" name="otp_code" class="form-input otp-input" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]{6}" required>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn-save-changes">VERIFY & CONTINUE</button>
                                 </div>
                             </form>
-
-                            <form action="includes/process_profile.php" method="POST" class="mt-2">
+                            
+                            <form action="includes/process_profile.php" method="POST" class="mt-3">
                                 <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                 <input type="hidden" name="action" value="cancel_email_change">
-                                <button type="submit" class="btn btn-text-link"><i class="bi bi-x-circle me-1"></i>Cancel email change</button>
+                                <button type="submit" class="btn-text-link"><i class="bi bi-x-circle"></i> Cancel email change</button>
                             </form>
                             <?php else: ?>
-                            <div class="pending-change-alert">
+                            <!-- Pending verification on new email -->
+                            <div class="verification-alert pending">
                                 <i class="bi bi-hourglass-split"></i>
                                 <div>
-                                    <strong>Pending Email Change</strong>
-                                    <p>Verification link sent to: <?php echo htmlspecialchars($user['pending_email']); ?></p>
-                                    <p class="small text-muted mt-1"><i class="bi bi-info-circle me-1"></i>Please verify your new email to complete the change.</p>
-                                    <small>Expires: <?php echo date('M j, Y g:i A', strtotime($user['pending_email_expires'])); ?></small>
+                                    <strong>Pending Email Verification</strong>
+                                    <p>We sent a verification link to: <strong><?php echo htmlspecialchars($user['pending_email']); ?></strong></p>
+                                    <small>Please check your new email and click the verification link.</small>
                                 </div>
                             </div>
-
-                            <form action="includes/process_profile.php" method="POST" class="mt-2">
+                            
+                            <form action="includes/process_profile.php" method="POST" class="mt-3">
                                 <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                 <input type="hidden" name="action" value="cancel_email_change">
-                                <button type="submit" class="btn btn-text-link"><i class="bi bi-x-circle me-1"></i>Cancel email change</button>
+                                <button type="submit" class="btn-text-link"><i class="bi bi-x-circle"></i> Cancel email change</button>
                             </form>
                             <?php endif; ?>
                         <?php else: ?>
-                        <form action="includes/process_profile.php" method="POST" id="emailChangeForm" class="change-form">
+                        <!-- Request new email change -->
+                        <form action="includes/process_profile.php" method="POST" class="edit-profile-form">
                             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                             <input type="hidden" name="action" value="request_email_change">
                             
-                            <div class="security-notice mb-3">
+                            <div class="security-notice">
                                 <i class="bi bi-shield-lock"></i>
                                 <span>For security, please confirm your password to change your email address.</span>
                             </div>
                             
-                            <div class="form-group mb-3">
-                                <label class="form-label">Current Password <span class="text-danger">*</span></label>
-                                <div class="input-icon-wrapper">
-                                    <i class="bi bi-lock input-icon"></i>
-                                    <input type="password" class="form-control form-control-custom with-icon" 
-                                           name="current_password" placeholder="Enter your password" required>
-                                </div>
+                            <div class="form-field">
+                                <label>Current Password <span class="required">*</span></label>
+                                <input type="password" name="current_password" class="form-input" placeholder="Enter your password" required>
                             </div>
                             
-                            <div class="form-group">
-                                <label class="form-label">New Email Address <span class="text-danger">*</span></label>
-                                <div class="input-icon-wrapper">
-                                    <i class="bi bi-envelope input-icon"></i>
-                                    <input type="email" class="form-control form-control-custom with-icon" 
-                                           name="new_email" placeholder="Enter new email address" required>
-                                </div>
-                                <small class="form-text text-muted">
-                                    <i class="bi bi-info-circle me-1"></i>A 6-digit code will be sent to your current email first.
-                                    After entering it, we will send a verification link to your new email.
-                                </small>
+                            <div class="form-field">
+                                <label>New Email Address <span class="required">*</span></label>
+                                <input type="email" name="new_email" class="form-input" placeholder="Enter new email address" required>
+                                <small class="form-hint">A verification code will be sent to your current email first.</small>
                             </div>
                             
-                            <button type="submit" class="btn btn-outline-profile">
-                                <i class="bi bi-envelope-arrow-up me-2"></i>Request Email Change
-                            </button>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-save-changes">REQUEST EMAIL CHANGE</button>
+                                <a href="index.php?page=profile" class="btn-cancel">Cancel</a>
+                            </div>
                         </form>
                         <?php endif; ?>
                     </div>
                 </div>
                 
-                <!-- Phone Settings Card -->
-                <div class="profile-card">
-                    <div class="profile-card-header">
-                        <h3><i class="bi bi-phone me-2"></i>Phone Number</h3>
-                        <?php if ($user['phone_verified']): ?>
-                        <span class="status-badge status-verified"><i class="bi bi-check-circle me-1"></i>Verified</span>
-                        <?php endif; ?>
+                <?php elseif ($editPhoneMode): ?>
+                <!-- ============ CHANGE PHONE VIEW ============ -->
+                <div class="content-card">
+                    <div class="content-card-header">
+                        <h2>Change Phone Number</h2>
+                        <a href="index.php?page=profile" class="back-link"><i class="bi bi-arrow-left"></i> Back to Profile</a>
                     </div>
-                    <div class="profile-card-body">
-                        <div class="current-value-display">
-                            <span class="value-label">Current Phone</span>
-                            <span class="value-text"><?php echo htmlspecialchars($user['phone'] ?? 'Not set'); ?></span>
-                        </div>
-                        
+                    <div class="content-card-body">
                         <?php 
-                        // Determine the current step in phone change process
                         $phoneChangeStep = $user['phone_change_step'] ?? 'none';
                         $hasPendingChange = $user['pending_phone'] && strtotime($user['pending_phone_expires']) > time();
                         ?>
                         
                         <?php if ($hasPendingChange && $phoneChangeStep === 'verify_old'): ?>
-                        <!-- Step 1: Verify OTP sent to OLD phone -->
+                        <!-- Step 1: Verify OTP on old phone -->
                         <div class="step-indicator">
-                            <div class="step active">
-                                <span class="step-num">1</span>
-                                <span class="step-label">Verify Current</span>
-                            </div>
+                            <div class="step active"><span>1</span><label>Verify Current</label></div>
                             <div class="step-line"></div>
-                            <div class="step">
-                                <span class="step-num">2</span>
-                                <span class="step-label">Verify New</span>
-                            </div>
+                            <div class="step"><span>2</span><label>Verify New</label></div>
                         </div>
                         
-                        <div class="pending-change-alert alert-step1">
+                        <div class="verification-alert info">
                             <i class="bi bi-shield-lock"></i>
                             <div>
                                 <strong>Step 1: Confirm Your Identity</strong>
                                 <p>We sent an OTP to your current phone: <strong><?php echo htmlspecialchars($user['phone']); ?></strong></p>
-                                <p class="small text-muted">New number pending: <?php echo htmlspecialchars($user['pending_phone']); ?></p>
-                                <small>Expires: <?php echo date('M j, Y g:i A', strtotime($user['pending_phone_expires'])); ?></small>
+                                <small>New number pending: <?php echo htmlspecialchars($user['pending_phone']); ?></small>
                             </div>
                         </div>
                         
-                        <form action="includes/process_profile.php" method="POST" class="otp-form mt-3">
+                        <form action="includes/process_profile.php" method="POST" class="otp-form">
                             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                             <input type="hidden" name="action" value="verify_old_phone_otp">
-                            
-                            <div class="form-group">
-                                <label class="form-label">Enter OTP from Current Phone</label>
-                                <div class="otp-input-group">
-                                    <input type="text" class="form-control form-control-custom otp-input" 
-                                           name="otp_code" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]{6}" required>
-                                    <button type="submit" class="btn btn-primary-profile">
-                                        <i class="bi bi-arrow-right"></i> Next
-                                    </button>
-                                </div>
+                            <div class="form-field">
+                                <label>Enter OTP from Current Phone</label>
+                                <input type="text" name="otp_code" class="form-input otp-input" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]{6}" required>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-save-changes">VERIFY & CONTINUE</button>
                             </div>
                         </form>
                         
-                        <div class="recovery-option mt-3">
-                            <p class="text-muted small mb-2"><i class="bi bi-question-circle me-1"></i>Can't access your current phone?</p>
+                        <div class="recovery-option">
+                            <p><i class="bi bi-question-circle"></i> Can't access your current phone?</p>
                             <form action="includes/process_profile.php" method="POST" class="d-inline">
                                 <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                 <input type="hidden" name="action" value="phone_change_email_recovery">
-                                <button type="submit" class="btn btn-text-link"><i class="bi bi-envelope me-1"></i>Verify via Email instead</button>
+                                <button type="submit" class="btn-text-link"><i class="bi bi-envelope"></i> Verify via Email instead</button>
                             </form>
                         </div>
                         
-                        <form action="includes/process_profile.php" method="POST" class="mt-2">
+                        <form action="includes/process_profile.php" method="POST" class="mt-3">
                             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                             <input type="hidden" name="action" value="cancel_phone_change">
-                            <button type="submit" class="btn btn-text-link text-danger"><i class="bi bi-x-circle me-1"></i>Cancel phone change</button>
+                            <button type="submit" class="btn-text-link text-danger"><i class="bi bi-x-circle"></i> Cancel phone change</button>
                         </form>
                         
                         <?php elseif ($hasPendingChange && $phoneChangeStep === 'verify_new'): ?>
-                        <!-- Step 2: Verify OTP sent to NEW phone -->
+                        <!-- Step 2: Verify OTP on new phone -->
                         <div class="step-indicator">
-                            <div class="step completed">
-                                <span class="step-num"><i class="bi bi-check"></i></span>
-                                <span class="step-label">Verified</span>
-                            </div>
+                            <div class="step completed"><span><i class="bi bi-check"></i></span><label>Verified</label></div>
                             <div class="step-line active"></div>
-                            <div class="step active">
-                                <span class="step-num">2</span>
-                                <span class="step-label">Verify New</span>
-                            </div>
+                            <div class="step active"><span>2</span><label>Verify New</label></div>
                         </div>
                         
-                        <div class="pending-change-alert alert-step2">
+                        <div class="verification-alert success">
                             <i class="bi bi-phone-vibrate"></i>
                             <div>
                                 <strong>Step 2: Verify New Phone Number</strong>
                                 <p>We sent an OTP to your new phone: <strong><?php echo htmlspecialchars($user['pending_phone']); ?></strong></p>
-                                <small>Expires: <?php echo date('M j, Y g:i A', strtotime($user['pending_phone_expires'])); ?></small>
                             </div>
                         </div>
                         
-                        <form action="includes/process_profile.php" method="POST" class="otp-form mt-3">
+                        <form action="includes/process_profile.php" method="POST" class="otp-form">
                             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                             <input type="hidden" name="action" value="verify_new_phone_otp">
-                            
-                            <div class="form-group">
-                                <label class="form-label">Enter OTP from New Phone</label>
-                                <div class="otp-input-group">
-                                    <input type="text" class="form-control form-control-custom otp-input" 
-                                           name="otp_code" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]{6}" required>
-                                    <button type="submit" class="btn btn-primary-profile">
-                                        <i class="bi bi-check-lg"></i> Complete
-                                    </button>
-                                </div>
+                            <div class="form-field">
+                                <label>Enter OTP from New Phone</label>
+                                <input type="text" name="otp_code" class="form-input otp-input" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]{6}" required>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-save-changes">COMPLETE CHANGE</button>
                             </div>
                         </form>
                         
                         <form action="includes/process_profile.php" method="POST" class="mt-2">
                             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                             <input type="hidden" name="action" value="resend_new_phone_otp">
-                            <button type="submit" class="btn btn-text-link"><i class="bi bi-arrow-repeat me-1"></i>Resend OTP to new phone</button>
+                            <button type="submit" class="btn-text-link"><i class="bi bi-arrow-repeat"></i> Resend OTP to new phone</button>
                         </form>
                         
                         <form action="includes/process_profile.php" method="POST" class="mt-2">
                             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                             <input type="hidden" name="action" value="cancel_phone_change">
-                            <button type="submit" class="btn btn-text-link text-danger"><i class="bi bi-x-circle me-1"></i>Cancel phone change</button>
+                            <button type="submit" class="btn-text-link text-danger"><i class="bi bi-x-circle"></i> Cancel phone change</button>
                         </form>
                         
                         <?php elseif ($hasPendingChange && $phoneChangeStep === 'email_recovery'): ?>
-                        <!-- Email Recovery: Verify via email link -->
-                        <div class="pending-change-alert alert-recovery">
+                        <!-- Email Recovery Mode -->
+                        <div class="verification-alert purple">
                             <i class="bi bi-envelope-check"></i>
                             <div>
                                 <strong>Email Verification Requested</strong>
                                 <p>We sent a verification link to: <strong><?php echo htmlspecialchars($user['email']); ?></strong></p>
-                                <p class="small text-muted">New number pending: <?php echo htmlspecialchars($user['pending_phone']); ?></p>
                                 <small>Please check your email and click the verification link to proceed.</small>
                             </div>
                         </div>
@@ -370,132 +399,375 @@ $flash = getFlashMessage();
                         <form action="includes/process_profile.php" method="POST" class="mt-3">
                             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                             <input type="hidden" name="action" value="resend_phone_recovery_email">
-                            <button type="submit" class="btn btn-outline-profile"><i class="bi bi-envelope me-1"></i>Resend Email</button>
+                            <button type="submit" class="btn-outline"><i class="bi bi-envelope"></i> Resend Email</button>
                         </form>
                         
                         <form action="includes/process_profile.php" method="POST" class="mt-2">
                             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                             <input type="hidden" name="action" value="cancel_phone_change">
-                            <button type="submit" class="btn btn-text-link text-danger"><i class="bi bi-x-circle me-1"></i>Cancel phone change</button>
+                            <button type="submit" class="btn-text-link text-danger"><i class="bi bi-x-circle"></i> Cancel phone change</button>
                         </form>
                         
                         <?php else: ?>
-                        <!-- Initial form: Start phone change process -->
-                        <form action="includes/process_profile.php" method="POST" id="phoneChangeForm" class="change-form">
+                        <!-- Initial phone change form -->
+                        <form action="includes/process_profile.php" method="POST" class="edit-profile-form">
                             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                             <input type="hidden" name="action" value="request_phone_change">
                             
-                            <div class="security-notice mb-3">
+                            <div class="security-notice">
                                 <i class="bi bi-shield-lock"></i>
                                 <span>For security, changing your phone requires verification from both your current and new phone.</span>
                             </div>
                             
-                            <div class="form-group mb-3">
-                                <label class="form-label">Current Password <span class="text-danger">*</span></label>
-                                <div class="input-icon-wrapper">
-                                    <i class="bi bi-lock input-icon"></i>
-                                    <input type="password" class="form-control form-control-custom with-icon" 
-                                           name="current_password" placeholder="Enter your password" required>
-                                </div>
+                            <div class="form-field">
+                                <label>Current Password <span class="required">*</span></label>
+                                <input type="password" name="current_password" class="form-input" placeholder="Enter your password" required>
                             </div>
                             
-                            <div class="form-group">
-                                <label class="form-label">New Phone Number <span class="text-danger">*</span></label>
+                            <div class="form-field">
+                                <label>New Phone Number <span class="required">*</span></label>
                                 <div class="phone-input-wrapper">
                                     <span class="phone-prefix">+63</span>
-                                    <input type="tel" class="form-control form-control-custom phone-input" 
-                                           name="new_phone" placeholder="9XX XXX XXXX" maxlength="10" pattern="[0-9]{10}" required>
+                                    <input type="tel" name="new_phone" class="form-input phone-input" placeholder="9XX XXX XXXX" maxlength="10" pattern="[0-9]{10}" required>
                                 </div>
-                                <small class="form-text text-muted">
-                                    <i class="bi bi-info-circle me-1"></i>OTP verification will be required for both your current and new phone.
-                                </small>
+                                <small class="form-hint">OTP verification will be required for both your current and new phone.</small>
                             </div>
                             
-                            <button type="submit" class="btn btn-outline-profile mt-3">
-                                <i class="bi bi-phone-vibrate me-2"></i>Start Phone Change
-                            </button>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-save-changes">START PHONE CHANGE</button>
+                                <a href="index.php?page=profile" class="btn-cancel">Cancel</a>
+                            </div>
                         </form>
                         <?php endif; ?>
                     </div>
                 </div>
                 
-                <!-- Password Change Card -->
-                <div class="profile-card">
-                    <div class="profile-card-header">
-                        <h3><i class="bi bi-shield-lock me-2"></i>Change Password</h3>
+                <?php elseif ($editPasswordMode): ?>
+                <!-- ============ CHANGE PASSWORD VIEW ============ -->
+                <div class="content-card">
+                    <div class="content-card-header">
+                        <h2>Change Password</h2>
+                        <a href="index.php?page=profile" class="back-link"><i class="bi bi-arrow-left"></i> Back to Profile</a>
                     </div>
-                    <div class="profile-card-body">
-                        <form action="includes/process_profile.php" method="POST" id="passwordChangeForm">
+                    <div class="content-card-body">
+                        <form action="includes/process_profile.php" method="POST" class="edit-profile-form" id="passwordForm">
                             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                             <input type="hidden" name="action" value="change_password">
                             
-                            <div class="form-group mb-3">
-                                <label class="form-label">Current Password</label>
-                                <div class="input-icon-wrapper">
-                                    <i class="bi bi-lock input-icon"></i>
-                                    <input type="password" class="form-control form-control-custom with-icon" 
-                                           name="current_password" placeholder="Enter current password" required>
-                                </div>
+                            <div class="form-field">
+                                <label>Current Password <span class="required">*</span></label>
+                                <input type="password" name="current_password" class="form-input" placeholder="Enter current password" required>
                             </div>
                             
-                            <div class="form-group mb-3">
-                                <label class="form-label">New Password</label>
-                                <div class="input-icon-wrapper">
-                                    <i class="bi bi-lock-fill input-icon"></i>
-                                    <input type="password" class="form-control form-control-custom with-icon" 
-                                           name="new_password" placeholder="Min 8 characters" required minlength="8">
-                                </div>
+                            <div class="form-field">
+                                <label>New Password <span class="required">*</span></label>
+                                <input type="password" name="new_password" class="form-input" placeholder="Min 8 characters" required minlength="8">
                             </div>
                             
-                            <div class="form-group mb-3">
-                                <label class="form-label">Confirm New Password</label>
-                                <div class="input-icon-wrapper">
-                                    <i class="bi bi-lock-fill input-icon"></i>
-                                    <input type="password" class="form-control form-control-custom with-icon" 
-                                           name="confirm_password" placeholder="Repeat new password" required>
-                                </div>
+                            <div class="form-field">
+                                <label>Confirm New Password <span class="required">*</span></label>
+                                <input type="password" name="confirm_password" class="form-input" placeholder="Repeat new password" required>
                             </div>
                             
-                            <button type="submit" class="btn btn-primary-profile">
-                                <i class="bi bi-shield-check me-2"></i>Update Password
-                            </button>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-save-changes">UPDATE PASSWORD</button>
+                                <a href="index.php?page=profile" class="btn-cancel">Cancel</a>
+                            </div>
                         </form>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Quick Actions -->
-            <div class="profile-quick-actions">
-                <a href="index.php?page=orders" class="quick-action-btn">
-                    <i class="bi bi-bag"></i>
-                    <span>My Orders</span>
-                </a>
-                <a href="index.php?page=cart" class="quick-action-btn">
-                    <i class="bi bi-cart3"></i>
-                    <span>Shopping Cart</span>
-                </a>
-                <a href="includes/logout.php" class="quick-action-btn quick-action-danger">
-                    <i class="bi bi-box-arrow-right"></i>
-                    <span>Logout</span>
-                </a>
-            </div>
+                
+                <?php else: ?>
+                <!-- ============ DASHBOARD VIEW ============ -->
+                <h1 class="page-title">Manage My Account</h1>
+                
+                <!-- Info Panels Row -->
+                <div class="info-panels-grid">
+                    <!-- Personal Profile Panel -->
+                    <div class="info-panel">
+                        <div class="info-panel-header">
+                            <h3>Personal Profile</h3>
+                            <a href="index.php?page=profile&edit=profile" class="edit-link">EDIT</a>
+                        </div>
+                        <div class="info-panel-body">
+                            <p class="profile-name"><?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?></p>
+                            <p class="profile-email"><?php echo htmlspecialchars(maskEmail($user['email'])); ?></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Address Book Panel (Placeholder - can be expanded) -->
+                    <div class="info-panel">
+                        <div class="info-panel-header">
+                            <h3>Account Status</h3>
+                        </div>
+                        <div class="info-panel-body">
+                            <div class="address-columns">
+                                <div class="address-column">
+                                    <h4>Email Status</h4>
+                                    <p class="address-name">
+                                        <?php if ($user['email_verified']): ?>
+                                        <span class="status-verified"><i class="bi bi-check-circle-fill"></i> Verified</span>
+                                        <?php else: ?>
+                                        <span class="status-unverified"><i class="bi bi-exclamation-circle-fill"></i> Not Verified</span>
+                                        <?php endif; ?>
+                                    </p>
+                                    <p class="address-details"><?php echo htmlspecialchars($user['email']); ?></p>
+                                </div>
+                                <div class="address-column">
+                                    <h4>Phone Status</h4>
+                                    <p class="address-name">
+                                        <?php if ($user['phone_verified']): ?>
+                                        <span class="status-verified"><i class="bi bi-check-circle-fill"></i> Verified</span>
+                                        <?php else: ?>
+                                        <span class="status-unverified"><i class="bi bi-exclamation-circle-fill"></i> Not Verified</span>
+                                        <?php endif; ?>
+                                    </p>
+                                    <p class="address-details"><?php echo htmlspecialchars($user['phone'] ?? 'Not set'); ?></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Orders Section -->
+                <div class="recent-orders-panel">
+                    <div class="panel-header">
+                        <h3>Recent Orders</h3>
+                        <?php if (!empty($recentOrders)): ?>
+                        <a href="index.php?page=orders" class="view-all-link">View All <i class="bi bi-arrow-right"></i></a>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <?php if (empty($recentOrders)): ?>
+                    <div class="empty-orders">
+                        <i class="bi bi-bag-x"></i>
+                        <p>No orders yet</p>
+                        <a href="index.php?page=menu" class="btn-browse">Browse Menu</a>
+                    </div>
+                    <?php else: ?>
+                    <table class="orders-table">
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Placed On</th>
+                                <th>Items</th>
+                                <th>Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($recentOrders as $order): ?>
+                            <tr>
+                                <td class="order-number"><?php echo htmlspecialchars($order['order_number']); ?></td>
+                                <td class="order-date"><?php echo date('d/m/Y', strtotime($order['created_at'])); ?></td>
+                                <td class="order-items">
+                                    <div class="items-preview">
+                                        <?php
+                                        // Show item summary or placeholder icons
+                                        $items = explode(', ', $order['items_summary'] ?? '');
+                                        $itemCount = count($items);
+                                        ?>
+                                        <span class="item-count"><?php echo $itemCount; ?> item<?php echo $itemCount > 1 ? 's' : ''; ?></span>
+                                    </div>
+                                </td>
+                                <td class="order-total">₱<?php echo number_format($order['total'], 2); ?></td>
+                                <td class="order-action">
+                                    <a href="index.php?page=orders" class="manage-link">MANAGE</a>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
+            </main>
         </div>
     </div>
 </section>
 
 <style>
-.profile-section {
+/* ========================================
+   BAKE & TAKE - PROFILE PAGE STYLES
+   Warm, bakery-inspired aesthetic
+   ======================================== */
+
+.lazada-profile-section {
     background: var(--cream);
-    min-height: 60vh;
+    min-height: calc(100vh - 200px);
+    padding: 2rem 0;
 }
 
-.profile-container {
-    max-width: 900px;
+.lazada-profile-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 2rem;
+    max-width: 1200px;
     margin: 0 auto;
 }
 
+/* ========== SIDEBAR ========== */
+.profile-sidebar {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 0;
+    box-shadow: var(--shadow-sm);
+    height: fit-content;
+    position: sticky;
+    top: 100px;
+    overflow: hidden;
+}
+
+.sidebar-user-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, var(--cream) 0%, var(--accent) 100%);
+    border-bottom: 1px solid var(--cream-dark);
+}
+
+.sidebar-avatar {
+    width: 55px;
+    height: 55px;
+    background: var(--gradient-warm);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-md);
+}
+
+.sidebar-avatar i {
+    font-size: 1.75rem;
+    color: var(--white);
+}
+
+.sidebar-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.sidebar-greeting {
+    font-weight: 600;
+    color: var(--dark);
+    font-size: 1rem;
+    font-family: var(--font-display);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.verified-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.7rem;
+    color: #16a34a;
+    background: rgba(22, 163, 74, 0.12);
+    padding: 0.25rem 0.6rem;
+    border-radius: 20px;
+    width: fit-content;
+    font-weight: 500;
+}
+
+.verified-badge i {
+    font-size: 0.7rem;
+}
+
+.sidebar-nav {
+    padding: 0.75rem 0;
+}
+
+.nav-section {
+    border-bottom: 1px solid var(--cream-dark);
+    padding: 0.5rem 0;
+}
+
+.nav-section:last-child {
+    border-bottom: none;
+}
+
+.nav-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--dark);
+    margin: 0;
+    font-family: var(--font-display);
+}
+
+.nav-section-title i {
+    color: var(--primary-dark);
+    font-size: 1.1rem;
+}
+
+.nav-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.nav-links li a {
+    display: block;
+    padding: 0.65rem 1.5rem 0.65rem 3rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: var(--transition);
+    border-left: 3px solid transparent;
+}
+
+.nav-links li a:hover {
+    color: var(--primary-dark);
+    background: var(--accent);
+    border-left-color: var(--primary);
+}
+
+.nav-links li a.active {
+    color: var(--primary-dark);
+    background: var(--accent);
+    font-weight: 500;
+    border-left-color: var(--primary);
+}
+
+.nav-logout {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1.5rem;
+    color: #dc2626;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.nav-logout:hover {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+/* ========== MAIN CONTENT ========== */
+.profile-main-content {
+    min-width: 0;
+}
+
+.page-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--dark);
+    margin: 0 0 1.75rem 0;
+    font-family: var(--font-display);
+}
+
 /* Alert Styles */
-.alert-custom {
+.alert-lazada {
     padding: 1rem 1.25rem;
     border-radius: var(--radius-md);
     margin-bottom: 1.5rem;
@@ -505,406 +777,551 @@ $flash = getFlashMessage();
     font-size: 0.95rem;
 }
 
-.alert-custom i {
-    font-size: 1.1rem;
+.alert-lazada i {
+    font-size: 1.25rem;
     flex-shrink: 0;
 }
 
-.alert-error {
-    background: #fee2e2;
-    color: #dc2626;
-    border: 1px solid #fecaca;
-}
-
-.alert-success {
+.alert-lazada.alert-success {
     background: #dcfce7;
     color: #16a34a;
     border: 1px solid #bbf7d0;
 }
 
-.alert-info {
+.alert-lazada.alert-error {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.alert-lazada.alert-info {
     background: #dbeafe;
     color: #2563eb;
     border: 1px solid #bfdbfe;
 }
 
-/* Profile Header Card */
-.profile-header-card {
-    background: linear-gradient(135deg, var(--cream) 0%, var(--accent) 100%);
-    border-radius: var(--radius-xl);
-    padding: 2.5rem;
-    display: flex;
-    align-items: center;
-    gap: 2rem;
-    margin-bottom: 2rem;
-    box-shadow: var(--shadow-md);
-    flex-wrap: wrap;
+/* Info Panels Grid */
+.info-panels-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
 }
 
-.profile-avatar {
-    width: 100px;
-    height: 100px;
+.info-panel {
     background: var(--white);
-    border-radius: 50%;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.info-panel:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.info-panel-header {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
-    box-shadow: var(--shadow-lg);
-    flex-shrink: 0;
+    padding: 1.15rem 1.5rem;
+    background: linear-gradient(135deg, var(--cream) 0%, rgba(212, 165, 116, 0.1) 100%);
+    border-bottom: 1px solid var(--cream-dark);
 }
 
-.profile-avatar i {
-    font-size: 4rem;
-    color: var(--primary-dark);
-}
-
-.profile-header-info {
-    flex: 1;
-    min-width: 250px;
-}
-
-.profile-header-info h2 {
-    font-family: var(--font-display);
+.info-panel-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
     color: var(--dark);
-    margin-bottom: 0.25rem;
+    margin: 0;
+    font-family: var(--font-display);
+}
+
+.edit-link {
+    color: var(--primary-dark);
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: var(--transition);
+}
+
+.edit-link:hover {
+    color: var(--secondary);
+}
+
+.info-panel-body {
+    padding: 1.5rem;
+}
+
+.profile-name {
+    font-weight: 600;
+    color: var(--dark);
+    margin: 0 0 0.35rem 0;
+    font-size: 1.05rem;
 }
 
 .profile-email {
     color: var(--text-secondary);
-    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    margin: 0 0 1.25rem 0;
 }
 
-.profile-badges {
+.marketing-prefs {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+    flex-direction: column;
+    gap: 0.6rem;
 }
 
-.badge {
-    padding: 0.4rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.8rem;
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-dark);
+}
+
+/* Address Columns */
+.address-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.address-column h4 {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-light);
+    text-transform: uppercase;
+    margin: 0 0 0.75rem 0;
+    letter-spacing: 0.5px;
+}
+
+.address-name {
     font-weight: 500;
-    display: inline-flex;
-    align-items: center;
+    color: var(--dark);
+    margin: 0 0 0.35rem 0;
+    font-size: 0.95rem;
 }
 
-.badge-verified {
-    background: rgba(22, 163, 74, 0.15);
-    color: #16a34a;
-}
-
-.badge-unverified {
-    background: rgba(217, 119, 6, 0.15);
-    color: #d97706;
-}
-
-.profile-member-since {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+.address-details {
     color: var(--text-secondary);
     font-size: 0.9rem;
-    background: var(--white);
-    padding: 0.75rem 1.25rem;
-    border-radius: var(--radius-md);
+    margin: 0;
+    line-height: 1.5;
 }
 
-/* Profile Content Grid */
-.profile-content-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+.status-verified {
+    color: #16a34a;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
 }
 
-.profile-card {
+.status-unverified {
+    color: #d97706;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+/* Recent Orders Panel */
+.recent-orders-panel {
     background: var(--white);
     border-radius: var(--radius-lg);
-    overflow: hidden;
     box-shadow: var(--shadow-sm);
-    transition: var(--transition);
+    overflow: hidden;
 }
 
-.profile-card:hover {
-    box-shadow: var(--shadow-md);
-}
-
-.profile-card-header {
-    background: linear-gradient(135deg, var(--cream) 0%, rgba(212, 165, 116, 0.1) 100%);
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid var(--cream-dark);
+.panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 1.15rem 1.5rem;
+    background: linear-gradient(135deg, var(--cream) 0%, rgba(212, 165, 116, 0.1) 100%);
+    border-bottom: 1px solid var(--cream-dark);
 }
 
-.profile-card-header h3 {
-    font-size: 1.1rem;
+.panel-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
     color: var(--dark);
     margin: 0;
     font-family: var(--font-display);
 }
 
-.profile-card-body {
-    padding: 1.5rem;
-}
-
-/* Status Badge */
-.status-badge {
-    padding: 0.35rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
+.view-all-link {
+    color: var(--primary-dark);
+    text-decoration: none;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
     font-weight: 500;
+    transition: var(--transition);
 }
 
-.status-verified {
-    background: rgba(22, 163, 74, 0.15);
-    color: #16a34a;
+.view-all-link:hover {
+    color: var(--secondary);
 }
 
-/* Current Value Display */
-.current-value-display {
-    background: var(--cream);
-    padding: 1rem 1.25rem;
-    border-radius: var(--radius-md);
-    margin-bottom: 1rem;
+/* Orders Table */
+.orders-table {
+    width: 100%;
+    border-collapse: collapse;
 }
 
-.value-label {
-    display: block;
+.orders-table th {
+    text-align: left;
+    padding: 0.85rem 1.5rem;
     font-size: 0.75rem;
+    font-weight: 600;
     color: var(--text-light);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 0.25rem;
+    border-bottom: 1px solid var(--cream-dark);
 }
 
-.value-text {
-    font-weight: 500;
-    color: var(--dark);
-    font-size: 1.05rem;
+.orders-table td {
+    padding: 1.1rem 1.5rem;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--cream-dark);
+    vertical-align: middle;
 }
 
-/* Pending Change Alert */
-.pending-change-alert {
-    background: rgba(13, 110, 253, 0.1);
-    border: 1px solid rgba(13, 110, 253, 0.2);
-    padding: 1rem 1.25rem;
-    border-radius: var(--radius-md);
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-    margin-bottom: 1rem;
+.orders-table tbody tr:last-child td {
+    border-bottom: none;
 }
 
-.pending-change-alert i {
-    font-size: 1.5rem;
-    color: #0d6efd;
-    flex-shrink: 0;
-    margin-top: 0.25rem;
+.orders-table tbody tr:hover {
+    background: var(--accent);
 }
 
-.pending-change-alert strong {
-    display: block;
-    color: #084298;
-    margin-bottom: 0.25rem;
+.orders-table .order-number {
+    font-weight: 600;
+    color: var(--secondary);
+    font-family: var(--font-display);
 }
 
-.pending-change-alert p {
-    margin: 0;
+.orders-table .order-date {
     color: var(--text-secondary);
+}
+
+.orders-table .order-items {
+    color: var(--text-secondary);
+}
+
+.items-preview {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.item-count {
     font-size: 0.9rem;
 }
 
-.pending-change-alert small {
+.orders-table .order-total {
+    font-weight: 600;
+    color: var(--secondary);
+}
+
+.manage-link {
+    color: var(--primary-dark);
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    transition: var(--transition);
+}
+
+.manage-link:hover {
+    color: var(--secondary);
+}
+
+/* Empty Orders */
+.empty-orders {
+    text-align: center;
+    padding: 3.5rem 1.5rem;
+    color: var(--text-secondary);
+}
+
+.empty-orders i {
+    font-size: 3.5rem;
+    color: var(--cream-dark);
+    margin-bottom: 1.25rem;
+    display: block;
+}
+
+.empty-orders p {
+    margin: 0 0 1.25rem 0;
+    font-size: 1rem;
+}
+
+.btn-browse {
+    display: inline-block;
+    padding: 0.75rem 2rem;
+    background: var(--gradient-warm);
+    color: var(--white);
+    text-decoration: none;
+    border-radius: 50px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.btn-browse:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glow);
+    color: var(--white);
+}
+
+/* ========== CONTENT CARD (Edit Views) ========== */
+.content-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.content-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.75rem;
+    background: linear-gradient(135deg, var(--cream) 0%, var(--accent) 100%);
+    border-bottom: 1px solid var(--cream-dark);
+}
+
+.content-card-header h2 {
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--dark);
+    margin: 0;
+    font-family: var(--font-display);
+}
+
+.back-link {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: var(--transition);
+}
+
+.back-link:hover {
+    color: var(--primary-dark);
+}
+
+.content-card-body {
+    padding: 2rem;
+}
+
+/* ========== EDIT PROFILE FORM ========== */
+.edit-profile-form {
+    max-width: 750px;
+}
+
+.form-row {
+    display: grid;
+    gap: 1.75rem;
+    margin-bottom: 1.75rem;
+}
+
+.form-row.three-cols {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.form-row.two-cols {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-field label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.change-link {
+    color: var(--primary-dark);
+    text-decoration: none;
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+    font-weight: 500;
+}
+
+.change-link:hover {
+    color: var(--secondary);
+    text-decoration: underline;
+}
+
+.required {
+    color: #dc2626;
+}
+
+.form-input {
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--cream-dark);
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    transition: var(--transition);
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.15);
+}
+
+.input-with-clear {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-with-clear .form-input {
+    flex: 1;
+    padding-right: 2.5rem;
+}
+
+.clear-btn {
+    position: absolute;
+    right: 0.75rem;
+    background: none;
+    border: none;
     color: var(--text-light);
+    cursor: pointer;
+    padding: 0.25rem;
+    transition: var(--transition);
+}
+
+.clear-btn:hover {
+    color: var(--text-secondary);
+}
+
+.static-value {
+    padding: 0.75rem 0;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.birthday-selects {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.select-input {
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--cream-dark);
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    background: var(--white);
+    cursor: pointer;
+    min-width: 90px;
+    transition: var(--transition);
+}
+
+.select-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.15);
+}
+
+.select-input.full-width {
+    width: 100%;
+}
+
+.form-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin-top: 2.5rem;
+}
+
+.btn-save-changes {
+    padding: 1rem 2.5rem;
+    background: var(--gradient-warm);
+    color: var(--white);
+    border: none;
+    border-radius: 50px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-save-changes:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glow);
+}
+
+.btn-cancel {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: var(--transition);
+}
+
+.btn-cancel:hover {
+    color: var(--primary-dark);
 }
 
 /* Security Notice */
 .security-notice {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 1.1rem 1.25rem;
     background: linear-gradient(135deg, rgba(13, 110, 253, 0.08) 0%, rgba(13, 110, 253, 0.04) 100%);
     border: 1px solid rgba(13, 110, 253, 0.2);
     border-radius: var(--radius-md);
-    padding: 0.875rem 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 0.9rem;
+    margin-bottom: 1.75rem;
+    font-size: 0.95rem;
     color: #084298;
 }
 
 .security-notice i {
-    font-size: 1.25rem;
-    color: #0d6efd;
-    flex-shrink: 0;
-}
-
-/* Step Indicator */
-.step-indicator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1.5rem;
-    padding: 1rem 0;
-}
-
-.step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.35rem;
-}
-
-.step-num {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--cream);
-    border: 2px solid var(--cream-dark);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: var(--text-light);
-    transition: all 0.3s ease;
-}
-
-.step.active .step-num {
-    background: var(--primary);
-    border-color: var(--primary);
-    color: var(--white);
-}
-
-.step.completed .step-num {
-    background: #16a34a;
-    border-color: #16a34a;
-    color: var(--white);
-}
-
-.step-label {
-    font-size: 0.75rem;
-    color: var(--text-light);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.step.active .step-label,
-.step.completed .step-label {
-    color: var(--dark);
-}
-
-.step-line {
-    width: 60px;
-    height: 3px;
-    background: var(--cream-dark);
-    margin: 0 0.75rem;
-    margin-bottom: 1.5rem;
-    border-radius: 2px;
-    transition: all 0.3s ease;
-}
-
-.step-line.active {
-    background: linear-gradient(90deg, #16a34a 0%, var(--primary) 100%);
-}
-
-/* Alert Variants for Phone Change Steps */
-.alert-step1 {
-    background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(13, 110, 253, 0.05) 100%);
-    border-color: rgba(13, 110, 253, 0.2);
-}
-
-.alert-step1 i {
+    font-size: 1.35rem;
     color: #0d6efd;
 }
 
-.alert-step2 {
-    background: linear-gradient(135deg, rgba(22, 163, 74, 0.1) 0%, rgba(22, 163, 74, 0.05) 100%);
-    border-color: rgba(22, 163, 74, 0.2);
-}
-
-.alert-step2 i {
-    color: #16a34a;
-}
-
-.alert-recovery {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%);
-    border-color: rgba(139, 92, 246, 0.2);
-}
-
-.alert-recovery i {
-    color: #8b5cf6;
-}
-
-.recovery-option {
-    padding: 0.75rem;
-    background: rgba(249, 250, 251, 0.8);
-    border-radius: var(--radius-md);
-    border: 1px dashed var(--cream-dark);
-}
-
-
-/* Form Styles */
-.change-form {
-    margin-top: 1rem;
-}
-
-.form-group {
-    margin-bottom: 1rem;
-}
-
-.form-label {
-    display: block;
-    font-weight: 500;
-    color: var(--dark);
-    margin-bottom: 0.5rem;
-}
-
-.input-icon-wrapper {
-    position: relative;
-}
-
-.input-icon {
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
+.form-hint {
+    font-size: 0.85rem;
     color: var(--text-light);
+    margin-top: 0.35rem;
 }
 
-.form-control-custom.with-icon {
-    padding-left: 2.75rem;
-}
-
-.form-control-custom {
-    border: 2px solid var(--cream-dark);
-    border-radius: var(--radius-md);
-    padding: 0.75rem 1rem;
-    transition: all 0.2s ease;
-}
-
-.form-control-custom:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.15);
-    outline: none;
-}
-
-.form-text {
-    font-size: 0.8rem;
-    margin-top: 0.5rem;
-}
-
-/* Phone Input */
+/* Phone Input Wrapper */
 .phone-input-wrapper {
     display: flex;
     align-items: center;
     border: 2px solid var(--cream-dark);
     border-radius: var(--radius-md);
     overflow: hidden;
-    transition: all 0.2s ease;
     background: var(--white);
+    transition: var(--transition);
 }
 
 .phone-input-wrapper:focus-within {
@@ -913,186 +1330,288 @@ $flash = getFlashMessage();
 }
 
 .phone-prefix {
-    background: var(--cream);
-    color: var(--text-secondary);
     padding: 0.75rem 1rem;
-    font-weight: 600;
-    font-size: 1rem;
+    background: var(--cream);
     border-right: 2px solid var(--cream-dark);
-    user-select: none;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.95rem;
 }
 
-.phone-input {
+.phone-input-wrapper .phone-input {
     border: none !important;
-    border-radius: 0 !important;
-    padding-left: 1rem !important;
     flex: 1;
+    box-shadow: none !important;
 }
 
-.phone-input:focus {
-    box-shadow: none !important;
-    outline: none !important;
+.phone-input-wrapper .phone-input:focus {
+    outline: none;
 }
 
 /* OTP Input */
-.otp-input-group {
-    display: flex;
-    gap: 0.75rem;
-}
-
 .otp-input {
-    flex: 1;
     text-align: center;
-    font-size: 1.25rem;
+    font-size: 1.35rem;
     letter-spacing: 0.5rem;
     font-weight: 600;
 }
 
-/* Buttons */
-.btn-primary-profile {
-    background: var(--gradient-warm);
-    color: var(--white);
-    border: none;
-    padding: 0.75rem 1.5rem;
+/* Verification Alerts */
+.verification-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.35rem;
     border-radius: var(--radius-md);
-    font-weight: 500;
-    cursor: pointer;
-    transition: var(--transition);
-    display: inline-flex;
+    margin-bottom: 1.75rem;
+}
+
+.verification-alert i {
+    font-size: 1.6rem;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+}
+
+.verification-alert strong {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 1rem;
+}
+
+.verification-alert p {
+    margin: 0 0 0.35rem 0;
+    font-size: 0.95rem;
+}
+
+.verification-alert small {
+    color: inherit;
+    opacity: 0.8;
+}
+
+.verification-alert.info {
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(13, 110, 253, 0.05) 100%);
+    border: 1px solid rgba(13, 110, 253, 0.2);
+    color: #084298;
+}
+
+.verification-alert.success {
+    background: linear-gradient(135deg, rgba(22, 163, 74, 0.1) 0%, rgba(22, 163, 74, 0.05) 100%);
+    border: 1px solid rgba(22, 163, 74, 0.2);
+    color: #166534;
+}
+
+.verification-alert.pending {
+    background: linear-gradient(135deg, rgba(217, 119, 6, 0.1) 0%, rgba(217, 119, 6, 0.05) 100%);
+    border: 1px solid rgba(217, 119, 6, 0.2);
+    color: #92400e;
+}
+
+.verification-alert.purple {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    color: #5b21b6;
+}
+
+/* Step Indicator */
+.step-indicator {
+    display: flex;
     align-items: center;
+    justify-content: center;
+    margin-bottom: 1.75rem;
+    padding: 1.25rem 0;
 }
 
-.btn-primary-profile:hover {
-    background: var(--primary-dark);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-}
-
-.btn-outline-profile {
-    background: transparent;
-    color: var(--primary-dark);
-    border: 2px solid var(--primary);
-    padding: 0.75rem 1.5rem;
-    border-radius: var(--radius-md);
-    font-weight: 500;
-    cursor: pointer;
-    transition: var(--transition);
-    display: inline-flex;
+.step-indicator .step {
+    display: flex;
+    flex-direction: column;
     align-items: center;
+    gap: 0.45rem;
 }
 
-.btn-outline-profile:hover {
+.step-indicator .step span {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--cream);
+    border: 2px solid var(--cream-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-light);
+    transition: var(--transition);
+}
+
+.step-indicator .step.active span {
     background: var(--primary);
+    border-color: var(--primary);
     color: var(--white);
+}
+
+.step-indicator .step.completed span {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: var(--white);
+}
+
+.step-indicator .step label {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+.step-indicator .step.active label,
+.step-indicator .step.completed label {
+    color: var(--dark);
+}
+
+.step-indicator .step-line {
+    width: 70px;
+    height: 3px;
+    background: var(--cream-dark);
+    margin: 0 0.75rem;
+    margin-bottom: 1.35rem;
+    border-radius: 2px;
+    transition: var(--transition);
+}
+
+.step-indicator .step-line.active {
+    background: linear-gradient(90deg, #16a34a, var(--primary));
+}
+
+/* Recovery Option */
+.recovery-option {
+    padding: 1.1rem;
+    background: var(--cream);
+    border-radius: var(--radius-md);
+    margin-top: 1.25rem;
+    border: 1px dashed var(--cream-dark);
+}
+
+.recovery-option p {
+    margin: 0 0 0.6rem 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
 }
 
 .btn-text-link {
     background: none;
     border: none;
-    color: var(--text-secondary);
-    font-size: 0.85rem;
+    color: var(--primary-dark);
+    font-size: 0.9rem;
     cursor: pointer;
     text-decoration: underline;
     padding: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: var(--transition);
 }
 
 .btn-text-link:hover {
-    color: var(--primary-dark);
+    color: var(--secondary);
 }
 
-/* Quick Actions */
-.profile-quick-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-.quick-action-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1.25rem 2rem;
-    background: var(--white);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
-    transition: var(--transition);
-    text-decoration: none;
-    color: var(--text-primary);
-    min-width: 120px;
-}
-
-.quick-action-btn i {
-    font-size: 1.75rem;
-    color: var(--primary-dark);
-}
-
-.quick-action-btn span {
-    font-weight: 500;
-    font-size: 0.9rem;
-}
-
-.quick-action-btn:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-md);
-    background: var(--accent);
-}
-
-.quick-action-danger:hover {
-    background: #fee2e2;
-}
-
-.quick-action-danger:hover i {
+.btn-text-link.text-danger {
     color: #dc2626;
 }
 
-/* Responsive */
+.btn-text-link.text-danger:hover {
+    color: #b91c1c;
+}
+
+.btn-outline {
+    padding: 0.65rem 1.25rem;
+    background: var(--white);
+    border: 2px solid var(--primary);
+    color: var(--primary-dark);
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: var(--transition);
+}
+
+.btn-outline:hover {
+    background: var(--primary);
+    color: var(--white);
+}
+
+.mt-2 { margin-top: 0.5rem; }
+.mt-3 { margin-top: 1rem; }
+.d-inline { display: inline; }
+
+/* ========== RESPONSIVE ========== */
 @media (max-width: 991px) {
-    .profile-content-grid {
+    .lazada-profile-layout {
         grid-template-columns: 1fr;
+    }
+    
+    .profile-sidebar {
+        position: static;
+    }
+    
+    .info-panels-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-row.three-cols,
+    .form-row.two-cols {
+        grid-template-columns: 1fr;
+    }
+    
+    .address-columns {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
     }
 }
 
-@media (max-width: 767px) {
-    .profile-header-card {
+@media (max-width: 575px) {
+    .lazada-profile-section {
+        padding: 1rem 0;
+    }
+    
+    .content-card-body,
+    .info-panel-body {
+        padding: 1.25rem;
+    }
+    
+    .sidebar-user-header {
+        padding: 1.25rem;
+    }
+    
+    .orders-table {
+        font-size: 0.85rem;
+    }
+    
+    .orders-table th,
+    .orders-table td {
+        padding: 0.85rem 1rem;
+    }
+    
+    .birthday-selects {
         flex-direction: column;
-        text-align: center;
-        padding: 2rem 1.5rem;
     }
     
-    .profile-header-info {
-        min-width: 100%;
+    .form-actions {
+        flex-direction: column;
     }
     
-    .profile-badges {
-        justify-content: center;
-    }
-    
-    .profile-member-since {
-        justify-content: center;
+    .btn-save-changes {
         width: 100%;
-    }
-    
-    .profile-quick-actions {
-        flex-direction: column;
-    }
-    
-    .quick-action-btn {
-        flex-direction: row;
-        justify-content: flex-start;
-        min-width: 100%;
-    }
-    
-    .otp-input-group {
-        flex-direction: column;
     }
 }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Phone number input formatting
+    // Phone input formatting
     const phoneInputs = document.querySelectorAll('.phone-input');
     phoneInputs.forEach(input => {
         input.addEventListener('input', function(e) {
@@ -1102,34 +1621,22 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             this.value = value;
         });
-        
-        input.addEventListener('keypress', function(e) {
-            if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab') {
-                e.preventDefault();
-            }
-        });
     });
     
     // OTP input formatting
-    const otpInput = document.querySelector('.otp-input');
-    if (otpInput) {
-        otpInput.addEventListener('input', function(e) {
+    const otpInputs = document.querySelectorAll('.otp-input');
+    otpInputs.forEach(input => {
+        input.addEventListener('input', function(e) {
             let value = this.value.replace(/[^0-9]/g, '');
             if (value.length > 6) {
                 value = value.slice(0, 6);
             }
             this.value = value;
         });
-        
-        otpInput.addEventListener('keypress', function(e) {
-            if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab') {
-                e.preventDefault();
-            }
-        });
-    }
+    });
     
-    // Password confirmation validation
-    const passwordForm = document.getElementById('passwordChangeForm');
+    // Password form validation
+    const passwordForm = document.getElementById('passwordForm');
     if (passwordForm) {
         passwordForm.addEventListener('submit', function(e) {
             const newPassword = this.querySelector('input[name="new_password"]').value;

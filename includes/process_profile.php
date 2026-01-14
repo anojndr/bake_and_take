@@ -35,6 +35,10 @@ try {
         case 'update_name':
             handleNameUpdate($pdo, $userId);
             break;
+        
+        case 'update_profile':
+            handleProfileUpdate($pdo, $userId);
+            break;
             
         case 'request_email_change':
             handleEmailChangeRequest($pdo, $userId);
@@ -122,6 +126,35 @@ function handleNameUpdate($pdo, $userId) {
     $_SESSION['user_name'] = $firstName . ' ' . $lastName;
     
     redirect('../index.php?page=profile', 'Name updated successfully!', 'success');
+}
+
+/**
+ * Handle profile update (full name only)
+ */
+function handleProfileUpdate($pdo, $userId) {
+    $fullName = trim($_POST['full_name'] ?? '');
+    
+    if (empty($fullName)) {
+        redirect('../index.php?page=profile&edit=profile', 'Full name is required.', 'error');
+    }
+    
+    // Parse full name into first and last name
+    $nameParts = explode(' ', $fullName, 2);
+    $firstName = $nameParts[0];
+    $lastName = isset($nameParts[1]) ? $nameParts[1] : '';
+    
+    // Update user profile
+    $stmt = $pdo->prepare("
+        UPDATE users 
+        SET first_name = ?, last_name = ?
+        WHERE id = ?
+    ");
+    $stmt->execute([$firstName, $lastName, $userId]);
+    
+    // Update session
+    $_SESSION['user_name'] = trim($firstName . ' ' . $lastName);
+    
+    redirect('../index.php?page=profile', 'Profile updated successfully!', 'success');
 }
 
 /**
