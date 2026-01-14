@@ -135,16 +135,6 @@ if (!in_array($page, $allowedPages)) {
                     <i class="bi bi-envelope"></i>
                     <span>Contact</span>
                 </a>
-                <?php if (isset($_SESSION['user_id'])): ?>
-                <a href="index.php?page=orders" class="mobile-more-item <?php echo $page === 'orders' ? 'active' : ''; ?>">
-                    <i class="bi bi-bag"></i>
-                    <span>My Orders</span>
-                </a>
-                <a href="includes/logout.php" class="mobile-more-item">
-                    <i class="bi bi-box-arrow-right"></i>
-                    <span>Logout</span>
-                </a>
-                <?php endif; ?>
             </div>
         </div>
     </div>
