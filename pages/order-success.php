@@ -21,6 +21,7 @@ $confirmationMethod = $lastOrder['confirmation_method'] ?? 'sms';
                 <strong>Action Required: Confirm Your Order</strong>
                 <?php if ($confirmationMethod === 'sms'): ?>
                 <p>We've sent you an SMS. Please reply <strong>CONFIRM</strong> to complete your order.</p>
+                <p class="waiting-status"><i class="bi bi-arrow-repeat spinning"></i> Waiting for your confirmation...</p>
                 <?php else: ?>
                 <p>We've sent you an email. Please click the confirmation link to complete your order.</p>
                 <?php endif; ?>
@@ -145,6 +146,22 @@ $confirmationMethod = $lastOrder['confirmation_method'] ?? 'sms';
     font-size: 0.9rem;
 }
 
+.confirmation-pending-notice .waiting-status {
+    margin-top: 0.5rem;
+    font-style: italic;
+    opacity: 0.8;
+}
+
+.spinning {
+    display: inline-block;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 .success-icon i {
     font-size: 3rem;
     color: var(--white);
@@ -265,5 +282,54 @@ $confirmationMethod = $lastOrder['confirmation_method'] ?? 'sms';
 // Clear cart after successful order
 document.addEventListener('DOMContentLoaded', function() {
     clearCart();
+    
+    // Start polling for order status if order is pending confirmation
+    <?php if ($lastOrder && $confirmationMethod === 'sms'): ?>
+    const orderNumber = '<?php echo htmlspecialchars($orderNumber); ?>';
+    const confirmationToken = '<?php echo htmlspecialchars($lastOrder['confirmation_token'] ?? ''); ?>';
+    let pollInterval;
+    let pollCount = 0;
+    const maxPolls = 360; // Poll for up to 30 minutes (5 second intervals)
+    
+    function checkOrderStatus() {
+        pollCount++;
+        
+        // Stop polling after max attempts
+        if (pollCount > maxPolls) {
+            clearInterval(pollInterval);
+            console.log('Stopped polling after max attempts');
+            return;
+        }
+        
+        fetch('includes/check_order_status.php?order_number=' + encodeURIComponent(orderNumber))
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.status === 'confirmed') {
+                    // Order confirmed! Redirect to confirmation page
+                    clearInterval(pollInterval);
+                    
+                    // Redirect with token for order details
+                    const redirectUrl = 'index.php?page=order-confirmed' + 
+                        (confirmationToken ? '&token=' + encodeURIComponent(confirmationToken) : '');
+                    
+                    window.location.href = redirectUrl;
+                }
+            })
+            .catch(error => {
+                console.log('Status check error:', error);
+            });
+    }
+    
+    // Start polling every 5 seconds
+    pollInterval = setInterval(checkOrderStatus, 5000);
+    
+    // Also check immediately
+    setTimeout(checkOrderStatus, 1000);
+    
+    // Clean up on page unload
+    window.addEventListener('beforeunload', function() {
+        if (pollInterval) clearInterval(pollInterval);
+    });
+    <?php endif; ?>
 });
 </script>

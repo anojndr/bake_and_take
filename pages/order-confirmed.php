@@ -1,9 +1,33 @@
 <?php
-// Get confirmed order data from session
+// Get confirmed order data from session or token parameter
 $confirmedOrder = $_SESSION['order_confirmed'] ?? null;
 
+// Check if accessed via SMS confirmation link with token
+$token = $_GET['token'] ?? '';
+if (!$confirmedOrder && !empty($token) && $pdo) {
+    try {
+        // Find the order by confirmation token
+        $stmt = $pdo->prepare("
+            SELECT o.order_number, o.total, o.status, o.user_id
+            FROM orders o 
+            WHERE o.confirmation_token = ?
+        ");
+        $stmt->execute([$token]);
+        $order = $stmt->fetch();
+        
+        if ($order && $order['status'] === 'confirmed') {
+            $confirmedOrder = [
+                'order_number' => $order['order_number'],
+                'total' => $order['total']
+            ];
+        }
+    } catch (PDOException $e) {
+        error_log("Order confirmation page error: " . $e->getMessage());
+    }
+}
+
 // Clear the session data after reading
-if ($confirmedOrder) {
+if (isset($_SESSION['order_confirmed'])) {
     unset($_SESSION['order_confirmed']);
 }
 ?>
@@ -27,10 +51,15 @@ if ($confirmedOrder) {
             <div class="confirmation-icon">
                 <i class="bi bi-check-circle-fill"></i>
             </div>
-            <h2>Thank You!</h2>
-            <p class="lead">Your order has been confirmed successfully.</p>
+            <h2>Order Confirmed!</h2>
+            <p class="lead">Your order has been successfully confirmed.</p>
             
             <?php if ($confirmedOrder): ?>
+            <div class="confirmation-message mt-3">
+                <p>Thank you for confirming your order! We're now preparing it for you.</p>
+                <p>You'll receive a notification when your order is ready for pickup.</p>
+            </div>
+            
             <div class="order-details mt-4">
                 <div class="detail-item">
                     <span class="label">Order Number</span>
@@ -41,17 +70,20 @@ if ($confirmedOrder) {
                     <span class="value">₱<?php echo number_format($confirmedOrder['total'], 2); ?></span>
                 </div>
             </div>
+            <?php else: ?>
+            <div class="confirmation-message mt-3">
+                <p>Thank you for confirming your order! We're now preparing it for you.</p>
+                <p>You'll receive a notification when your order is ready for pickup.</p>
+            </div>
             <?php endif; ?>
             
-            <div class="confirmation-message mt-4">
-                <p>We're now preparing your order! You'll receive a notification when it's ready for pickup.</p>
-            </div>
-            
             <div class="confirmation-actions mt-4">
-                <a href="index.php?page=menu" class="btn btn-primary">Continue Shopping</a>
-                <?php if (isset($_SESSION['user_id'])): ?>
-                <a href="index.php?page=orders" class="btn btn-outline-primary">View My Orders</a>
-                <?php endif; ?>
+                <a href="index.php?page=orders" class="btn btn-primary">
+                    <i class="bi bi-calendar-check"></i> View My Orders
+                </a>
+                <a href="index.php?page=menu" class="btn btn-outline-primary">
+                    <i class="bi bi-shop"></i> Continue Shopping
+                </a>
             </div>
         </div>
     </div>

@@ -114,7 +114,8 @@ Reply CONFIRM to confirm your order.'
 );
 
 // Order confirmed via reply SMS template
+// Available placeholders: {order_number}, {store_name}, {link}
 define('SMS_TEMPLATE_ORDER_CONFIRMED', 
-    '{store_name}: Your order #{order_number} has been confirmed! We\'ll notify you when it\'s ready for pickup.'
+    '{store_name}: Your order #{order_number} has been confirmed! View details: {link}'
 );
 ?>

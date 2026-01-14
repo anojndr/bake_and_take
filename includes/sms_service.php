@@ -493,7 +493,7 @@ function sendOrderConfirmationRequestSMS($orderData) {
  * Send order confirmed notification SMS
  * This is sent after the customer confirms their order via SMS reply
  * 
- * @param array $orderData Order data containing phone, order_number
+ * @param array $orderData Order data containing phone, order_number, confirmation_token, site_url
  * @return array Result of sendSMS
  */
 function sendOrderConfirmedSMS($orderData) {
@@ -501,11 +501,18 @@ function sendOrderConfirmedSMS($orderData) {
         return ['success' => false, 'message' => 'Order SMS notifications disabled'];
     }
     
+    // Generate confirmation link if token and site URL provided
+    $confirmationLink = '';
+    if (!empty($orderData['confirmation_token']) && !empty($orderData['site_url'])) {
+        $confirmationLink = $orderData['site_url'] . '/index.php?page=order-confirmed&token=' . $orderData['confirmation_token'];
+    }
+    
     $message = str_replace(
-        ['{order_number}', '{store_name}'],
+        ['{order_number}', '{store_name}', '{link}'],
         [
             $orderData['order_number'],
-            SMS_SENDER_NAME
+            SMS_SENDER_NAME,
+            $confirmationLink
         ],
         SMS_TEMPLATE_ORDER_CONFIRMED
     );

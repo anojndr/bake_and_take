@@ -283,6 +283,25 @@ function getCurrentSiteUrl() {
     }
 }
 
+/**
+ * Get site URL for SMS messages (when called from webhook/CLI context)
+ * Uses SITE_URL constant or fallback to config
+ */
+function getSiteUrlForSMS() {
+    // Try to use defined SITE_URL constant first
+    if (defined('SITE_URL') && !empty(SITE_URL)) {
+        return rtrim(SITE_URL, '/');
+    }
+    
+    // Fallback: Try to get from server if available
+    if (isset($_SERVER['HTTP_HOST'])) {
+        return getCurrentSiteUrl();
+    }
+    
+    // Default fallback for CLI/webhook context
+    return 'http://localhost/bake_and_take';
+}
+
 function generateCSRFToken() {
     if (!isset($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));

@@ -243,19 +243,23 @@ function handleConfirmReply($phoneNumber) {
             ");
             $stmt->execute([$pendingOrder['id']]);
             
-            // Send confirmation SMS
+            // Get site URL and send confirmation SMS with link
+            require_once __DIR__ . '/functions.php';
+            $siteUrl = getSiteUrlForSMS();
+            
+            // Send confirmation SMS with link to order-confirmed page
             sendOrderConfirmedSMS([
                 'phone' => $phoneNumber,
                 'order_number' => $pendingOrder['order_number'],
                 'order_id' => $pendingOrder['id'],
-                'user_id' => $pendingOrder['user_id']
+                'user_id' => $pendingOrder['user_id'],
+                'confirmation_token' => $pendingOrder['confirmation_token'],
+                'site_url' => $siteUrl
             ]);
             
             // Notify admin about the confirmation
             try {
                 require_once __DIR__ . '/mailer.php';
-                require_once __DIR__ . '/functions.php';
-                $siteUrl = getCurrentSiteUrl();
                 $adminSubject = "Order #{$pendingOrder['order_number']} Confirmed by Customer";
                 $adminBody = "
                     <h2>Order Confirmed</h2>
