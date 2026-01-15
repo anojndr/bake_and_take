@@ -198,12 +198,12 @@ function handleEmailChangeRequest($pdo, $userId) {
     
     // Validate password is provided
     if (empty($currentPassword)) {
-        redirect('../index.php?page=profile', 'Please enter your current password.', 'error');
+        redirect('../index.php?page=profile&edit=email', 'Please enter your current password.', 'error');
     }
     
     // Validate email
     if (empty($newEmail) || !isValidEmail($newEmail)) {
-        redirect('../index.php?page=profile', 'Please enter a valid email address.', 'error');
+        redirect('../index.php?page=profile&edit=email', 'Please enter a valid email address.', 'error');
     }
     
     // Get current user with password
@@ -213,19 +213,19 @@ function handleEmailChangeRequest($pdo, $userId) {
     
     // Verify password
     if (!password_verify($currentPassword, $user['password'])) {
-        redirect('../index.php?page=profile', 'Incorrect password. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=email', 'Incorrect password. Please try again.', 'error');
     }
     
     // Check if email is the same
     if (strtolower($user['email']) === strtolower($newEmail)) {
-        redirect('../index.php?page=profile', 'This is already your current email address.', 'info');
+        redirect('../index.php?page=profile&edit=email', 'This is already your current email address.', 'info');
     }
     
     // Check if email is already in use
     $stmt = $pdo->prepare("SELECT user_id FROM users WHERE email = ? AND user_id != ?");
     $stmt->execute([$newEmail, $userId]);
     if ($stmt->fetch()) {
-        redirect('../index.php?page=profile', 'This email address is already in use.', 'error');
+        redirect('../index.php?page=profile&edit=email', 'This email address is already in use.', 'error');
     }
     
     // Generate OTP for OLD email
@@ -269,10 +269,10 @@ function handleEmailChangeRequest($pdo, $userId) {
         $stmt->execute([$userId]);
 
         error_log("Email OTP send failed: " . $notifyResult['message']);
-        redirect('../index.php?page=profile', 'Failed to send authorization code to your current email. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=email', 'Failed to send authorization code to your current email. Please try again.', 'error');
     }
 
-    redirect('../index.php?page=profile', 'We sent an authorization code to your current email. Enter it to continue with changing to ' . $newEmail . '.', 'success');
+    redirect('../index.php?page=profile&edit=email', 'We sent an authorization code to your current email. Enter it to continue with changing to ' . $newEmail . '.', 'success');
 }
 
 /**
@@ -282,7 +282,7 @@ function handleVerifyOldEmailCode($pdo, $userId) {
     $otpCode = trim($_POST['otp_code'] ?? '');
 
     if (empty($otpCode) || !preg_match('/^[0-9]{6}$/', $otpCode)) {
-        redirect('../index.php?page=profile', 'Please enter a valid 6-digit code.', 'error');
+        redirect('../index.php?page=profile&edit=email', 'Please enter a valid 6-digit code.', 'error');
     }
 
     // Get user with pending email change
@@ -291,18 +291,18 @@ function handleVerifyOldEmailCode($pdo, $userId) {
     $user = $stmt->fetch();
 
     if (!$user || empty($user['pending_email']) || $user['email_change_step'] !== 'verify_old') {
-        redirect('../index.php?page=profile', 'No pending email authorization found.', 'error');
+        redirect('../index.php?page=profile&edit=email', 'No pending email authorization found.', 'error');
     }
 
     // Check expiry
     if (empty($user['pending_email_expires']) || strtotime($user['pending_email_expires']) < time()) {
         clearPendingEmailChange($pdo, $userId);
-        redirect('../index.php?page=profile', 'Authorization code has expired. Please start over.', 'error');
+        redirect('../index.php?page=profile&edit=email', 'Authorization code has expired. Please start over.', 'error');
     }
 
     // Verify OTP
     if (empty($user['pending_email_old_otp']) || $user['pending_email_old_otp'] !== $otpCode) {
-        redirect('../index.php?page=profile', 'Invalid authorization code. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=email', 'Invalid authorization code. Please try again.', 'error');
     }
 
     // Old email authorized; now generate verification token for NEW email and send link
@@ -330,10 +330,10 @@ function handleVerifyOldEmailCode($pdo, $userId) {
         error_log("Email verification send failed: " . $verifyResult['message']);
         // Keep pending change but require re-start for safety
         clearPendingEmailChange($pdo, $userId);
-        redirect('../index.php?page=profile', 'Failed to send verification email to your new address. Please start over.', 'error');
+        redirect('../index.php?page=profile&edit=email', 'Failed to send verification email to your new address. Please start over.', 'error');
     }
 
-    redirect('../index.php?page=profile', 'Authorization confirmed! We sent a verification link to ' . $user['pending_email'] . '. Please click it to finish changing your email.', 'success');
+    redirect('../index.php?page=profile&edit=email', 'Authorization confirmed! We sent a verification link to ' . $user['pending_email'] . '. Please click it to finish changing your email.', 'success');
 }
 
 /**
@@ -794,7 +794,7 @@ function getEmailChangeVerificationTemplate($oldEmail, $newEmail, $verifyUrl) {
 function handleCancelEmailChange($pdo, $userId) {
     clearPendingEmailChange($pdo, $userId);
     
-    redirect('../index.php?page=profile', 'Email change request cancelled.', 'info');
+    redirect('../index.php?page=profile&edit=email', 'Email change request cancelled.', 'info');
 }
 
 /**
