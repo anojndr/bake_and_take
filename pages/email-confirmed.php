@@ -2,13 +2,38 @@
 /**
  * Email Confirmation Success Page
  * This page is shown after a user confirms their order via email link
+ * Also handles auto-redirect from polling when user confirms on another device
  */
 
 // Get confirmed order data from session
 $confirmedOrder = $_SESSION['email_order_confirmed'] ?? null;
 
+// Check if accessed via auto-redirect with token parameter (when user confirmed on phone)
+$token = $_GET['token'] ?? '';
+if (!$confirmedOrder && !empty($token) && $pdo) {
+    try {
+        // Find the order by confirmation token
+        $stmt = $pdo->prepare("
+            SELECT o.order_number, o.total, o.status, o.user_id
+            FROM orders o 
+            WHERE o.confirmation_token = ?
+        ");
+        $stmt->execute([$token]);
+        $order = $stmt->fetch();
+        
+        if ($order && $order['status'] === 'confirmed') {
+            $confirmedOrder = [
+                'order_number' => $order['order_number'],
+                'total' => $order['total']
+            ];
+        }
+    } catch (PDOException $e) {
+        error_log("Email confirmation page error: " . $e->getMessage());
+    }
+}
+
 // Clear the session data after reading
-if ($confirmedOrder) {
+if (isset($_SESSION['email_order_confirmed'])) {
     unset($_SESSION['email_order_confirmed']);
 }
 ?>

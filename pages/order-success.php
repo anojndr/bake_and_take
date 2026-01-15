@@ -21,10 +21,10 @@ $confirmationMethod = $lastOrder['confirmation_method'] ?? 'sms';
                 <strong>Action Required: Confirm Your Order</strong>
                 <?php if ($confirmationMethod === 'sms'): ?>
                 <p>We've sent you an SMS. Please reply <strong>CONFIRM</strong> to complete your order.</p>
-                <p class="waiting-status"><i class="bi bi-arrow-repeat spinning"></i> Waiting for your confirmation...</p>
                 <?php else: ?>
                 <p>We've sent you an email. Please click the confirmation link to complete your order.</p>
                 <?php endif; ?>
+                <p class="waiting-status"><i class="bi bi-arrow-repeat spinning"></i> Waiting for your confirmation...</p>
             </div>
         </div>
         
@@ -283,10 +283,11 @@ $confirmationMethod = $lastOrder['confirmation_method'] ?? 'sms';
 document.addEventListener('DOMContentLoaded', function() {
     clearCart();
     
-    // Start polling for order status if order is pending confirmation
-    <?php if ($lastOrder && $confirmationMethod === 'sms'): ?>
+    // Start polling for order status if order is pending confirmation (both SMS and Email)
+    <?php if ($lastOrder): ?>
     const orderNumber = '<?php echo htmlspecialchars($orderNumber); ?>';
     const confirmationToken = '<?php echo htmlspecialchars($lastOrder['confirmation_token'] ?? ''); ?>';
+    const confirmationMethod = '<?php echo htmlspecialchars($confirmationMethod); ?>';
     let pollInterval;
     let pollCount = 0;
     const maxPolls = 360; // Poll for up to 30 minutes (5 second intervals)
@@ -309,7 +310,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     clearInterval(pollInterval);
                     
                     // Redirect with token for order details
-                    const redirectUrl = 'index.php?page=order-confirmed' + 
+                    // Use email-confirmed page for email method, order-confirmed for SMS
+                    let redirectPage = confirmationMethod === 'email' ? 'email-confirmed' : 'order-confirmed';
+                    const redirectUrl = 'index.php?page=' + redirectPage + 
                         (confirmationToken ? '&token=' + encodeURIComponent(confirmationToken) : '');
                     
                     window.location.href = redirectUrl;
