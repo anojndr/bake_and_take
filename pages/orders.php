@@ -650,7 +650,7 @@ async function cancelOrder(orderId, orderNumber) {
                 button.remove();
                 
                 // Update ordersData
-                const orderIndex = ordersData.findIndex(o => o.id == orderId);
+                const orderIndex = ordersData.findIndex(o => o.order_id == orderId);
                 if (orderIndex !== -1) {
                     ordersData[orderIndex].status = 'cancelled';
                 }
@@ -717,7 +717,7 @@ async function viewOrderDetails(orderId) {
     modal.show();
     
     // Find order in our data
-    const order = ordersData.find(o => o.id == orderId);
+    const order = ordersData.find(o => o.order_id == orderId);
     
     if (!order) {
         modalBody.innerHTML = '<p class="text-center text-muted">Order not found.</p>';
@@ -834,7 +834,7 @@ async function cancelOrderFromModal(orderId, orderNumber) {
             }
             
             // Update ordersData
-            const orderIndex = ordersData.findIndex(o => o.id == orderId);
+            const orderIndex = ordersData.findIndex(o => o.order_id == orderId);
             if (orderIndex !== -1) {
                 ordersData[orderIndex].status = 'cancelled';
             }
