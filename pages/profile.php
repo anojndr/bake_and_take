@@ -164,13 +164,6 @@ function maskPhone($phone) {
             
             <!-- Main Content Area -->
             <main class="profile-main-content">
-                <?php if ($flash): ?>
-                <div class="alert-lazada alert-<?php echo $flash['type']; ?>">
-                    <i class="bi bi-<?php echo $flash['type'] === 'success' ? 'check-circle-fill' : ($flash['type'] === 'info' ? 'info-circle-fill' : 'exclamation-circle-fill'); ?>"></i>
-                    <?php echo $flash['message']; ?>
-                </div>
-                <?php endif; ?>
-                
                 <?php if ($editMode): ?>
                 <!-- ============ EDIT PROFILE VIEW ============ -->
                 <div class="content-card">
@@ -734,6 +727,13 @@ function maskPhone($phone) {
                 <!-- ============ DASHBOARD VIEW ============ -->
                 <h1 class="page-title">Manage My Account</h1>
                 
+                <?php if ($flash): ?>
+                <div class="alert-lazada alert-<?php echo $flash['type']; ?>">
+                    <i class="bi bi-<?php echo $flash['type'] === 'success' ? 'check-circle-fill' : ($flash['type'] === 'info' ? 'info-circle-fill' : 'exclamation-circle-fill'); ?>"></i>
+                    <?php echo $flash['message']; ?>
+                </div>
+                <?php endif; ?>
+                
                 <!-- Info Panels Row -->
                 <div class="info-panels-grid">
                     <!-- Personal Profile Panel -->
@@ -1031,36 +1031,48 @@ function maskPhone($phone) {
 
 /* Alert Styles */
 .alert-lazada {
-    padding: 1rem 1.25rem;
+    padding: 0.875rem 1rem;
     border-radius: var(--radius-md);
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    font-size: 0.95rem;
+    gap: 0.625rem;
+    font-size: 0.875rem;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .alert-lazada i {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     flex-shrink: 0;
 }
 
 .alert-lazada.alert-success {
-    background: #dcfce7;
-    color: #16a34a;
-    border: 1px solid #bbf7d0;
+    background: linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%);
+    color: #15803d;
+    border: 1px solid #86efac;
 }
 
 .alert-lazada.alert-error {
-    background: #fee2e2;
-    color: #dc2626;
-    border: 1px solid #fecaca;
+    background: linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%);
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
 }
 
 .alert-lazada.alert-info {
-    background: #dbeafe;
-    color: #2563eb;
-    border: 1px solid #bfdbfe;
+    background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+    color: #1d4ed8;
+    border: 1px solid #93c5fd;
 }
 
 /* Info Panels Grid */

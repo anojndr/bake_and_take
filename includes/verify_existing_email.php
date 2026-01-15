@@ -10,14 +10,14 @@ require_once 'functions.php';
 $token = $_GET['token'] ?? '';
 
 if (empty($token)) {
-    setFlashMessage('Invalid verification link.', 'error');
+    setFlashMessage('error', 'Invalid verification link.');
     header('Location: ../index.php?page=profile');
     exit;
 }
 
 global $conn;
 if (!$conn) {
-    setFlashMessage('Database connection error.', 'error');
+    setFlashMessage('error', 'Database connection error.');
     header('Location: ../index.php?page=profile');
     exit;
 }
@@ -30,7 +30,7 @@ $stmt = mysqli_prepare($conn, "
 ");
 if (!$stmt) {
     error_log("Email verification error: " . mysqli_error($conn));
-    setFlashMessage('An error occurred during verification. Please try again.', 'error');
+    setFlashMessage('error', 'An error occurred during verification. Please try again.');
     header('Location: ../index.php?page=profile');
     exit;
 }
@@ -41,7 +41,7 @@ $user = mysqli_fetch_assoc($result);
 mysqli_stmt_close($stmt);
 
 if (!$user) {
-    setFlashMessage('Invalid or expired verification link.', 'error');
+    setFlashMessage('error', 'Invalid or expired verification link.');
     header('Location: ../index.php?page=profile');
     exit;
 }
@@ -54,7 +54,7 @@ if ($user['email_verified']) {
     mysqli_stmt_execute($stmt);
     mysqli_stmt_close($stmt);
     
-    setFlashMessage('Your email address is already verified.', 'info');
+    setFlashMessage('info', 'Your email address is already verified.');
     header('Location: ../index.php?page=profile');
     exit;
 }
@@ -67,7 +67,7 @@ if (!empty($user['email_verify_expires']) && strtotime($user['email_verify_expir
     mysqli_stmt_execute($stmt);
     mysqli_stmt_close($stmt);
     
-    setFlashMessage('Verification link has expired. Please request a new one.', 'error');
+    setFlashMessage('error', 'Verification link has expired. Please request a new one.');
     header('Location: ../index.php?page=profile');
     exit;
 }
@@ -82,7 +82,7 @@ $stmt = mysqli_prepare($conn, "
 ");
 if (!$stmt) {
     error_log("Email verification error: " . mysqli_error($conn));
-    setFlashMessage('An error occurred during verification. Please try again.', 'error');
+    setFlashMessage('error', 'An error occurred during verification. Please try again.');
     header('Location: ../index.php?page=profile');
     exit;
 }
@@ -95,7 +95,7 @@ if (isset($_SESSION['email_verify_step'])) {
     unset($_SESSION['email_verify_step']);
 }
 
-setFlashMessage('Email verified successfully! Your account is now fully verified.', 'success');
+setFlashMessage('success', 'Email verified successfully! Your account is now fully verified.');
 header('Location: ../index.php?page=profile');
 exit;
 ?>

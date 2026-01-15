@@ -98,7 +98,7 @@ switch ($action) {
             $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
             
             // Set flash message
-            setFlashMessage('Phone verified successfully! Welcome, ' . $user['first_name'] . '!', 'success');
+            setFlashMessage('success', 'Phone verified successfully! Welcome, ' . $user['first_name'] . '!');
             
             $response['success'] = true;
             $response['message'] = 'Phone verified successfully! Logging you in...';
