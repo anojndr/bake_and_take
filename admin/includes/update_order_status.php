@@ -71,21 +71,50 @@ try {
             'user_id' => $order['user_id']
         ];
         
-        // Send email notification for 'ready' status
-        if ($status === 'ready') {
+        // Send email notifications for status changes
+        if ($oldStatus !== $status) {
             require_once '../../includes/mailer.php';
             
-            $subject = "Your Order #{$order['order_number']} is Ready!";
-            $body = "
-                <h2>Good news!</h2>
-                <p>Hi {$order['first_name']},</p>
-                <p>Your order <strong>#{$order['order_number']}</strong> is fresh out of the oven and ready for pickup.</p>
-                <p>Please come by our store to collect your delicious treats.</p>
-                <br>
-                <p>See you soon!<br>Bake & Take Team</p>
-            ";
-            
-            sendMail($order['email'], $subject, $body);
+            switch ($status) {
+                case 'preparing':
+                    $subject = "Your Order #{$order['order_number']} is Being Prepared!";
+                    $body = "
+                        <h2>We're on it!</h2>
+                        <p>Hi {$order['first_name']},</p>
+                        <p>Great news! Your order <strong>#{$order['order_number']}</strong> is now being prepared by our bakers.</p>
+                        <p>We'll notify you as soon as it's ready for pickup.</p>
+                        <br>
+                        <p>Thank you for your patience!<br>Bake & Take Team</p>
+                    ";
+                    sendMail($order['email'], $subject, $body);
+                    break;
+                    
+                case 'ready':
+                    $subject = "Your Order #{$order['order_number']} is Ready for Pickup!";
+                    $body = "
+                        <h2>Good news!</h2>
+                        <p>Hi {$order['first_name']},</p>
+                        <p>Your order <strong>#{$order['order_number']}</strong> is fresh out of the oven and ready for pickup.</p>
+                        <p>Please come by our store to collect your delicious treats.</p>
+                        <br>
+                        <p>See you soon!<br>Bake & Take Team</p>
+                    ";
+                    sendMail($order['email'], $subject, $body);
+                    break;
+                    
+                case 'delivered':
+                    $subject = "Thank You for Your Order #{$order['order_number']}!";
+                    $body = "
+                        <h2>Thank you!</h2>
+                        <p>Hi {$order['first_name']},</p>
+                        <p>Thank you for picking up your order <strong>#{$order['order_number']}</strong>!</p>
+                        <p>We hope you enjoy your treats. We'd love to see you again soon!</p>
+                        <br>
+                        <p>With warm regards,<br>Bake & Take Team</p>
+                    ";
+                    sendMail($order['email'], $subject, $body);
+                    break;
+            }
         }
         
         // Send SMS notifications for status changes
