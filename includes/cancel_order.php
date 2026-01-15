@@ -77,6 +77,26 @@ $affectedRows = mysqli_stmt_affected_rows($stmt);
 mysqli_stmt_close($stmt);
 
 if ($affectedRows > 0) {
+    // Return stock to inventory for cancelled order items
+    $itemsStmt = mysqli_prepare($conn, "SELECT product_id, quantity FROM order_items WHERE order_id = ?");
+    if ($itemsStmt) {
+        mysqli_stmt_bind_param($itemsStmt, "i", $orderId);
+        mysqli_stmt_execute($itemsStmt);
+        $itemsResult = mysqli_stmt_get_result($itemsStmt);
+        
+        while ($item = mysqli_fetch_assoc($itemsResult)) {
+            if ($item['product_id']) {
+                $stockStmt = mysqli_prepare($conn, "UPDATE products SET stock = stock + ? WHERE product_id = ?");
+                if ($stockStmt) {
+                    mysqli_stmt_bind_param($stockStmt, "ii", $item['quantity'], $item['product_id']);
+                    mysqli_stmt_execute($stockStmt);
+                    mysqli_stmt_close($stockStmt);
+                }
+            }
+        }
+        mysqli_stmt_close($itemsStmt);
+    }
+    
     // Send cancellation email notification
     require_once 'mailer.php';
     
