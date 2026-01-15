@@ -425,12 +425,12 @@ function handlePhoneChangeRequest($userId) {
     
     // Validate password
     if (empty($currentPassword)) {
-        redirect('../index.php?page=profile', 'Please enter your current password.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Please enter your current password.', 'error');
     }
     
     // Validate phone
     if (empty($newPhone) || !preg_match('/^[0-9]{10}$/', $newPhone)) {
-        redirect('../index.php?page=profile', 'Please enter a valid 10-digit phone number.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Please enter a valid 10-digit phone number.', 'error');
     }
     
     // Format phone with country code
@@ -439,7 +439,7 @@ function handlePhoneChangeRequest($userId) {
     // Get current user with password
     $stmt = mysqli_prepare($conn, "SELECT phone, password FROM users WHERE user_id = ?");
     if (!$stmt) {
-        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Database error. Please try again.', 'error');
     }
     mysqli_stmt_bind_param($stmt, "i", $userId);
     mysqli_stmt_execute($stmt);
@@ -449,30 +449,30 @@ function handlePhoneChangeRequest($userId) {
 
     // Require an existing current phone so we can authorize via OTP to the old number
     if (empty($user['phone'])) {
-        redirect('../index.php?page=profile', 'You must have a current phone number on file to change it. Please add/verify a phone number first.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'You must have a current phone number on file to change it. Please add/verify a phone number first.', 'error');
     }
     
     // Verify password
     if (!password_verify($currentPassword, $user['password'])) {
-        redirect('../index.php?page=profile', 'Incorrect password. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Incorrect password. Please try again.', 'error');
     }
     
     // Check if phone is the same
     if ($user['phone'] === $formattedPhone) {
-        redirect('../index.php?page=profile', 'This is already your current phone number.', 'info');
+        redirect('../index.php?page=profile&edit=phone', 'This is already your current phone number.', 'info');
     }
     
     // Check if phone is already in use
     $stmt = mysqli_prepare($conn, "SELECT user_id FROM users WHERE phone = ? AND user_id != ?");
     if (!$stmt) {
-        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Database error. Please try again.', 'error');
     }
     mysqli_stmt_bind_param($stmt, "si", $formattedPhone, $userId);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
     if (mysqli_fetch_assoc($result)) {
         mysqli_stmt_close($stmt);
-        redirect('../index.php?page=profile', 'This phone number is already in use.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'This phone number is already in use.', 'error');
     }
     mysqli_stmt_close($stmt);
     
@@ -489,7 +489,7 @@ function handlePhoneChangeRequest($userId) {
         WHERE user_id = ?
     ");
     if (!$stmt) {
-        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Database error. Please try again.', 'error');
     }
     mysqli_stmt_bind_param($stmt, "ssssi", $formattedPhone, $otp, $expiresAt, $phoneChangeStep, $userId);
     mysqli_stmt_execute($stmt);
@@ -500,7 +500,7 @@ function handlePhoneChangeRequest($userId) {
     $result = sendSMS($user['phone'], $message, null, $userId);
     
     if ($result['success']) {
-        redirect('../index.php?page=profile', 'OTP sent to your current phone. Please enter the code to authorize the change.', 'success');
+        redirect('../index.php?page=profile&edit=phone', 'OTP sent to your current phone. Please enter the code to authorize the change.', 'success');
     } else {
         // Clear pending phone on failure
         $stmt = mysqli_prepare($conn, "
@@ -516,7 +516,7 @@ function handlePhoneChangeRequest($userId) {
         }
         
         error_log("SMS send failed: " . $result['message']);
-        redirect('../index.php?page=profile', 'Failed to send OTP. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Failed to send OTP. Please try again.', 'error');
     }
 }
 
@@ -529,7 +529,7 @@ function handleVerifyOldPhoneOtp($userId) {
     $otpCode = trim($_POST['otp_code'] ?? '');
     
     if (empty($otpCode) || !preg_match('/^[0-9]{6}$/', $otpCode)) {
-        redirect('../index.php?page=profile', 'Please enter a valid 6-digit OTP code.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Please enter a valid 6-digit OTP code.', 'error');
     }
     
     // Get user with pending phone change
@@ -538,7 +538,7 @@ function handleVerifyOldPhoneOtp($userId) {
         FROM users WHERE user_id = ?
     ");
     if (!$stmt) {
-        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Database error. Please try again.', 'error');
     }
     mysqli_stmt_bind_param($stmt, "i", $userId);
     mysqli_stmt_execute($stmt);
@@ -547,18 +547,18 @@ function handleVerifyOldPhoneOtp($userId) {
     mysqli_stmt_close($stmt);
     
     if (!$user['pending_phone'] || $user['phone_change_step'] !== 'verify_old') {
-        redirect('../index.php?page=profile', 'No pending phone authorization found.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'No pending phone authorization found.', 'error');
     }
     
     // Check if OTP expired
     if (strtotime($user['pending_phone_expires']) < time()) {
         clearPendingPhoneChange($userId);
-        redirect('../index.php?page=profile', 'OTP has expired. Please start over.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'OTP has expired. Please start over.', 'error');
     }
     
     // Verify OTP
     if ($user['pending_phone_otp'] !== $otpCode) {
-        redirect('../index.php?page=profile', 'Invalid OTP code. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Invalid OTP code. Please try again.', 'error');
     }
     
     // Old phone verified! Now send OTP to NEW phone
@@ -574,7 +574,7 @@ function handleVerifyOldPhoneOtp($userId) {
         WHERE user_id = ?
     ");
     if (!$stmt) {
-        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Database error. Please try again.', 'error');
     }
     mysqli_stmt_bind_param($stmt, "sssi", $newOtp, $newExpiresAt, $phoneChangeStep, $userId);
     mysqli_stmt_execute($stmt);
@@ -585,10 +585,10 @@ function handleVerifyOldPhoneOtp($userId) {
     $smsResult = sendSMS($user['pending_phone'], $message, null, $userId);
     
     if ($smsResult['success']) {
-        redirect('../index.php?page=profile', 'Identity confirmed! OTP sent to your new phone number. Enter the code to complete the change.', 'success');
+        redirect('../index.php?page=profile&edit=phone', 'Identity confirmed! OTP sent to your new phone number. Enter the code to complete the change.', 'success');
     } else {
         error_log("SMS to new phone failed: " . $smsResult['message']);
-        redirect('../index.php?page=profile', 'Failed to send OTP to new phone. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Failed to send OTP to new phone. Please try again.', 'error');
     }
 }
 
@@ -601,7 +601,7 @@ function handleVerifyNewPhoneOtp($userId) {
     $otpCode = trim($_POST['otp_code'] ?? '');
     
     if (empty($otpCode) || !preg_match('/^[0-9]{6}$/', $otpCode)) {
-        redirect('../index.php?page=profile', 'Please enter a valid 6-digit OTP code.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Please enter a valid 6-digit OTP code.', 'error');
     }
     
     // Get user with pending phone change
@@ -610,7 +610,7 @@ function handleVerifyNewPhoneOtp($userId) {
         FROM users WHERE user_id = ?
     ");
     if (!$stmt) {
-        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Database error. Please try again.', 'error');
     }
     mysqli_stmt_bind_param($stmt, "i", $userId);
     mysqli_stmt_execute($stmt);
@@ -619,18 +619,18 @@ function handleVerifyNewPhoneOtp($userId) {
     mysqli_stmt_close($stmt);
     
     if (!$user['pending_phone'] || $user['phone_change_step'] !== 'verify_new') {
-        redirect('../index.php?page=profile', 'No pending phone verification found.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'No pending phone verification found.', 'error');
     }
     
     // Check if OTP expired
     if (strtotime($user['pending_phone_expires']) < time()) {
         clearPendingPhoneChange($userId);
-        redirect('../index.php?page=profile', 'OTP has expired. Please start over.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'OTP has expired. Please start over.', 'error');
     }
     
     // Verify OTP
     if ($user['pending_phone_otp'] !== $otpCode) {
-        redirect('../index.php?page=profile', 'Invalid OTP code. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Invalid OTP code. Please try again.', 'error');
     }
     
     $oldPhone = $user['phone'];
@@ -646,7 +646,7 @@ function handleVerifyNewPhoneOtp($userId) {
         WHERE user_id = ?
     ");
     if (!$stmt) {
-        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Database error. Please try again.', 'error');
     }
     mysqli_stmt_bind_param($stmt, "sii", $newPhone, $phoneVerified, $userId);
     mysqli_stmt_execute($stmt);
@@ -676,7 +676,7 @@ function handlePhoneChangeEmailRecovery($userId) {
         FROM users WHERE user_id = ?
     ");
     if (!$stmt) {
-        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Database error. Please try again.', 'error');
     }
     mysqli_stmt_bind_param($stmt, "i", $userId);
     mysqli_stmt_execute($stmt);
@@ -685,7 +685,7 @@ function handlePhoneChangeEmailRecovery($userId) {
     mysqli_stmt_close($stmt);
     
     if (!$user['pending_phone'] || $user['phone_change_step'] !== 'verify_old') {
-        redirect('../index.php?page=profile', 'No pending phone change to recover.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'No pending phone change to recover.', 'error');
     }
     
     // Generate recovery token
@@ -702,7 +702,7 @@ function handlePhoneChangeEmailRecovery($userId) {
         WHERE user_id = ?
     ");
     if (!$stmt) {
-        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Database error. Please try again.', 'error');
     }
     mysqli_stmt_bind_param($stmt, "sssi", $phoneChangeStep, $recoveryToken, $expiresAt, $userId);
     mysqli_stmt_execute($stmt);
@@ -718,10 +718,10 @@ function handlePhoneChangeEmailRecovery($userId) {
     $mailResult = sendMail($user['email'], $subject, $body);
     
     if ($mailResult['success']) {
-        redirect('../index.php?page=profile', 'Recovery email sent! Please check your inbox and click the link to proceed.', 'success');
+        redirect('../index.php?page=profile&edit=phone', 'Recovery email sent! Please check your inbox and click the link to proceed.', 'success');
     } else {
         error_log("Recovery email failed: " . $mailResult['message']);
-        redirect('../index.php?page=profile', 'Failed to send recovery email. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Failed to send recovery email. Please try again.', 'error');
     }
 }
 
@@ -737,7 +737,7 @@ function handleResendNewPhoneOtp($userId) {
         FROM users WHERE user_id = ?
     ");
     if (!$stmt) {
-        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Database error. Please try again.', 'error');
     }
     mysqli_stmt_bind_param($stmt, "i", $userId);
     mysqli_stmt_execute($stmt);
@@ -746,7 +746,7 @@ function handleResendNewPhoneOtp($userId) {
     mysqli_stmt_close($stmt);
     
     if (!$user['pending_phone'] || $user['phone_change_step'] !== 'verify_new') {
-        redirect('../index.php?page=profile', 'No pending phone verification found.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'No pending phone verification found.', 'error');
     }
     
     // Generate new OTP
@@ -760,7 +760,7 @@ function handleResendNewPhoneOtp($userId) {
         WHERE user_id = ?
     ");
     if (!$stmt) {
-        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Database error. Please try again.', 'error');
     }
     mysqli_stmt_bind_param($stmt, "ssi", $newOtp, $newExpiresAt, $userId);
     mysqli_stmt_execute($stmt);
@@ -771,9 +771,9 @@ function handleResendNewPhoneOtp($userId) {
     $smsResult = sendSMS($user['pending_phone'], $message, null, $userId);
     
     if ($smsResult['success']) {
-        redirect('../index.php?page=profile', 'New OTP sent to your new phone number.', 'success');
+        redirect('../index.php?page=profile&edit=phone', 'New OTP sent to your new phone number.', 'success');
     } else {
-        redirect('../index.php?page=profile', 'Failed to resend OTP. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Failed to resend OTP. Please try again.', 'error');
     }
 }
 
@@ -789,7 +789,7 @@ function handleResendPhoneRecoveryEmail($userId) {
         FROM users WHERE user_id = ?
     ");
     if (!$stmt) {
-        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Database error. Please try again.', 'error');
     }
     mysqli_stmt_bind_param($stmt, "i", $userId);
     mysqli_stmt_execute($stmt);
@@ -798,7 +798,7 @@ function handleResendPhoneRecoveryEmail($userId) {
     mysqli_stmt_close($stmt);
     
     if (!$user['pending_phone'] || $user['phone_change_step'] !== 'email_recovery') {
-        redirect('../index.php?page=profile', 'No pending recovery found.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'No pending recovery found.', 'error');
     }
     
     // Generate new recovery token
@@ -813,7 +813,7 @@ function handleResendPhoneRecoveryEmail($userId) {
         WHERE user_id = ?
     ");
     if (!$stmt) {
-        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Database error. Please try again.', 'error');
     }
     mysqli_stmt_bind_param($stmt, "ssi", $recoveryToken, $expiresAt, $userId);
     mysqli_stmt_execute($stmt);
@@ -829,9 +829,9 @@ function handleResendPhoneRecoveryEmail($userId) {
     $mailResult = sendMail($user['email'], $subject, $body);
     
     if ($mailResult['success']) {
-        redirect('../index.php?page=profile', 'Recovery email resent! Please check your inbox.', 'success');
+        redirect('../index.php?page=profile&edit=phone', 'Recovery email resent! Please check your inbox.', 'success');
     } else {
-        redirect('../index.php?page=profile', 'Failed to resend email. Please try again.', 'error');
+        redirect('../index.php?page=profile&edit=phone', 'Failed to resend email. Please try again.', 'error');
     }
 }
 
