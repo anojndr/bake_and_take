@@ -30,9 +30,17 @@ function sendMail($to, $subject, $body, $isHtml = true) {
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = SMTP_PORT;
         
-        // Performance: Set reasonable timeouts (in seconds)
-        $mail->Timeout    = 10;  // Connection timeout (default was 300)
-        $mail->SMTPDebug  = SMTP::DEBUG_OFF;  // Disable debug output
+        // Performance optimizations - reduce timeouts significantly
+        $mail->Timeout       = 10;  // Connection timeout (seconds) - was 300 default
+        $mail->SMTPKeepAlive = true; // Keep connection open for faster subsequent sends
+        $mail->SMTPDebug     = SMTP::DEBUG_OFF;  // Disable debug output
+        $mail->SMTPOptions   = [
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true
+            ]
+        ];
 
         // Recipients
         $mail->setFrom(SMTP_USER, SMTP_FROM_NAME);
