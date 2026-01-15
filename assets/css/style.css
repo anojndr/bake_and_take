@@ -101,6 +101,12 @@ img {
     color: var(--primary);
 }
 
+.navbar-logo {
+    height: 72px;
+    width: auto;
+    object-fit: contain;
+}
+
 .nav-link {
     font-weight: 500;
     color: var(--text-primary) !important;

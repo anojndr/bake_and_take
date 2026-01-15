@@ -42,7 +42,7 @@ if (in_array($page, $protectedPages) && !isset($_SESSION['user_id'])) {
     <nav class="navbar navbar-expand-lg fixed-top" id="mainNav">
         <div class="container">
             <a class="navbar-brand" href="index.php">
-                <i class="bi bi-cake2 me-2"></i>Bake & Take
+                <img src="assets/images/logo.png" alt="Bake & Take" class="navbar-logo me-2">Bake & Take
             </a>
             
             <!-- Desktop Nav Actions (hidden on mobile) -->

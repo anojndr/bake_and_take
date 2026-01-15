@@ -107,6 +107,12 @@ body {
     color: var(--admin-primary);
 }
 
+.sidebar-logo {
+    height: 64px;
+    width: auto;
+    object-fit: contain;
+}
+
 .sidebar-toggle {
     background: transparent;
     border: none;

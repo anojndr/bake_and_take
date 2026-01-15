@@ -40,7 +40,7 @@ if (!in_array($page, $allowedPages)) {
     <aside class="admin-sidebar" id="adminSidebar">
         <div class="sidebar-header">
             <a href="index.php" class="sidebar-brand">
-                <i class="bi bi-cake2"></i>
+                <img src="../assets/images/logo.png" alt="Bake & Take" class="sidebar-logo">
                 <span>Bake & Take</span>
             </a>
             <button class="sidebar-toggle d-lg-none" id="sidebarClose">

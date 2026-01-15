@@ -73,6 +73,13 @@ if (isset($_GET['error'])) {
             display: block;
         }
         
+        .login-logo {
+            height: 144px;
+            width: auto;
+            object-fit: contain;
+            margin-bottom: 1rem;
+        }
+        
         .login-brand h1 {
             color: var(--admin-text);
             font-size: 1.75rem;
@@ -205,7 +212,7 @@ if (isset($_GET['error'])) {
 <body>
     <div class="login-container">
         <div class="login-brand">
-            <i class="bi bi-shield-lock"></i>
+            <img src="../assets/images/logo.png" alt="Bake & Take" class="login-logo">
             <h1>Admin Panel</h1>
             <p>Bake & Take Management System</p>
         </div>
