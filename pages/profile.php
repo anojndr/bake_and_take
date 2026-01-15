@@ -221,61 +221,104 @@ function maskPhone($phone) {
                         <a href="index.php?page=profile" class="back-link"><i class="bi bi-arrow-left"></i> Back to Profile</a>
                     </div>
                     <div class="content-card-body">
-                        <?php if ($user['pending_email'] && strtotime($user['pending_email_expires']) > time()): ?>
-                            <?php if (($user['email_change_step'] ?? '') === 'verify_old'): ?>
-                            <!-- Step 1: Verify current email -->
-                            <div class="verification-alert info">
-                                <i class="bi bi-shield-lock"></i>
-                                <div>
-                                    <strong>Step 1: Verify Your Current Email</strong>
-                                    <p>We sent a 6-digit code to: <strong><?php echo htmlspecialchars($user['email']); ?></strong></p>
-                                    <small>New email pending: <?php echo htmlspecialchars($user['pending_email']); ?></small>
+                        <?php 
+                        $emailChangeStep = $user['email_change_step'] ?? 'none';
+                        $hasPendingEmailChange = $user['pending_email'] && strtotime($user['pending_email_expires']) > time();
+                        ?>
+                        
+                        <?php if ($hasPendingEmailChange && $emailChangeStep === 'verify_old'): ?>
+                        <!-- Step 1: Verify OTP on current email -->
+                        <div class="step-indicator">
+                            <div class="step active"><span>1</span><label>Verify Current</label></div>
+                            <div class="step-line"></div>
+                            <div class="step"><span>2</span><label>Verify New</label></div>
+                        </div>
+                        
+                        <div class="verification-alert info">
+                            <i class="bi bi-shield-lock"></i>
+                            <div>
+                                <strong>Step 1: Confirm Your Identity</strong>
+                                <p>We sent a 6-digit code to your current email: <strong><?php echo htmlspecialchars($user['email']); ?></strong></p>
+                                <small>New email pending: <?php echo htmlspecialchars($user['pending_email']); ?></small>
+                            </div>
+                        </div>
+                        
+                        <form action="includes/process_profile.php" method="POST" class="otp-form">
+                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                            <input type="hidden" name="action" value="verify_old_email_code">
+                            <input type="hidden" name="otp_code" id="otp_code_hidden" value="">
+                            <div class="form-field">
+                                <label>Enter Code from Current Email</label>
+                                <div class="otp-input-group">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="0" autocomplete="off">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="1" autocomplete="off">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="2" autocomplete="off">
+                                    <span class="otp-separator">-</span>
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="3" autocomplete="off">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="4" autocomplete="off">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="5" autocomplete="off">
                                 </div>
                             </div>
-                            
-                            <form action="includes/process_profile.php" method="POST" class="otp-form">
-                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                                <input type="hidden" name="action" value="verify_old_email_code">
-                                <input type="hidden" name="otp_code" id="otp_code_hidden" value="">
-                                <div class="form-field">
-                                    <label>Enter Code from Current Email</label>
-                                    <div class="otp-input-group">
-                                        <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="0" autocomplete="off">
-                                        <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="1" autocomplete="off">
-                                        <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="2" autocomplete="off">
-                                        <span class="otp-separator">-</span>
-                                        <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="3" autocomplete="off">
-                                        <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="4" autocomplete="off">
-                                        <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="5" autocomplete="off">
-                                    </div>
-                                </div>
-                                <div class="form-actions">
-                                    <button type="submit" class="btn-save-changes">VERIFY & CONTINUE</button>
-                                </div>
-                            </form>
-                            
-                            <form action="includes/process_profile.php" method="POST" class="mt-3">
-                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                                <input type="hidden" name="action" value="cancel_email_change">
-                                <button type="submit" class="btn-text-link"><i class="bi bi-x-circle"></i> Cancel email change</button>
-                            </form>
-                            <?php else: ?>
-                            <!-- Pending verification on new email -->
-                            <div class="verification-alert pending">
-                                <i class="bi bi-hourglass-split"></i>
-                                <div>
-                                    <strong>Pending Email Verification</strong>
-                                    <p>We sent a verification link to: <strong><?php echo htmlspecialchars($user['pending_email']); ?></strong></p>
-                                    <small>Please check your new email and click the verification link.</small>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-save-changes">VERIFY & CONTINUE</button>
+                            </div>
+                        </form>
+                        
+                        <form action="includes/process_profile.php" method="POST" class="mt-3">
+                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                            <input type="hidden" name="action" value="cancel_email_change">
+                            <button type="submit" class="btn-text-link text-danger"><i class="bi bi-x-circle"></i> Cancel email change</button>
+                        </form>
+                        
+                        <?php elseif ($hasPendingEmailChange && $emailChangeStep === 'verify_new'): ?>
+                        <!-- Step 2: Verify new email -->
+                        <div class="step-indicator">
+                            <div class="step completed"><span><i class="bi bi-check"></i></span><label>Verified</label></div>
+                            <div class="step-line active"></div>
+                            <div class="step active"><span>2</span><label>Verify New</label></div>
+                        </div>
+                        
+                        <div class="verification-alert success">
+                            <i class="bi bi-envelope-check"></i>
+                            <div>
+                                <strong>Step 2: Verify New Email Address</strong>
+                                <p>We sent a 6-digit code to your new email: <strong><?php echo htmlspecialchars($user['pending_email']); ?></strong></p>
+                            </div>
+                        </div>
+                        
+                        <form action="includes/process_profile.php" method="POST" class="otp-form">
+                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                            <input type="hidden" name="action" value="verify_new_email_code">
+                            <input type="hidden" name="otp_code" id="otp_code_hidden_new" value="">
+                            <div class="form-field">
+                                <label>Enter Code from New Email</label>
+                                <div class="otp-input-group">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="0" autocomplete="off">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="1" autocomplete="off">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="2" autocomplete="off">
+                                    <span class="otp-separator">-</span>
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="3" autocomplete="off">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="4" autocomplete="off">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="5" autocomplete="off">
                                 </div>
                             </div>
-                            
-                            <form action="includes/process_profile.php" method="POST" class="mt-3">
-                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                                <input type="hidden" name="action" value="cancel_email_change">
-                                <button type="submit" class="btn-text-link"><i class="bi bi-x-circle"></i> Cancel email change</button>
-                            </form>
-                            <?php endif; ?>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-save-changes">COMPLETE CHANGE</button>
+                            </div>
+                        </form>
+                        
+                        <form action="includes/process_profile.php" method="POST" class="mt-2">
+                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                            <input type="hidden" name="action" value="resend_new_email_code">
+                            <button type="submit" class="btn-text-link"><i class="bi bi-arrow-repeat"></i> Resend code to new email</button>
+                        </form>
+                        
+                        <form action="includes/process_profile.php" method="POST" class="mt-2">
+                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                            <input type="hidden" name="action" value="cancel_email_change">
+                            <button type="submit" class="btn-text-link text-danger"><i class="bi bi-x-circle"></i> Cancel email change</button>
+                        </form>
+                        
                         <?php else: ?>
                         <!-- Request new email change -->
                         <form action="includes/process_profile.php" method="POST" class="edit-profile-form">
@@ -284,7 +327,7 @@ function maskPhone($phone) {
                             
                             <div class="security-notice">
                                 <i class="bi bi-shield-lock"></i>
-                                <span>For security, please confirm your password to change your email address.</span>
+                                <span>For security, changing your email requires verification from both your current and new email.</span>
                             </div>
                             
                             <div class="form-field">
@@ -300,11 +343,11 @@ function maskPhone($phone) {
                             <div class="form-field">
                                 <label>New Email Address <span class="required">*</span></label>
                                 <input type="email" name="new_email" class="form-input" placeholder="Enter new email address" required>
-                                <small class="form-hint">A verification code will be sent to your current email first.</small>
+                                <small class="form-hint">Verification will be required for both your current and new email.</small>
                             </div>
                             
                             <div class="form-actions">
-                                <button type="submit" class="btn-save-changes">REQUEST EMAIL CHANGE</button>
+                                <button type="submit" class="btn-save-changes">START EMAIL CHANGE</button>
                                 <a href="index.php?page=profile" class="btn-cancel">Cancel</a>
                             </div>
                         </form>

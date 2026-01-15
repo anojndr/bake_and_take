@@ -79,6 +79,14 @@ switch ($action) {
     case 'cancel_email_change':
         handleCancelEmailChange($userId);
         break;
+    
+    case 'verify_new_email_code':
+        handleVerifyNewEmailCode($userId);
+        break;
+        
+    case 'resend_new_email_code':
+        handleResendNewEmailCode($userId);
+        break;
         
     case 'change_password':
         handlePasswordChange($userId);
@@ -354,14 +362,14 @@ function handleVerifyOldEmailCode($userId) {
         redirect('../index.php?page=profile&edit=email', 'Invalid authorization code. Please try again.', 'error');
     }
 
-    // Old email authorized; now generate verification token for NEW email and send link
-    $verifyToken = bin2hex(random_bytes(32));
-    $expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
+    // Old email authorized; now generate OTP code for NEW email and send it
+    $newEmailOtp = sprintf('%06d', random_int(0, 999999));
+    $expiresAt = date('Y-m-d H:i:s', strtotime('+15 minutes'));
     $emailChangeStep = 'verify_new';
 
     $stmt = mysqli_prepare($conn, "
         UPDATE users
-        SET pending_email_token = ?,
+        SET pending_email_new_otp = ?,
             pending_email_expires = ?,
             pending_email_old_otp = NULL,
             email_change_step = ?
@@ -370,25 +378,21 @@ function handleVerifyOldEmailCode($userId) {
     if (!$stmt) {
         redirect('../index.php?page=profile&edit=email', 'Database error. Please try again.', 'error');
     }
-    mysqli_stmt_bind_param($stmt, "sssi", $verifyToken, $expiresAt, $emailChangeStep, $userId);
+    mysqli_stmt_bind_param($stmt, "sssi", $newEmailOtp, $expiresAt, $emailChangeStep, $userId);
     mysqli_stmt_execute($stmt);
     mysqli_stmt_close($stmt);
 
-    $baseUrl = getCurrentSiteUrl();
-    $verifyUrl = $baseUrl . '/includes/verify_email_change.php?token=' . $verifyToken;
-
     $verifySubject = 'Verify Your New Email Address - ' . SITE_NAME;
-    $verifyBody = getEmailChangeVerificationTemplate($user['email'], $user['pending_email'], $verifyUrl);
+    $verifyBody = getNewEmailOtpTemplate($user['first_name'], $user['pending_email'], $newEmailOtp);
     $verifyResult = sendMail($user['pending_email'], $verifySubject, $verifyBody);
 
     if (!$verifyResult['success']) {
-        error_log("Email verification send failed: " . $verifyResult['message']);
-        // Keep pending change but require re-start for safety
+        error_log("Email verification OTP send failed: " . $verifyResult['message']);
         clearPendingEmailChange($userId);
-        redirect('../index.php?page=profile&edit=email', 'Failed to send verification email to your new address. Please start over.', 'error');
+        redirect('../index.php?page=profile&edit=email', 'Failed to send verification code to your new address. Please start over.', 'error');
     }
 
-    redirect('../index.php?page=profile&edit=email', 'Authorization confirmed! We sent a verification link to ' . $user['pending_email'] . '. Please click it to finish changing your email.', 'success');
+    redirect('../index.php?page=profile&edit=email', 'Authorization confirmed! We sent a 6-digit code to ' . $user['pending_email'] . '. Please enter it to finish changing your email.', 'success');
 }
 
 /**
@@ -403,6 +407,7 @@ function clearPendingEmailChange($userId) {
             pending_email_token = NULL,
             pending_email_expires = NULL,
             pending_email_old_otp = NULL,
+            pending_email_new_otp = NULL,
             email_change_step = NULL,
             email_change_cancel_token = NULL
         WHERE user_id = ?
@@ -412,6 +417,237 @@ function clearPendingEmailChange($userId) {
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
     }
+}
+
+/**
+ * Handle verification of new email OTP code - Step 2
+ */
+function handleVerifyNewEmailCode($userId) {
+    global $conn;
+    
+    $otpCode = trim($_POST['otp_code'] ?? '');
+
+    if (empty($otpCode) || !preg_match('/^[0-9]{6}$/', $otpCode)) {
+        redirect('../index.php?page=profile&edit=email', 'Please enter a valid 6-digit code.', 'error');
+    }
+
+    // Get user with pending email change
+    $stmt = mysqli_prepare($conn, "SELECT email, first_name, pending_email, pending_email_expires, pending_email_new_otp, email_change_step FROM users WHERE user_id = ?");
+    if (!$stmt) {
+        redirect('../index.php?page=profile&edit=email', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "i", $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $user = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
+
+    if (!$user || empty($user['pending_email']) || $user['email_change_step'] !== 'verify_new') {
+        redirect('../index.php?page=profile&edit=email', 'No pending email verification found.', 'error');
+    }
+
+    // Check expiry
+    if (empty($user['pending_email_expires']) || strtotime($user['pending_email_expires']) < time()) {
+        clearPendingEmailChange($userId);
+        redirect('../index.php?page=profile&edit=email', 'Verification code has expired. Please start over.', 'error');
+    }
+
+    // Verify OTP
+    if (empty($user['pending_email_new_otp']) || $user['pending_email_new_otp'] !== $otpCode) {
+        redirect('../index.php?page=profile&edit=email', 'Invalid verification code. Please try again.', 'error');
+    }
+
+    // Success! Update the email
+    $oldEmail = $user['email'];
+    $newEmail = $user['pending_email'];
+
+    $stmt = mysqli_prepare($conn, "
+        UPDATE users
+        SET email = ?,
+            pending_email = NULL,
+            pending_email_token = NULL,
+            pending_email_expires = NULL,
+            pending_email_old_otp = NULL,
+            pending_email_new_otp = NULL,
+            email_change_step = NULL,
+            email_change_cancel_token = NULL
+        WHERE user_id = ?
+    ");
+    if (!$stmt) {
+        redirect('../index.php?page=profile&edit=email', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "si", $newEmail, $userId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+
+    // Send confirmation emails
+    $confirmSubject = 'Email Address Changed - ' . SITE_NAME;
+    $confirmBodyOld = getEmailChangedConfirmationTemplate($user['first_name'], $oldEmail, $newEmail, true);
+    $confirmBodyNew = getEmailChangedConfirmationTemplate($user['first_name'], $oldEmail, $newEmail, false);
+    
+    sendMail($oldEmail, $confirmSubject, $confirmBodyOld);
+    sendMail($newEmail, $confirmSubject, $confirmBodyNew);
+
+    redirect('../index.php?page=profile', 'Your email address has been successfully changed to ' . $newEmail . '!', 'success');
+}
+
+/**
+ * Handle resending OTP code to new email
+ */
+function handleResendNewEmailCode($userId) {
+    global $conn;
+
+    // Get user with pending email change
+    $stmt = mysqli_prepare($conn, "SELECT first_name, pending_email, pending_email_expires, email_change_step FROM users WHERE user_id = ?");
+    if (!$stmt) {
+        redirect('../index.php?page=profile&edit=email', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "i", $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $user = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
+
+    if (!$user || empty($user['pending_email']) || $user['email_change_step'] !== 'verify_new') {
+        redirect('../index.php?page=profile&edit=email', 'No pending email verification found.', 'error');
+    }
+
+    // Generate new OTP
+    $newEmailOtp = sprintf('%06d', random_int(0, 999999));
+    $expiresAt = date('Y-m-d H:i:s', strtotime('+15 minutes'));
+
+    $stmt = mysqli_prepare($conn, "UPDATE users SET pending_email_new_otp = ?, pending_email_expires = ? WHERE user_id = ?");
+    if (!$stmt) {
+        redirect('../index.php?page=profile&edit=email', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "ssi", $newEmailOtp, $expiresAt, $userId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+
+    $verifySubject = 'Verify Your New Email Address - ' . SITE_NAME;
+    $verifyBody = getNewEmailOtpTemplate($user['first_name'], $user['pending_email'], $newEmailOtp);
+    $verifyResult = sendMail($user['pending_email'], $verifySubject, $verifyBody);
+
+    if (!$verifyResult['success']) {
+        redirect('../index.php?page=profile&edit=email', 'Failed to resend verification code. Please try again.', 'error');
+    }
+
+    redirect('../index.php?page=profile&edit=email', 'A new 6-digit code has been sent to ' . $user['pending_email'] . '.', 'success');
+}
+
+/**
+ * Email template for new email OTP verification
+ */
+function getNewEmailOtpTemplate($firstName, $newEmail, $otpCode) {
+    $siteName = SITE_NAME;
+    
+    return "
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset='UTF-8'>
+        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    </head>
+    <body style='margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;'>
+        <table role='presentation' style='width: 100%; border-collapse: collapse;'>
+            <tr>
+                <td style='padding: 40px 0;'>
+                    <table role='presentation' style='width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>
+                        <tr>
+                            <td style='background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%); padding: 30px; text-align: center;'>
+                                <h1 style='color: #ffffff; margin: 0; font-size: 24px;'>$siteName</h1>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 40px 30px;'>
+                                <h2 style='color: #333333; margin: 0 0 20px 0; font-size: 20px;'>Verify Your New Email Address</h2>
+                                <p style='color: #666666; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;'>
+                                    Hi $firstName,
+                                </p>
+                                <p style='color: #666666; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;'>
+                                    You requested to change your email address to <strong>$newEmail</strong>. Enter this verification code to complete the change:
+                                </p>
+                                <div style='background-color: #f8f9fa; border-radius: 8px; padding: 25px; text-align: center; margin: 25px 0;'>
+                                    <span style='font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #8B4513;'>$otpCode</span>
+                                </div>
+                                <p style='color: #666666; font-size: 14px; line-height: 1.6; margin: 0 0 10px 0;'>
+                                    This code will expire in <strong>15 minutes</strong>.
+                                </p>
+                                <p style='color: #999999; font-size: 14px; line-height: 1.6; margin: 20px 0 0 0;'>
+                                    If you didn't request this change, please ignore this email or contact support.
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style='background-color: #f8f9fa; padding: 20px 30px; text-align: center;'>
+                                <p style='color: #999999; font-size: 12px; margin: 0;'>
+                                    &copy; " . date('Y') . " $siteName. All rights reserved.
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+    ";
+}
+
+/**
+ * Email template for email change confirmation
+ */
+function getEmailChangedConfirmationTemplate($firstName, $oldEmail, $newEmail, $isOldEmail = true) {
+    $siteName = SITE_NAME;
+    $message = $isOldEmail 
+        ? "Your email address has been successfully changed from <strong>$oldEmail</strong> to <strong>$newEmail</strong>."
+        : "Your email address has been successfully changed. This email (<strong>$newEmail</strong>) is now associated with your account.";
+    
+    return "
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset='UTF-8'>
+        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    </head>
+    <body style='margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;'>
+        <table role='presentation' style='width: 100%; border-collapse: collapse;'>
+            <tr>
+                <td style='padding: 40px 0;'>
+                    <table role='presentation' style='width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>
+                        <tr>
+                            <td style='background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%); padding: 30px; text-align: center;'>
+                                <h1 style='color: #ffffff; margin: 0; font-size: 24px;'>$siteName</h1>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 40px 30px;'>
+                                <h2 style='color: #333333; margin: 0 0 20px 0; font-size: 20px;'>Email Address Changed</h2>
+                                <p style='color: #666666; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;'>
+                                    Hi $firstName,
+                                </p>
+                                <p style='color: #666666; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;'>
+                                    $message
+                                </p>
+                                <p style='color: #999999; font-size: 14px; line-height: 1.6; margin: 20px 0 0 0;'>
+                                    If you didn't make this change, please contact our support team immediately.
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style='background-color: #f8f9fa; padding: 20px 30px; text-align: center;'>
+                                <p style='color: #999999; font-size: 12px; margin: 0;'>
+                                    &copy; " . date('Y') . " $siteName. All rights reserved.
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+    ";
 }
 
 /**

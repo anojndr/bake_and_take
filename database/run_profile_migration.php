@@ -67,6 +67,19 @@ if (mysqli_num_rows($result) === 0) {
 }
 mysqli_free_result($result);
 
+// Check and add pending_email_new_otp column
+$result = mysqli_query($conn, "SHOW COLUMNS FROM users LIKE 'pending_email_new_otp'");
+if (mysqli_num_rows($result) === 0) {
+    if (mysqli_query($conn, "ALTER TABLE users ADD COLUMN pending_email_new_otp VARCHAR(6) NULL")) {
+        echo "✓ Added 'pending_email_new_otp' column\n";
+    } else {
+        echo "✗ Error adding 'pending_email_new_otp': " . mysqli_error($conn) . "\n";
+    }
+} else {
+    echo "- 'pending_email_new_otp' column already exists\n";
+}
+mysqli_free_result($result);
+
 // Check and add email_change_step column
 $result = mysqli_query($conn, "SHOW COLUMNS FROM users LIKE 'email_change_step'");
 if (mysqli_num_rows($result) === 0) {
