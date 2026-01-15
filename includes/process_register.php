@@ -43,8 +43,17 @@ if (empty($phone)) {
     redirect('../index.php?page=register', 'Phone number is required.', 'error');
 }
 
-if (strlen($password) < 8) {
-    redirect('../index.php?page=register', 'Password must be at least 8 characters.', 'error');
+// Validate phone format (10 digits starting with 9)
+$phoneDigits = preg_replace('/[^0-9]/', '', $_POST['phone'] ?? '');
+if (!isValidPhoneNumber($phoneDigits)) {
+    redirect('../index.php?page=register', 'Please enter a valid Philippine mobile number (10 digits starting with 9).', 'error');
+}
+
+// Password strength validation
+$passwordCheck = isStrongPassword($password);
+if (!$passwordCheck['valid']) {
+    $missing = implode(', ', $passwordCheck['errors']);
+    redirect('../index.php?page=register', 'Password must contain: ' . $missing . '.', 'error');
 }
 
 if ($password !== $confirmPassword) {

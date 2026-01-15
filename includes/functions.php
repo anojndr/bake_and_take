@@ -238,6 +238,50 @@ function isValidEmail($email) {
 }
 
 /**
+ * Validate Philippine phone number (10 digits starting with 9)
+ * @param string $phone The phone number (without +63 prefix)
+ * @return bool True if valid, false otherwise
+ */
+function isValidPhoneNumber($phone) {
+    // Remove any non-numeric characters
+    $phone = preg_replace('/[^0-9]/', '', $phone);
+    
+    // Must be exactly 10 digits and start with 9
+    return strlen($phone) === 10 && substr($phone, 0, 1) === '9';
+}
+
+/**
+ * Check if password meets strength requirements
+ * Must have: uppercase, lowercase, number, and special character
+ * @param string $password The password to check
+ * @return array ['valid' => bool, 'errors' => array of error messages]
+ */
+function isStrongPassword($password) {
+    $errors = [];
+    
+    if (strlen($password) < 8) {
+        $errors[] = 'at least 8 characters';
+    }
+    if (!preg_match('/[A-Z]/', $password)) {
+        $errors[] = 'an uppercase letter';
+    }
+    if (!preg_match('/[a-z]/', $password)) {
+        $errors[] = 'a lowercase letter';
+    }
+    if (!preg_match('/[0-9]/', $password)) {
+        $errors[] = 'a number';
+    }
+    if (!preg_match('/[!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>\/?~`]/', $password)) {
+        $errors[] = 'a special character (!@#$%^&*...)';
+    }
+    
+    return [
+        'valid' => empty($errors),
+        'errors' => $errors
+    ];
+}
+
+/**
  * Get the current site URL dynamically
  * Detects whether we're on localhost or a domain
  */

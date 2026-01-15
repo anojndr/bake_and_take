@@ -73,19 +73,30 @@
                 <label class="form-label">Phone Number</label>
                 <div class="phone-input-wrapper">
                     <span class="phone-prefix">+63</span>
-                    <input type="tel" class="form-control form-control-custom phone-input" name="phone" id="phone" placeholder="9XX XXX XXXX" maxlength="10" pattern="[0-9]{10}" required>
+                    <input type="tel" class="form-control form-control-custom phone-input" name="phone" id="phone" placeholder="9XX XXX XXXX" maxlength="10" pattern="9[0-9]{9}" required>
                 </div>
-                <small class="text-muted">Enter your 10-digit Philippine mobile number</small>
+                <small class="text-muted">Enter your 10-digit Philippine mobile number (must start with 9)</small>
+                <div class="invalid-feedback" id="phone-error"></div>
             </div>
             
             <div class="mt-3">
                 <label class="form-label">Password</label>
                 <div class="input-icon-wrapper">
                     <i class="bi bi-lock input-icon"></i>
-                    <input type="password" class="form-control form-control-custom with-icon has-toggle" name="password" id="reg_password" placeholder="Min 8 characters" required minlength="8">
+                    <input type="password" class="form-control form-control-custom with-icon has-toggle" name="password" id="reg_password" placeholder="Strong password required" required minlength="8">
                     <button type="button" class="password-toggle" onclick="togglePassword('reg_password')" aria-label="Show password">
                         <i class="bi bi-eye"></i>
                     </button>
+                </div>
+                <div class="password-requirements mt-2" id="password-requirements">
+                    <small class="text-muted">Password must contain:</small>
+                    <ul class="password-checklist mb-0 ps-3">
+                        <li id="req-length" class="text-muted"><small>At least 8 characters</small></li>
+                        <li id="req-upper" class="text-muted"><small>An uppercase letter (A-Z)</small></li>
+                        <li id="req-lower" class="text-muted"><small>A lowercase letter (a-z)</small></li>
+                        <li id="req-number" class="text-muted"><small>A number (0-9)</small></li>
+                        <li id="req-special" class="text-muted"><small>A special character (!@#$%^&*...)</small></li>
+                    </ul>
                 </div>
             </div>
             
@@ -203,6 +214,54 @@
     background: #dbeafe;
     color: #2563eb;
     border: 1px solid #bfdbfe;
+}
+
+/* Password Requirements Checklist */
+.password-checklist {
+    list-style: none;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+.password-checklist li {
+    padding: 0.15rem 0;
+    transition: color 0.2s ease;
+}
+
+.password-checklist li.text-success {
+    color: #16a34a !important;
+}
+
+/* Validation States */
+.form-control-custom.is-valid {
+    border-color: #16a34a;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2316a34a' d='M2.3 6.73.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem;
+    padding-right: 2.5rem;
+}
+
+.form-control-custom.is-invalid {
+    border-color: #dc2626;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23dc2626'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc2626' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem;
+    padding-right: 2.5rem;
+}
+
+.form-control-custom.has-toggle.is-valid,
+.form-control-custom.has-toggle.is-invalid {
+    background-position: right 2.75rem center;
+    padding-right: 4.5rem;
+}
+
+.invalid-feedback {
+    display: block;
+    color: #dc2626;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
 }
 
 /* Verification Options Styles */
@@ -411,6 +470,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const phoneField = document.getElementById('phone-field');
     const phoneInput = document.getElementById('phone');
     const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('reg_password');
+    const registerForm = document.getElementById('registerForm');
     
     verificationOptions.forEach(option => {
         option.addEventListener('click', function() {
@@ -433,6 +494,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Phone number validation
+    function validatePhone(value) {
+        const digits = value.replace(/[^0-9]/g, '');
+        return digits.length === 10 && digits.charAt(0) === '9';
+    }
+    
     // Phone number input formatting - only allow numbers
     phoneInput.addEventListener('input', function(e) {
         // Remove any non-numeric characters
@@ -444,12 +511,136 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         this.value = value;
+        
+        // Validate and show feedback
+        const phoneError = document.getElementById('phone-error');
+        if (value.length > 0) {
+            if (!validatePhone(value)) {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+                if (value.charAt(0) !== '9') {
+                    phoneError.textContent = 'Phone number must start with 9';
+                } else {
+                    phoneError.textContent = 'Phone number must be 10 digits';
+                }
+            } else {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+                phoneError.textContent = '';
+            }
+        } else {
+            this.classList.remove('is-invalid', 'is-valid');
+            phoneError.textContent = '';
+        }
     });
     
     // Prevent non-numeric key presses
     phoneInput.addEventListener('keypress', function(e) {
         if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab') {
             e.preventDefault();
+        }
+    });
+    
+    // Email validation
+    emailInput.addEventListener('input', function() {
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (this.value.length > 0) {
+            if (emailPattern.test(this.value)) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            } else {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+            }
+        } else {
+            this.classList.remove('is-invalid', 'is-valid');
+        }
+    });
+    
+    // Password strength validation
+    function checkPasswordStrength(password) {
+        return {
+            length: password.length >= 8,
+            upper: /[A-Z]/.test(password),
+            lower: /[a-z]/.test(password),
+            number: /[0-9]/.test(password),
+            special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(password)
+        };
+    }
+    
+    function updatePasswordUI(checks) {
+        const requirements = [
+            { id: 'req-length', check: checks.length },
+            { id: 'req-upper', check: checks.upper },
+            { id: 'req-lower', check: checks.lower },
+            { id: 'req-number', check: checks.number },
+            { id: 'req-special', check: checks.special }
+        ];
+        
+        requirements.forEach(req => {
+            const element = document.getElementById(req.id);
+            if (req.check) {
+                element.classList.remove('text-muted', 'text-danger');
+                element.classList.add('text-success');
+                element.innerHTML = '<small><i class="bi bi-check-circle-fill me-1"></i>' + element.textContent.trim() + '</small>';
+            } else {
+                element.classList.remove('text-success');
+                element.classList.add('text-muted');
+                element.innerHTML = '<small>' + element.textContent.trim() + '</small>';
+            }
+        });
+    }
+    
+    passwordInput.addEventListener('input', function() {
+        const checks = checkPasswordStrength(this.value);
+        updatePasswordUI(checks);
+        
+        const allValid = Object.values(checks).every(v => v);
+        if (this.value.length > 0) {
+            if (allValid) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            } else {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+            }
+        } else {
+            this.classList.remove('is-invalid', 'is-valid');
+        }
+    });
+    
+    // Form submission validation
+    registerForm.addEventListener('submit', function(e) {
+        let isValid = true;
+        let errorMessage = '';
+        
+        // Validate email
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailPattern.test(emailInput.value)) {
+            isValid = false;
+            errorMessage = 'Please enter a valid email address.';
+            emailInput.classList.add('is-invalid');
+        }
+        
+        // Validate phone
+        if (!validatePhone(phoneInput.value)) {
+            isValid = false;
+            errorMessage = 'Please enter a valid Philippine mobile number (10 digits starting with 9).';
+            phoneInput.classList.add('is-invalid');
+        }
+        
+        // Validate password strength
+        const checks = checkPasswordStrength(passwordInput.value);
+        const allValid = Object.values(checks).every(v => v);
+        if (!allValid) {
+            isValid = false;
+            errorMessage = 'Password must contain uppercase, lowercase, numbers, and special characters.';
+            passwordInput.classList.add('is-invalid');
+        }
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert(errorMessage);
         }
     });
 });
