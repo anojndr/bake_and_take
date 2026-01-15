@@ -110,9 +110,16 @@ if ($pdo) {
                                     <span class="total-label">Total</span>
                                     <span class="total-amount">₱<?php echo number_format($order['total'], 2); ?></span>
                                 </div>
-                                <button class="btn btn-view-details" onclick="viewOrderDetails(<?php echo $order['id']; ?>)">
-                                    View Details <i class="bi bi-chevron-right"></i>
-                                </button>
+                                <div class="order-actions">
+                                    <?php if (in_array($order['status'], ['pending', 'confirmed'])): ?>
+                                        <button class="btn btn-cancel-order" onclick="cancelOrder(<?php echo $order['id']; ?>, '<?php echo htmlspecialchars($order['order_number']); ?>')">
+                                            <i class="bi bi-x-circle"></i> Cancel
+                                        </button>
+                                    <?php endif; ?>
+                                    <button class="btn btn-view-details" onclick="viewOrderDetails(<?php echo $order['id']; ?>)">
+                                        View Details <i class="bi bi-chevron-right"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -377,6 +384,67 @@ if ($pdo) {
     color: var(--white);
 }
 
+.order-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.btn-cancel-order {
+    background: transparent;
+    border: 2px solid #dc3545;
+    color: #dc3545;
+    padding: 0.6rem 1.25rem;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-cancel-order:hover {
+    background: #dc3545;
+    color: var(--white);
+}
+
+.btn-cancel-order:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Modal Cancel Section */
+.modal-cancel-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--cream-dark);
+    text-align: center;
+}
+
+.btn-cancel-order-modal {
+    background: transparent;
+    border: 2px solid #dc3545;
+    color: #dc3545;
+    padding: 0.75rem 2rem;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+}
+
+.btn-cancel-order-modal:hover {
+    background: #dc3545;
+    color: var(--white);
+}
+
+.btn-cancel-order-modal:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 /* Modal Styles */
 .order-modal-content {
     border: none;
@@ -516,6 +584,10 @@ if ($pdo) {
     to { transform: rotate(360deg); }
 }
 
+.spin {
+    animation: spin 1s linear infinite;
+}
+
 /* Responsive */
 @media (max-width: 767px) {
     .order-card-header {
@@ -529,7 +601,13 @@ if ($pdo) {
         gap: 1rem;
     }
     
-    .btn-view-details {
+    .order-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+    
+    .btn-view-details,
+    .btn-cancel-order {
         width: 100%;
         justify-content: center;
     }
@@ -542,6 +620,93 @@ if ($pdo) {
 
 <script>
 const ordersData = <?php echo json_encode($orders); ?>;
+
+async function cancelOrder(orderId, orderNumber) {
+    if (!confirm(`Are you sure you want to cancel order #${orderNumber}? This action cannot be undone.`)) {
+        return;
+    }
+    
+    const button = event.target.closest('.btn-cancel-order');
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Cancelling...';
+    
+    try {
+        const formData = new FormData();
+        formData.append('order_id', orderId);
+        
+        const response = await fetch('includes/cancel_order.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Update the order card UI
+            const orderCard = document.querySelector(`.order-card[data-order-id="${orderId}"]`);
+            if (orderCard) {
+                // Update status badge
+                const statusBadge = orderCard.querySelector('.order-status');
+                statusBadge.className = 'order-status status-cancelled';
+                statusBadge.innerHTML = '<i class="bi bi-x-circle me-1"></i>Cancelled';
+                
+                // Remove cancel button
+                button.remove();
+                
+                // Update ordersData
+                const orderIndex = ordersData.findIndex(o => o.id == orderId);
+                if (orderIndex !== -1) {
+                    ordersData[orderIndex].status = 'cancelled';
+                }
+            }
+            
+            // Show success message
+            showToast('Order cancelled successfully', 'success');
+        } else {
+            button.disabled = false;
+            button.innerHTML = originalText;
+            showToast(result.message || 'Failed to cancel order', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        button.disabled = false;
+        button.innerHTML = originalText;
+        showToast('An error occurred. Please try again.', 'error');
+    }
+}
+
+function showToast(message, type = 'info') {
+    // Create toast container if not exists
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        toastContainer.style.zIndex = '1100';
+        document.body.appendChild(toastContainer);
+    }
+    
+    const bgClass = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-info';
+    const icon = type === 'success' ? 'bi-check-circle' : type === 'error' ? 'bi-exclamation-circle' : 'bi-info-circle';
+    
+    const toastEl = document.createElement('div');
+    toastEl.className = `toast align-items-center text-white ${bgClass} border-0`;
+    toastEl.setAttribute('role', 'alert');
+    toastEl.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="bi ${icon} me-2"></i>${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    toastContainer.appendChild(toastEl);
+    const toast = new bootstrap.Toast(toastEl, { autohide: true, delay: 4000 });
+    toast.show();
+    
+    toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+}
 
 async function viewOrderDetails(orderId) {
     const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
@@ -623,6 +788,74 @@ async function viewOrderDetails(orderId) {
                 <span>₱${parseFloat(order.total).toFixed(2)}</span>
             </div>
         </div>
+        
+        ${['pending', 'confirmed'].includes(order.status) ? `
+        <div class="modal-cancel-section">
+            <button class="btn btn-cancel-order-modal" onclick="cancelOrderFromModal(${order.id}, '${order.order_number}')">
+                <i class="bi bi-x-circle me-2"></i>Cancel This Order
+            </button>
+        </div>
+        ` : ''}
     `;
+}
+
+async function cancelOrderFromModal(orderId, orderNumber) {
+    if (!confirm(`Are you sure you want to cancel order #${orderNumber}? This action cannot be undone.`)) {
+        return;
+    }
+    
+    const button = document.querySelector('.btn-cancel-order-modal');
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Cancelling...';
+    
+    try {
+        const formData = new FormData();
+        formData.append('order_id', orderId);
+        
+        const response = await fetch('includes/cancel_order.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('orderDetailsModal'));
+            modal.hide();
+            
+            // Update the order card UI
+            const orderCard = document.querySelector(`.order-card[data-order-id="${orderId}"]`);
+            if (orderCard) {
+                // Update status badge
+                const statusBadge = orderCard.querySelector('.order-status');
+                statusBadge.className = 'order-status status-cancelled';
+                statusBadge.innerHTML = '<i class="bi bi-x-circle me-1"></i>Cancelled';
+                
+                // Remove cancel button from card
+                const cancelBtn = orderCard.querySelector('.btn-cancel-order');
+                if (cancelBtn) cancelBtn.remove();
+            }
+            
+            // Update ordersData
+            const orderIndex = ordersData.findIndex(o => o.id == orderId);
+            if (orderIndex !== -1) {
+                ordersData[orderIndex].status = 'cancelled';
+            }
+            
+            // Show success message
+            showToast('Order cancelled successfully', 'success');
+        } else {
+            button.disabled = false;
+            button.innerHTML = originalText;
+            showToast(result.message || 'Failed to cancel order', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        button.disabled = false;
+        button.innerHTML = originalText;
+        showToast('An error occurred. Please try again.', 'error');
+    }
 }
 </script>
