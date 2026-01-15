@@ -1,190 +1,109 @@
-# Bake & Take - Artisan Bakery Web App
+# Bake & Take 🥖🧁
 
-A beautiful, modern bakery web application built with PHP, Bootstrap, CSS, and JavaScript.
+**Bake & Take** is a full-featured e-commerce web application designed for a bakery business. Built with **PHP** and **MySQL**, it provides a seamless ordering experience for customers and a robust management system for administrators.
 
-## Features
+### 🌐 **Live Site:** [bakeandtake.xyz](https://bakeandtake.xyz)
 
-- 🍞 **Product Catalog** - Browse artisan breads, pastries, cakes, and cookies
-- 🛒 **Shopping Cart** - Add items, update quantities, and checkout
-- 👤 **User Authentication** - Register and login functionality
-- 📧 **Contact Form** - Get in touch with the bakery
-- 📱 **Responsive Design** - Works on desktop, tablet, and mobile
-- ✨ **Modern UI** - Beautiful animations and premium design
-- 🤖 **AI Chatbot** - Intelligent assistant powered by Ollama (qwen3:0.6b) to answer questions about Bake & Take
+> **Note:** This project was developed as a final requirement for the Bachelor of Science in Information Technology (BSIT) program (Year 2026).
 
-## Tech Stack
+---
 
-- **Backend**: PHP 7.4+
-- **Frontend**: Bootstrap 5, CSS3, JavaScript (ES6+)
-- **Database**: MySQL/MariaDB (optional for full functionality)
-- **Icons**: Bootstrap Icons
-- **Fonts**: Google Fonts (Playfair Display, Poppins)
+## 🚀 Features
 
-## Installation
+### 🛒 Customer Side
+* **User Authentication**: Secure registration and login system.
+* **Product Catalog**: Browse bakery items by category (Bread, Pastries, Cakes, etc.).
+* **Shopping Cart**: Add items, update quantities, and manage the cart.
+* **Checkout System**: Secure checkout with order summary.
+* **Payment Integration**:
+    * **PayPal**: Real-time payment processing.
+    * **Cash on Delivery (COD)**.
+* **Order Tracking**: View order status and history.
+* **Profile Management**: Update personal details and password.
 
-### Prerequisites
+### 🛡️ Admin Panel
+* **Dashboard**: Overview of sales, recent orders, and total users.
+* **Product Management**: Add, edit, and delete products with image uploads.
+* **Category Management**: Organize products into categories.
+* **Order Management**:
+    * View order details.
+    * Update statuses (Pending, Confirmed, Preparing, Ready, Completed, Cancelled).
+    * Printable invoices/receipts.
+* **User Management**: View and manage registered customers.
+* **Database Backup**: Built-in tool to backup and restore the database.
 
-- PHP 7.4 or higher
-- Web server (Apache, Nginx, or PHP built-in server)
-- MySQL/MariaDB (optional)
+### 🔔 Notifications
+* **SMS Integration**: Automated SMS updates for order confirmations and status changes (via SMSGate & Android).
+* **Email Notifications**: Transactional emails using PHPMailer.
 
-### Quick Start
+---
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/bake_and_take.git
-   cd bake_and_take
-   ```
+## 🛠️ Tech Stack
 
-2. **Configure the database** (optional)
-   - Import `database/schema.sql` into MySQL
-   - Update `includes/config.php` with your database credentials
+* **Backend**: PHP (Native)
+* **Frontend**: HTML5, CSS3, JavaScript, Bootstrap 5
+* **Database**: MySQL
+* **Libraries & APIs**:
+    * [PHPMailer](https://github.com/PHPMailer/PHPMailer) (Email)
+    * PayPal Checkout SDK
+    * SMSGate (Android Gateway)
 
-3. **Start a local server**
-   ```bash
-   # Using PHP's built-in server
-   php -S localhost:8000
-   
-   # Or use XAMPP/WAMP and place in htdocs folder
-   ```
+---
 
-4. **Open in browser**
-   ```
-   http://localhost:8000
-   ```
+## ⚙️ Installation & Setup (Local Development)
 
-## Project Structure
+### 1. Prerequisites
+* A local server environment like **XAMPP**, **WAMP**, or **MAMP**.
+* PHP 7.4 or higher.
+* MySQL/MariaDB.
 
-```
-bake_and_take/
-├── assets/
-│   ├── css/
-│   │   └── style.css          # Main stylesheet
-│   ├── js/
-│   │   └── main.js            # JavaScript functionality
-│   └── images/
-│       └── products/          # Product images
-├── database/
-│   └── schema.sql             # Database schema
-├── includes/
-│   ├── config.php             # Configuration settings
-│   ├── functions.php          # Helper functions
-│   ├── process_*.php          # Form processors
-│   └── logout.php             # Logout handler
-├── pages/
-│   ├── home.php               # Homepage
-│   ├── menu.php               # Product listing
-│   ├── about.php              # About page
-│   ├── contact.php            # Contact page
-│   ├── cart.php               # Shopping cart
-│   ├── checkout.php           # Checkout page
-│   ├── login.php              # Login page
-│   ├── register.php           # Registration page
-│   └── order-success.php      # Order confirmation
-└── index.php                  # Main entry point
-```
+### 2. Database Setup
+1.  Open **phpMyAdmin** (usually `http://localhost/phpmyadmin`).
+2.  Create a new database named `bake_and_take`.
+3.  Import the schema and initial data:
+    * Import `database/schema.sql` (Main structure).
+    * Import `database/migration_*.sql` files (e.g., `migration_add_sms.sql`, `paypal_migration.sql`).
+4.  *(Optional)* Run `database/update_prices_php.sql` to seed current product prices.
 
-## Features in Detail
+### 3. Configuration
+1.  **Database Connection**:
+    * Open `includes/connect.php`.
+    * Ensure the credentials match your local setup:
+        ```php
+        $dbhost = "localhost";
+        $dbuser = "root";
+        $dbpass = ""; // Your MySQL password
+        $db = "bake_and_take";
+        ```
 
-### Shopping Cart
-- Client-side cart management using localStorage
-- Real-time cart updates without page reload
-- Quantity controls and item removal
-- Automatic tax calculation
+2.  **SMS Configuration** (Optional):
+    * Copy `includes/sms_config.example.php` to `includes/sms_config.php`.
+    * Configure your SMS Gateway URL and credentials as per `docs/SMS_INTEGRATION.md`.
 
-### User Authentication
-- Secure login and registration forms
-- CSRF protection
-- Session-based authentication
-- Password validation
+3.  **Email Configuration**:
+    * Configure SMTP settings in `includes/mailer.php` (or wherever PHPMailer is initialized) with your email provider credentials.
 
-### Contact Form
-- Form validation (client and server-side)
-- CSRF protection
-- Success/error notifications
+### 4. Running the Project
+1.  Move the project folder to your server's root directory (e.g., `htdocs` or `www`).
+2.  Access the website:
+    * **Local Storefront**: `http://localhost/bake_and_take/`
+    * **Local Admin Panel**: `http://localhost/bake_and_take/admin/`
+    * **Live Site**: [https://bakeandtake.xyz](https://bakeandtake.xyz)
 
-### PayPal Integration
-The application uses PayPal REST API for secure payment processing:
+---
 
-**Features:**
-- PayPal Smart Buttons (one-click checkout)
-- Secure server-to-server payment processing
-- Support for PayPal balance and credit/debit cards
-- Transaction logging for audit trails
-- Order confirmation emails with payment details
+## 👥 The Team
 
-**Setup:**
-1. Create a PayPal Developer account at [developer.paypal.com](https://developer.paypal.com/)
-2. Create a new app in the Dashboard to get credentials
-3. Copy `includes/secrets.example.php` to `includes/secrets.php`
-4. Add your PayPal Client ID and Secret:
-   ```php
-   define('PAYPAL_CLIENT_ID', 'your-client-id');
-   define('PAYPAL_CLIENT_SECRET', 'your-client-secret');
-   define('PAYPAL_SANDBOX', true); // false for production
-   ```
-5. Run the database migration:
-   ```sql
-   source database/paypal_migration.sql
-   ```
+* **Jandron Gian Ramos** - Developer
+* **Benedict Orio** - Developer
+* **Paulchristian Dimaculangan** - Developer
+* **Diannedra Halili** - Developer
+* **Angelene Castillo** - Developer
 
-**Architecture:**
-- `includes/paypal_create_order.php` - Creates PayPal orders
-- `includes/paypal_capture_order.php` - Captures payments and creates orders
-- Order status is set to 'confirmed' immediately after successful payment
+---
 
-### AI Chatbot (Ollama)
-The application includes an AI-powered chatbot that can answer questions about Bake & Take:
+## 📄 License & Disclaimer
 
-**Features:**
-- Intelligent responses about products, services, and ordering
-- Only responds to Bake & Take related queries
-- Modern, responsive chat interface
-- Quick action buttons for common questions
-- Real-time typing indicators
+This project is for **educational purposes only**. It does not represent a real commercial entity. No real money or products are exchanged.
 
-**Prerequisites:**
-1. Install [Ollama](https://ollama.com/) on your system
-2. Pull the qwen3:0.6b model:
-   ```bash
-   ollama pull qwen3:0.6b
-   ```
-3. Start the Ollama service (runs on localhost:11434 by default)
-
-**Usage:**
-- Click the "Ask AI" button in the bottom-right corner of any page
-- Ask questions about products, operating hours, ordering, and more
-- The chatbot will only respond to Bake & Take related queries
-
-**Architecture:**
-- `includes/chatbot_api.php` - PHP API endpoint for chatbot communication
-- `assets/js/chatbot.js` - JavaScript chatbot UI and logic
-- `assets/css/chatbot.css` - Chatbot styling
-- Uses Ollama's OpenAI-compatible API (v1/chat/completions)
-
-
-## Customization
-
-### Colors
-Edit the CSS variables in `assets/css/style.css`:
-```css
-:root {
-    --primary: #D4A574;
-    --secondary: #8B4513;
-    --dark: #2C1810;
-    /* ... */
-}
-```
-
-### Products
-Update the `$PRODUCTS` array in `includes/config.php` or use the database.
-
-## License
-
-This project is open source and available under the [MIT License](LICENSE).
-
-## Credits
-
-- Design inspired by modern bakery websites
-- Icons by [Bootstrap Icons](https://icons.getbootstrap.com/)
-- Fonts by [Google Fonts](https://fonts.google.com/)
+&copy; 2026 Bake & Take. All rights reserved.
