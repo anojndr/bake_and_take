@@ -7,18 +7,23 @@
  * this script validates the token and confirms the order.
  */
 
+session_start();
+
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/functions.php';
+
+// Get site URL for redirects
+$siteUrl = getCurrentSiteUrl();
 
 // Get the token from URL
 $token = $_GET['token'] ?? '';
 
 if (empty($token)) {
-    redirect('../index.php', 'Invalid confirmation link.', 'error');
+    redirect($siteUrl . '/index.php', 'Invalid confirmation link.', 'error');
 }
 
 if (!$pdo) {
-    redirect('../index.php', 'Service temporarily unavailable.', 'error');
+    redirect($siteUrl . '/index.php', 'Service temporarily unavailable.', 'error');
 }
 
 try {
@@ -46,10 +51,10 @@ try {
         $confirmedOrder = $stmt->fetch();
         
         if ($confirmedOrder) {
-            redirect('../index.php', 'This order has already been confirmed.', 'info');
+            redirect($siteUrl . '/index.php?page=email-confirmed', 'This order has already been confirmed.', 'info');
         }
         
-        redirect('../index.php', 'Invalid or expired confirmation link.', 'error');
+        redirect($siteUrl . '/index.php', 'Invalid or expired confirmation link.', 'error');
     }
     
     // Update order status to confirmed
@@ -91,7 +96,6 @@ try {
     sendOrderStatusSMS($smsOrderData, 'confirmed');
     
     // Notify admin
-    $siteUrl = getCurrentSiteUrl();
     $adminSubject = "Order #{$order['order_number']} Confirmed by Customer";
     $adminBody = "
         <h2>Order Confirmed</h2>
@@ -110,10 +114,10 @@ try {
     ];
     
     // Redirect to email confirmation success page
-    redirect('../index.php?page=email-confirmed', 'Your order has been confirmed successfully!', 'success');
+    redirect($siteUrl . '/index.php?page=email-confirmed', 'Your order has been confirmed successfully!', 'success');
     
 } catch (PDOException $e) {
     error_log("Order confirmation error: " . $e->getMessage());
-    redirect('../index.php', 'An error occurred while confirming your order. Please try again.', 'error');
+    redirect($siteUrl . '/index.php', 'An error occurred while confirming your order. Please try again.', 'error');
 }
 ?>
