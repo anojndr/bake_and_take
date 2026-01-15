@@ -62,20 +62,14 @@ $verifyEmailMode = isset($_GET['action']) && $_GET['action'] === 'verify_email';
 
 $flash = getFlashMessage();
 
-// Helper function to mask email
+// Helper function for email display (no masking - user's own data)
 function maskEmail($email) {
-    $parts = explode('@', $email);
-    if (count($parts) !== 2) return $email;
-    $name = $parts[0];
-    $domain = $parts[1];
-    $maskedName = substr($name, 0, 2) . str_repeat('*', max(strlen($name) - 2, 3));
-    return $maskedName . '@' . $domain;
+    return $email;
 }
 
-// Helper function to mask phone
+// Helper function for phone display (no masking - user's own data)
 function maskPhone($phone) {
-    if (strlen($phone) < 6) return $phone;
-    return substr($phone, 0, 4) . str_repeat('*', strlen($phone) - 6) . substr($phone, -2);
+    return $phone;
 }
 ?>
 
