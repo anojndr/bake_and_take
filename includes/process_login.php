@@ -13,7 +13,6 @@ if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
 
 $email = sanitize($_POST['email'] ?? '');
 $password = $_POST['password'] ?? '';
-$remember = isset($_POST['remember']);
 
 if (empty($email) || empty($password)) {
     redirect('../index.php?page=login', 'Please enter both email and password.', 'error');
