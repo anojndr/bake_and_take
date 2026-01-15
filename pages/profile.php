@@ -225,9 +225,18 @@ function maskPhone($phone) {
                             <form action="includes/process_profile.php" method="POST" class="otp-form">
                                 <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                 <input type="hidden" name="action" value="verify_old_email_code">
+                                <input type="hidden" name="otp_code" id="otp_code_hidden" value="">
                                 <div class="form-field">
                                     <label>Enter Code from Current Email</label>
-                                    <input type="text" name="otp_code" class="form-input otp-input" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]{6}" required>
+                                    <div class="otp-input-group">
+                                        <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="0" autocomplete="off">
+                                        <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="1" autocomplete="off">
+                                        <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="2" autocomplete="off">
+                                        <span class="otp-separator">-</span>
+                                        <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="3" autocomplete="off">
+                                        <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="4" autocomplete="off">
+                                        <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="5" autocomplete="off">
+                                    </div>
                                 </div>
                                 <div class="form-actions">
                                     <button type="submit" class="btn-save-changes">VERIFY & CONTINUE</button>
@@ -325,9 +334,18 @@ function maskPhone($phone) {
                         <form action="includes/process_profile.php" method="POST" class="otp-form">
                             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                             <input type="hidden" name="action" value="verify_old_phone_otp">
+                            <input type="hidden" name="otp_code" id="otp_code_hidden" value="">
                             <div class="form-field">
                                 <label>Enter OTP from Current Phone</label>
-                                <input type="text" name="otp_code" class="form-input otp-input" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]{6}" required>
+                                <div class="otp-input-group">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="0" autocomplete="off">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="1" autocomplete="off">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="2" autocomplete="off">
+                                    <span class="otp-separator">-</span>
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="3" autocomplete="off">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="4" autocomplete="off">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="5" autocomplete="off">
+                                </div>
                             </div>
                             <div class="form-actions">
                                 <button type="submit" class="btn-save-changes">VERIFY & CONTINUE</button>
@@ -368,9 +386,18 @@ function maskPhone($phone) {
                         <form action="includes/process_profile.php" method="POST" class="otp-form">
                             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                             <input type="hidden" name="action" value="verify_new_phone_otp">
+                            <input type="hidden" name="otp_code" id="otp_code_hidden" value="">
                             <div class="form-field">
                                 <label>Enter OTP from New Phone</label>
-                                <input type="text" name="otp_code" class="form-input otp-input" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]{6}" required>
+                                <div class="otp-input-group">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="0" autocomplete="off">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="1" autocomplete="off">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="2" autocomplete="off">
+                                    <span class="otp-separator">-</span>
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="3" autocomplete="off">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="4" autocomplete="off">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="5" autocomplete="off">
+                                </div>
                             </div>
                             <div class="form-actions">
                                 <button type="submit" class="btn-save-changes">COMPLETE CHANGE</button>
@@ -548,9 +575,18 @@ function maskPhone($phone) {
                         <form action="includes/process_profile.php" method="POST" class="otp-form">
                             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                             <input type="hidden" name="action" value="verify_phone_otp">
+                            <input type="hidden" name="otp_code" id="otp_code_hidden" value="">
                             <div class="form-field">
                                 <label>Enter Verification Code</label>
-                                <input type="text" name="otp_code" class="form-input otp-input" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]{6}" required autofocus>
+                                <div class="otp-input-group">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="0" autocomplete="off" autofocus>
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="1" autocomplete="off">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="2" autocomplete="off">
+                                    <span class="otp-separator">-</span>
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="3" autocomplete="off">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="4" autocomplete="off">
+                                    <input type="text" class="otp-digit-input" maxlength="1" pattern="[0-9]" inputmode="numeric" data-index="5" autocomplete="off">
+                                </div>
                             </div>
                             <div class="form-actions">
                                 <button type="submit" class="btn-save-changes">VERIFY PHONE</button>
@@ -1630,12 +1666,66 @@ function maskPhone($phone) {
     outline: none;
 }
 
-/* OTP Input */
-.otp-input {
+/* OTP Input Group - Individual Boxes */
+.otp-input-group {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.75rem;
+}
+
+.otp-digit-input {
+    width: 52px;
+    height: 60px;
     text-align: center;
-    font-size: 1.35rem;
-    letter-spacing: 0.5rem;
-    font-weight: 600;
+    font-size: 1.5rem;
+    font-weight: 700;
+    border: 2px solid var(--cream-dark);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+    color: var(--dark);
+    background: var(--white);
+}
+
+.otp-digit-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(232, 180, 130, 0.2);
+    outline: none;
+}
+
+.otp-digit-input.filled {
+    background: var(--accent);
+    border-color: var(--primary);
+}
+
+.otp-digit-input.error {
+    border-color: #dc3545;
+    animation: shake 0.3s ease;
+}
+
+@keyframes otpShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.otp-separator {
+    font-size: 1.5rem;
+    color: var(--text-light);
+    padding: 0 0.25rem;
+}
+
+@media (max-width: 480px) {
+    .otp-digit-input {
+        width: 42px;
+        height: 50px;
+        font-size: 1.25rem;
+    }
+    
+    .otp-input-group {
+        gap: 0.35rem;
+    }
 }
 
 /* Verification Alerts */
@@ -1905,15 +1995,105 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // OTP input formatting
-    const otpInputs = document.querySelectorAll('.otp-input');
-    otpInputs.forEach(input => {
-        input.addEventListener('input', function(e) {
-            let value = this.value.replace(/[^0-9]/g, '');
-            if (value.length > 6) {
-                value = value.slice(0, 6);
+    // OTP individual digit inputs handling
+    const otpForms = document.querySelectorAll('.otp-form');
+    otpForms.forEach(form => {
+        const digitInputs = form.querySelectorAll('.otp-digit-input');
+        const hiddenInput = form.querySelector('input[name="otp_code"]');
+        
+        if (digitInputs.length === 0) return;
+        
+        // Function to update hidden input with combined value
+        const updateHiddenInput = () => {
+            const code = Array.from(digitInputs).map(input => input.value).join('');
+            if (hiddenInput) hiddenInput.value = code;
+        };
+        
+        // Function to update filled state
+        const updateFilledState = (input) => {
+            if (input.value) {
+                input.classList.add('filled');
+            } else {
+                input.classList.remove('filled');
             }
-            this.value = value;
+        };
+        
+        digitInputs.forEach((input, index) => {
+            // Input event - handle typing
+            input.addEventListener('input', function(e) {
+                // Only allow digits
+                this.value = this.value.replace(/[^0-9]/g, '');
+                
+                updateFilledState(this);
+                updateHiddenInput();
+                
+                // Auto-advance to next input
+                if (this.value && index < digitInputs.length - 1) {
+                    digitInputs[index + 1].focus();
+                }
+            });
+            
+            // Keydown event - handle backspace and navigation
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Backspace') {
+                    if (!this.value && index > 0) {
+                        // Move to previous input on backspace if current is empty
+                        digitInputs[index - 1].focus();
+                        digitInputs[index - 1].value = '';
+                        updateFilledState(digitInputs[index - 1]);
+                        updateHiddenInput();
+                        e.preventDefault();
+                    }
+                } else if (e.key === 'ArrowLeft' && index > 0) {
+                    digitInputs[index - 1].focus();
+                } else if (e.key === 'ArrowRight' && index < digitInputs.length - 1) {
+                    digitInputs[index + 1].focus();
+                }
+            });
+            
+            // Focus event - select all text on focus
+            input.addEventListener('focus', function() {
+                this.select();
+            });
+            
+            // Paste event - handle paste across all inputs
+            input.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const pastedData = (e.clipboardData || window.clipboardData).getData('text');
+                const digits = pastedData.replace(/[^0-9]/g, '').split('').slice(0, 6);
+                
+                digits.forEach((digit, i) => {
+                    if (digitInputs[i]) {
+                        digitInputs[i].value = digit;
+                        updateFilledState(digitInputs[i]);
+                    }
+                });
+                
+                // Focus on next empty or last input
+                const nextEmpty = Array.from(digitInputs).find(inp => !inp.value);
+                if (nextEmpty) {
+                    nextEmpty.focus();
+                } else {
+                    digitInputs[digitInputs.length - 1].focus();
+                }
+                
+                updateHiddenInput();
+            });
+        });
+        
+        // Form validation before submit
+        form.addEventListener('submit', function(e) {
+            updateHiddenInput();
+            const code = hiddenInput ? hiddenInput.value : '';
+            if (code.length !== 6) {
+                e.preventDefault();
+                digitInputs.forEach(input => {
+                    input.classList.add('error');
+                    setTimeout(() => input.classList.remove('error'), 300);
+                });
+                const firstEmpty = Array.from(digitInputs).find(inp => !inp.value) || digitInputs[0];
+                firstEmpty.focus();
+            }
         });
     });
     
