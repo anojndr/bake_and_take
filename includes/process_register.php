@@ -57,7 +57,7 @@ if (!$pdo) {
 }
 
 // Check if email already exists
-$stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+$stmt = $pdo->prepare("SELECT user_id FROM users WHERE email = ?");
 $stmt->execute([$email]);
 if ($stmt->fetch()) {
     redirect('../index.php?page=register', 'An account with this email already exists. Please login instead.', 'error');
@@ -66,7 +66,7 @@ if ($stmt->fetch()) {
 // Check if phone number already exists (if provided)
 if (!empty($phone)) {
     $formattedPhone = formatPhoneNumber($phone);
-    $stmt = $pdo->prepare("SELECT id FROM users WHERE phone = ?");
+    $stmt = $pdo->prepare("SELECT user_id FROM users WHERE phone = ?");
     $stmt->execute([$formattedPhone]);
     if ($stmt->fetch()) {
         redirect('../index.php?page=register', 'An account with this phone number already exists.', 'error');
@@ -156,7 +156,7 @@ try {
             redirect('../index.php?page=verify-phone', 'Account created! Please enter the OTP code sent to your phone.', 'success');
         } else {
             // OTP failed - delete the user and show error
-            $pdo->prepare("DELETE FROM users WHERE id = ?")->execute([$userId]);
+            $pdo->prepare("DELETE FROM users WHERE user_id = ?")->execute([$userId]);
             redirect('../index.php?page=register', 'Failed to send verification code. Please try again or choose email verification.', 'error');
         }
     }

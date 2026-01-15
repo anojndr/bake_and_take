@@ -47,7 +47,7 @@ switch ($action) {
         if ($verifyResult['success']) {
             try {
                 // Get user data for auto-login
-                $stmt = $pdo->prepare("SELECT id, first_name, last_name, email FROM users WHERE id = ?");
+                $stmt = $pdo->prepare("SELECT user_id, first_name, last_name, email FROM users WHERE user_id = ?");
                 $stmt->execute([$userId]);
                 $user = $stmt->fetch();
                 
@@ -62,7 +62,7 @@ switch ($action) {
                     UPDATE users 
                     SET is_verified = TRUE, 
                         phone_verified = TRUE 
-                    WHERE id = ?
+                    WHERE user_id = ?
                 ");
                 $stmt->execute([$userId]);
                 
@@ -72,7 +72,7 @@ switch ($action) {
                 unset($_SESSION['pending_verification_method']);
                 
                 // Automatically log the user in
-                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['user_id'] = $user['user_id'];
                 $_SESSION['user_email'] = $user['email'];
                 $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
                 

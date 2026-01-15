@@ -29,7 +29,7 @@ if (!$pdo) {
 
 // Verify credentials against database
 try {
-    $stmt = $pdo->prepare("SELECT id, first_name, last_name, email, phone, password, is_admin, is_verified, verification_method FROM users WHERE email = ?");
+    $stmt = $pdo->prepare("SELECT user_id, first_name, last_name, email, phone, password, is_admin, is_verified, verification_method FROM users WHERE email = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch();
     
@@ -51,10 +51,10 @@ try {
             require_once 'sms_service.php';
             
             // Send new OTP
-            $otpResult = sendOTP($user['phone'], 'registration', $user['id']);
+            $otpResult = sendOTP($user['phone'], 'registration', $user['user_id']);
             
             if ($otpResult['success']) {
-                $_SESSION['pending_verification_user_id'] = $user['id'];
+                $_SESSION['pending_verification_user_id'] = $user['user_id'];
                 $_SESSION['pending_verification_phone'] = $user['phone'];
                 $_SESSION['pending_verification_method'] = 'phone';
                 
@@ -69,7 +69,7 @@ try {
     }
     
     // Set session variables for logged in user
-    $_SESSION['user_id'] = $user['id'];
+    $_SESSION['user_id'] = $user['user_id'];
     $_SESSION['user_email'] = $user['email'];
     $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
     

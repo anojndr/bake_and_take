@@ -3,7 +3,7 @@
 $userData = null;
 if (isset($_SESSION['user_id'])) {
     try {
-        $stmt = $pdo->prepare("SELECT first_name, last_name, email, phone FROM users WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT first_name, last_name, email, phone FROM users WHERE user_id = ?");
         $stmt->execute([$_SESSION['user_id']]);
         $userData = $stmt->fetch();
     } catch (PDOException $e) {

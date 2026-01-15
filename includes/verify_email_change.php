@@ -21,7 +21,7 @@ if (!$pdo) {
 try {
     // Find user with this token
     $stmt = $pdo->prepare("
-        SELECT id, first_name, last_name, email, pending_email, pending_email_token, pending_email_expires, email_change_step
+        SELECT user_id, first_name, last_name, email, pending_email, pending_email_token, pending_email_expires, email_change_step
         FROM users 
         WHERE pending_email_token = ?
     ");
@@ -46,16 +46,16 @@ try {
                 pending_email_old_otp = NULL,
                 email_change_step = NULL,
                 email_change_cancel_token = NULL
-            WHERE id = ?
+            WHERE user_id = ?
         ");
-        $stmt->execute([$user['id']]);
+        $stmt->execute([$user['user_id']]);
         
         redirect('../index.php?page=login', 'Verification link has expired. Please request a new email change.', 'error');
     }
     
     // Check if the new email is still available
-    $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? AND id != ?");
-    $stmt->execute([$user['pending_email'], $user['id']]);
+    $stmt = $pdo->prepare("SELECT user_id FROM users WHERE email = ? AND user_id != ?");
+    $stmt->execute([$user['pending_email'], $user['user_id']]);
     if ($stmt->fetch()) {
         // Email was taken by someone else
         $stmt = $pdo->prepare("
@@ -64,9 +64,9 @@ try {
                 pending_email_old_otp = NULL,
                 email_change_step = NULL,
                 email_change_cancel_token = NULL
-            WHERE id = ?
+            WHERE user_id = ?
         ");
-        $stmt->execute([$user['id']]);
+        $stmt->execute([$user['user_id']]);
         
         redirect('../index.php?page=profile', 'This email address is now in use by another account.', 'error');
     }
@@ -79,12 +79,12 @@ try {
             pending_email_old_otp = NULL,
             email_change_step = NULL,
             email_change_cancel_token = NULL
-        WHERE id = ?
+        WHERE user_id = ?
     ");
-    $stmt->execute([$user['pending_email'], $user['id']]);
+    $stmt->execute([$user['pending_email'], $user['user_id']]);
     
     // Update session if user is logged in
-    if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $user['id']) {
+    if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $user['user_id']) {
         $_SESSION['user_email'] = $user['pending_email'];
     }
     

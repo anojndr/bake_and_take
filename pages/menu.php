@@ -183,7 +183,7 @@ function buildPaginationUrl($page, $category = null, $search = '', $priceMin = n
                 <div class="products-grid">
                     <?php foreach ($paginatedProducts as $product): ?>
                     <div class="product-card" 
-                         data-product-id="<?php echo $product['id']; ?>"
+                         data-product-id="<?php echo $product['product_id']; ?>"
                          data-product-name="<?php echo sanitize($product['name']); ?>"
                          data-product-price="<?php echo $product['price']; ?>"
                          data-product-image="<?php echo getProductImage($product['image']); ?>">
@@ -199,7 +199,7 @@ function buildPaginationUrl($page, $category = null, $search = '', $priceMin = n
                         <div class="product-content">
                             <span class="product-category"><?php echo getCategoryName($product['category']); ?></span>
                             <h3 class="product-title">
-                                <a href="index.php?page=product&id=<?php echo $product['id']; ?>"><?php echo sanitize($product['name']); ?></a>
+                                <a href="index.php?page=product&id=<?php echo $product['product_id']; ?>"><?php echo sanitize($product['name']); ?></a>
                             </h3>
                             <p class="product-description"><?php echo sanitize($product['description']); ?></p>
                             <div class="product-stock-info">

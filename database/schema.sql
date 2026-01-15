@@ -6,7 +6,7 @@ USE bake_and_take;
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Categories table
 CREATE TABLE IF NOT EXISTS categories (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    category_id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     slug VARCHAR(100) NOT NULL UNIQUE,
     icon VARCHAR(50),
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS categories (
 
 -- Products table
 CREATE TABLE IF NOT EXISTS products (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT AUTO_INCREMENT PRIMARY KEY,
     category_id INT,
     name VARCHAR(200) NOT NULL,
     slug VARCHAR(200) NOT NULL UNIQUE,
@@ -81,12 +81,12 @@ CREATE TABLE IF NOT EXISTS products (
     active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+    FOREIGN KEY (category_id) REFERENCES categories(category_id) ON DELETE SET NULL
 );
 
 -- Orders table  
 CREATE TABLE IF NOT EXISTS orders (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
     first_name VARCHAR(50) NULL,
     last_name VARCHAR(50) NULL,
@@ -103,43 +103,43 @@ CREATE TABLE IF NOT EXISTS orders (
     payment_status ENUM('pending', 'completed', 'failed', 'refunded') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL,
     KEY idx_confirmation_token (confirmation_token),
     KEY idx_orders_phone_status (phone, status)
 );
 
 -- Order items table
 CREATE TABLE IF NOT EXISTS order_items (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_item_id INT AUTO_INCREMENT PRIMARY KEY,
     order_id INT NOT NULL,
     product_id INT,
     quantity INT NOT NULL,
     price DECIMAL(10, 2) NOT NULL,
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
+    FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE SET NULL
 );
 
 
 -- Cart table - stores cart header information for each user
 CREATE TABLE IF NOT EXISTS cart (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    cart_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
     UNIQUE KEY unique_user_cart (user_id)  -- Each user can only have one active cart
 );
 
 -- Cart items table - stores individual items in the cart
 CREATE TABLE IF NOT EXISTS cart_items (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    cart_item_id INT AUTO_INCREMENT PRIMARY KEY,
     cart_id INT NOT NULL,
     product_id INT NOT NULL,
     quantity INT NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (cart_id) REFERENCES cart(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (cart_id) REFERENCES cart(cart_id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE,
     UNIQUE KEY unique_cart_product (cart_id, product_id),  -- Prevent duplicate products in same cart
     KEY idx_cart_items_product (product_id)
 );
@@ -179,7 +179,7 @@ ON DUPLICATE KEY UPDATE
 
 -- PayPal transactions table - logs all PayPal API interactions
 CREATE TABLE IF NOT EXISTS paypal_transactions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    transaction_id INT AUTO_INCREMENT PRIMARY KEY,
     order_id INT,
     paypal_order_id VARCHAR(100),
     paypal_capture_id VARCHAR(100),
@@ -190,13 +190,13 @@ CREATE TABLE IF NOT EXISTS paypal_transactions (
     status VARCHAR(50),
     raw_response TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE SET NULL,
     KEY idx_order_id (order_id)
 );
 
 -- SMS log table - tracks all SMS messages sent/received
 CREATE TABLE IF NOT EXISTS sms_log (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    sms_id INT AUTO_INCREMENT PRIMARY KEY,
     direction ENUM('outbound', 'inbound') NOT NULL,
     phone_number VARCHAR(20) NOT NULL,
     message TEXT NOT NULL,
@@ -205,7 +205,7 @@ CREATE TABLE IF NOT EXISTS sms_log (
     order_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE SET NULL,
     INDEX idx_phone (phone_number),
     INDEX idx_direction (direction),
     INDEX idx_status (status)
@@ -213,7 +213,7 @@ CREATE TABLE IF NOT EXISTS sms_log (
 
 -- SMS OTP table - stores one-time passwords for verification
 CREATE TABLE IF NOT EXISTS sms_otp (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    otp_id INT AUTO_INCREMENT PRIMARY KEY,
     phone_number VARCHAR(20) NOT NULL,
     otp_code VARCHAR(10) NOT NULL,
     purpose ENUM('order_verify', 'phone_verify', 'login', 'registration', 'other') DEFAULT 'other',

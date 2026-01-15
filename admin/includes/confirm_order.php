@@ -36,7 +36,7 @@ if (!$pdo) {
 
 try {
     // Get the order
-    $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ? AND status = 'pending'");
+    $stmt = $pdo->prepare("SELECT * FROM orders WHERE order_id = ? AND status = 'pending'");
     $stmt->execute([$orderId]);
     $order = $stmt->fetch();
     
@@ -51,7 +51,7 @@ try {
         SET status = 'confirmed', 
             confirmed_at = NOW(),
             updated_at = NOW()
-        WHERE id = ?
+        WHERE order_id = ?
     ");
     $stmt->execute([$orderId]);
     
@@ -76,7 +76,7 @@ try {
     sendOrderConfirmedSMS([
         'phone' => $order['phone'],
         'order_number' => $order['order_number'],
-        'order_id' => $order['id'],
+        'order_id' => $order['order_id'],
         'user_id' => $order['user_id']
     ]);
     

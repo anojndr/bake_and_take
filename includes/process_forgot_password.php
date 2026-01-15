@@ -26,7 +26,7 @@ if (!$pdo) {
 }
 
 try {
-    $stmt = $pdo->prepare('SELECT id, first_name, email, is_admin FROM users WHERE email = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT user_id, first_name, email, is_admin FROM users WHERE email = ? LIMIT 1');
     $stmt->execute([$email]);
     $user = $stmt->fetch();
 
@@ -39,8 +39,8 @@ try {
     $tokenHash = hash('sha256', $rawToken);
     $expiresAt = date('Y-m-d H:i:s', strtotime('+60 minutes'));
 
-    $update = $pdo->prepare('UPDATE users SET password_reset_token_hash = ?, password_reset_expires_at = ? WHERE id = ?');
-    $update->execute([$tokenHash, $expiresAt, $user['id']]);
+    $update = $pdo->prepare('UPDATE users SET password_reset_token_hash = ?, password_reset_expires_at = ? WHERE user_id = ?');
+    $update->execute([$tokenHash, $expiresAt, $user['user_id']]);
 
     // Build reset link
     $siteUrl = function_exists('getCurrentSiteUrl') ? getCurrentSiteUrl() : (defined('SITE_URL') ? SITE_URL : '');
@@ -76,7 +76,7 @@ try {
     $mailResult = sendMail($user['email'], 'Password Reset - ' . (defined('SITE_NAME') ? SITE_NAME : 'Bake & Take'), $emailBody);
 
     if (!$mailResult['success']) {
-        error_log('Password reset email failed for user_id=' . $user['id'] . ': ' . ($mailResult['message'] ?? 'unknown error'));
+        error_log('Password reset email failed for user_id=' . $user['user_id'] . ': ' . ($mailResult['message'] ?? 'unknown error'));
     }
 
     // Lightweight local log for debugging mail delivery without leaking tokens.
@@ -89,7 +89,7 @@ try {
         $line = sprintf(
             "[%s] password_reset_mail user_id=%s to=%s success=%s message=%s\n",
             date('c'),
-            (string)$user['id'],
+            (string)$user['user_id'],
             (string)$user['email'],
             !empty($mailResult['success']) ? '1' : '0',
             str_replace(["\r", "\n"], ' ', (string)($mailResult['message'] ?? ''))

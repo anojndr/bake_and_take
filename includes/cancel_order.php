@@ -33,7 +33,7 @@ if (!$pdo) {
 
 try {
     // Get current order data - ensure it belongs to the logged-in user
-    $orderStmt = $pdo->prepare("SELECT * FROM orders WHERE id = ? AND user_id = ?");
+    $orderStmt = $pdo->prepare("SELECT * FROM orders WHERE order_id = ? AND user_id = ?");
     $orderStmt->execute([$orderId, $_SESSION['user_id']]);
     $order = $orderStmt->fetch();
     
@@ -57,7 +57,7 @@ try {
     }
     
     // Update the order status to cancelled
-    $stmt = $pdo->prepare("UPDATE orders SET status = 'cancelled', updated_at = NOW() WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE orders SET status = 'cancelled', updated_at = NOW() WHERE order_id = ?");
     $stmt->execute([$orderId]);
     
     if ($stmt->rowCount() > 0) {

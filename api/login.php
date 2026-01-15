@@ -56,7 +56,7 @@ $password = $data->password;
 
 try {
     // Prepare query to fetch user
-    $stmt = $pdo->prepare("SELECT id, first_name, last_name, email, password, phone, is_admin, created_at FROM users WHERE email = ? LIMIT 1");
+    $stmt = $pdo->prepare("SELECT user_id, first_name, last_name, email, password, phone, is_admin, created_at FROM users WHERE email = ? LIMIT 1");
     $stmt->execute([$email]);
     
     if ($stmt->rowCount() > 0) {

@@ -38,7 +38,7 @@ try {
             $pdo->beginTransaction();
             
             // Getting IDs of users to delete (everyone except current admin)
-            $stmt = $pdo->prepare("SELECT id FROM users WHERE id != ?");
+            $stmt = $pdo->prepare("SELECT user_id FROM users WHERE user_id != ?");
             $stmt->execute([$_SESSION['admin_id']]);
             $userIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
             
@@ -46,7 +46,7 @@ try {
                 $inQuery = implode(',', array_fill(0, count($userIds), '?'));
 
                 // 1. Get order IDs for these users to clean up order_items first
-                $stmtOrders = $pdo->prepare("SELECT id FROM orders WHERE user_id IN ($inQuery)");
+                $stmtOrders = $pdo->prepare("SELECT order_id FROM orders WHERE user_id IN ($inQuery)");
                 $stmtOrders->execute($userIds);
                 $orderIds = $stmtOrders->fetchAll(PDO::FETCH_COLUMN);
                 
@@ -63,7 +63,7 @@ try {
                 }
 
                 // 4. Delete users
-                $deleteUsers = $pdo->prepare("DELETE FROM users WHERE id IN ($inQuery)");
+                $deleteUsers = $pdo->prepare("DELETE FROM users WHERE user_id IN ($inQuery)");
                 $deleteUsers->execute($userIds);
                 
                 setFlashMessage('success', 'All users (except you) and their data have been deleted.');

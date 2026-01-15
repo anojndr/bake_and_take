@@ -41,7 +41,7 @@ try {
     $stmt->execute([$orderId]);
     
     // Then, delete the order
-    $stmt = $pdo->prepare("DELETE FROM orders WHERE id = ?");
+    $stmt = $pdo->prepare("DELETE FROM orders WHERE order_id = ?");
     $stmt->execute([$orderId]);
     
     // Check if order was actually deleted

@@ -36,7 +36,7 @@ if (!$pdo) {
 
 try {
     // Get current order data before update
-    $orderStmt = $pdo->prepare("SELECT * FROM orders WHERE id = ?");
+    $orderStmt = $pdo->prepare("SELECT * FROM orders WHERE order_id = ?");
     $orderStmt->execute([$orderId]);
     $order = $orderStmt->fetch();
     
@@ -56,7 +56,7 @@ try {
         $updateFields = "status = ?, confirmed_at = NOW(), updated_at = NOW()";
     }
     
-    $stmt = $pdo->prepare("UPDATE orders SET $updateFields WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE orders SET $updateFields WHERE order_id = ?");
     $stmt->execute($updateParams);
     
     if ($stmt->rowCount() > 0) {

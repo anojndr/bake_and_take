@@ -62,7 +62,7 @@ $categories = getAllCategories();
                 <tbody>
                     <?php foreach ($products as $product): ?>
                     <tr>
-                        <td>#<?php echo $product['id']; ?></td>
+                        <td>#<?php echo $product['product_id']; ?></td>
                         <td>
                             <div class="d-flex align-items-center gap-3">
                                 <div style="width: 50px; height: 50px; background: var(--admin-dark); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; overflow: hidden;">
@@ -107,13 +107,13 @@ $categories = getAllCategories();
                         </td>
                         <td>
                             <div class="action-buttons">
-                                <button class="btn-action edit" title="Edit" data-bs-toggle="modal" data-bs-target="#editProductModal<?php echo $product['id']; ?>">
+                                <button class="btn-action edit" title="Edit" data-bs-toggle="modal" data-bs-target="#editProductModal<?php echo $product['product_id']; ?>">
                                     <i class="bi bi-pencil"></i>
                                 </button>
                                 <form action="includes/manage_product.php" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this product?');">
                                     <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                     <input type="hidden" name="action" value="delete">
-                                    <input type="hidden" name="id" value="<?php echo $product['id']; ?>">
+                                    <input type="hidden" name="id" value="<?php echo $product['product_id']; ?>">
                                     <button type="submit" class="btn-action delete" title="Delete">
                                         <i class="bi bi-trash"></i>
                                     </button>
@@ -155,7 +155,7 @@ $categories = getAllCategories();
                                     style="background: var(--admin-dark); border-color: var(--admin-dark-tertiary); color: var(--admin-text);" 
                                     required>
                                 <?php foreach ($categories as $slug => $cat): ?>
-                                <option value="<?php echo $cat['id'] ?? $slug; ?>"><?php echo $cat['name']; ?></option>
+                                <option value="<?php echo $cat['category_id'] ?? $slug; ?>"><?php echo $cat['name']; ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -203,7 +203,7 @@ $categories = getAllCategories();
 
 <!-- Edit Product Modals -->
 <?php foreach ($products as $product): ?>
-<div class="modal fade" id="editProductModal<?php echo $product['id']; ?>" tabindex="-1">
+<div class="modal fade" id="editProductModal<?php echo $product['product_id']; ?>" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content" style="background: var(--admin-dark-secondary); border: 1px solid var(--admin-dark-tertiary);">
             <div class="modal-header" style="border-color: var(--admin-dark-tertiary);">
@@ -212,7 +212,7 @@ $categories = getAllCategories();
             </div>
             <form action="includes/manage_product.php" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="edit">
-                <input type="hidden" name="id" value="<?php echo $product['id']; ?>">
+                <input type="hidden" name="id" value="<?php echo $product['product_id']; ?>">
                 <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                 
                 <div class="modal-body" style="color: var(--admin-text);">
@@ -230,7 +230,7 @@ $categories = getAllCategories();
                                     style="background: var(--admin-dark); border-color: var(--admin-dark-tertiary); color: var(--admin-text);" 
                                     required>
                                 <?php foreach ($categories as $slug => $cat): ?>
-                                <option value="<?php echo $cat['id'] ?? $slug; ?>" <?php echo $product['category'] === $slug ? 'selected' : ''; ?>>
+                                <option value="<?php echo $cat['category_id'] ?? $slug; ?>" <?php echo $product['category'] === $slug ? 'selected' : ''; ?>>
                                     <?php echo $cat['name']; ?>
                                 </option>
                                 <?php endforeach; ?>
@@ -257,9 +257,9 @@ $categories = getAllCategories();
                         <div class="col-md-3">
                             <label class="form-label">Options</label>
                             <div class="form-check mt-2">
-                                <input class="form-check-input" type="checkbox" name="featured" id="featuredCheck<?php echo $product['id']; ?>"
+                                <input class="form-check-input" type="checkbox" name="featured" id="featuredCheck<?php echo $product['product_id']; ?>"
                                        <?php echo $product['featured'] ? 'checked' : ''; ?>>
-                                <label class="form-check-label" for="featuredCheck<?php echo $product['id']; ?>">Featured Product</label>
+                                <label class="form-check-label" for="featuredCheck<?php echo $product['product_id']; ?>">Featured Product</label>
                             </div>
                         </div>
                     </div>

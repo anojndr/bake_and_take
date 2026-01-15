@@ -140,7 +140,7 @@ function handleNameUpdate($pdo, $userId) {
     }
     
     // Get current user password
-    $stmt = $pdo->prepare("SELECT password FROM users WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT password FROM users WHERE user_id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
     
@@ -149,7 +149,7 @@ function handleNameUpdate($pdo, $userId) {
         redirect('../index.php?page=profile', 'Incorrect password. Please try again.', 'error');
     }
     
-    $stmt = $pdo->prepare("UPDATE users SET first_name = ?, last_name = ? WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE users SET first_name = ?, last_name = ? WHERE user_id = ?");
     $stmt->execute([$firstName, $lastName, $userId]);
     
     // Update session
@@ -177,7 +177,7 @@ function handleProfileUpdate($pdo, $userId) {
     $stmt = $pdo->prepare("
         UPDATE users 
         SET first_name = ?, last_name = ?
-        WHERE id = ?
+        WHERE user_id = ?
     ");
     $stmt->execute([$firstName, $lastName, $userId]);
     
@@ -207,7 +207,7 @@ function handleEmailChangeRequest($pdo, $userId) {
     }
     
     // Get current user with password
-    $stmt = $pdo->prepare("SELECT email, password, first_name FROM users WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT email, password, first_name FROM users WHERE user_id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
     
@@ -222,7 +222,7 @@ function handleEmailChangeRequest($pdo, $userId) {
     }
     
     // Check if email is already in use
-    $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? AND id != ?");
+    $stmt = $pdo->prepare("SELECT user_id FROM users WHERE email = ? AND user_id != ?");
     $stmt->execute([$newEmail, $userId]);
     if ($stmt->fetch()) {
         redirect('../index.php?page=profile', 'This email address is already in use.', 'error');
@@ -243,7 +243,7 @@ function handleEmailChangeRequest($pdo, $userId) {
             email_change_step = 'verify_old',
             pending_email_token = NULL,
             email_change_cancel_token = ?
-        WHERE id = ?
+        WHERE user_id = ?
     ");
     $stmt->execute([$newEmail, $expiresAt, $oldEmailOtp, $cancelToken, $userId]);
     
@@ -264,7 +264,7 @@ function handleEmailChangeRequest($pdo, $userId) {
                 pending_email_old_otp = NULL,
                 email_change_step = NULL,
                 email_change_cancel_token = NULL
-            WHERE id = ?
+            WHERE user_id = ?
         ");
         $stmt->execute([$userId]);
 
@@ -286,7 +286,7 @@ function handleVerifyOldEmailCode($pdo, $userId) {
     }
 
     // Get user with pending email change
-    $stmt = $pdo->prepare("SELECT email, first_name, pending_email, pending_email_expires, pending_email_old_otp, email_change_step FROM users WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT email, first_name, pending_email, pending_email_expires, pending_email_old_otp, email_change_step FROM users WHERE user_id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
 
@@ -315,7 +315,7 @@ function handleVerifyOldEmailCode($pdo, $userId) {
             pending_email_expires = ?,
             pending_email_old_otp = NULL,
             email_change_step = 'verify_new'
-        WHERE id = ?
+        WHERE user_id = ?
     ");
     $stmt->execute([$verifyToken, $expiresAt, $userId]);
 
@@ -348,7 +348,7 @@ function clearPendingEmailChange($pdo, $userId) {
             pending_email_old_otp = NULL,
             email_change_step = NULL,
             email_change_cancel_token = NULL
-        WHERE id = ?
+        WHERE user_id = ?
     ");
     $stmt->execute([$userId]);
 }
@@ -374,7 +374,7 @@ function handlePhoneChangeRequest($pdo, $userId) {
     $formattedPhone = '+63' . $newPhone;
     
     // Get current user with password
-    $stmt = $pdo->prepare("SELECT phone, password FROM users WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT phone, password FROM users WHERE user_id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
 
@@ -394,7 +394,7 @@ function handlePhoneChangeRequest($pdo, $userId) {
     }
     
     // Check if phone is already in use
-    $stmt = $pdo->prepare("SELECT id FROM users WHERE phone = ? AND id != ?");
+    $stmt = $pdo->prepare("SELECT user_id FROM users WHERE phone = ? AND user_id != ?");
     $stmt->execute([$formattedPhone, $userId]);
     if ($stmt->fetch()) {
         redirect('../index.php?page=profile', 'This phone number is already in use.', 'error');
@@ -409,7 +409,7 @@ function handlePhoneChangeRequest($pdo, $userId) {
         UPDATE users 
         SET pending_phone = ?, pending_phone_otp = ?, pending_phone_expires = ?,
             phone_change_step = 'verify_old'
-        WHERE id = ?
+        WHERE user_id = ?
     ");
     $stmt->execute([$formattedPhone, $otp, $expiresAt, $userId]);
     
@@ -425,7 +425,7 @@ function handlePhoneChangeRequest($pdo, $userId) {
             UPDATE users 
             SET pending_phone = NULL, pending_phone_otp = NULL, pending_phone_expires = NULL,
                 phone_change_step = NULL
-            WHERE id = ?
+            WHERE user_id = ?
         ");
         $stmt->execute([$userId]);
         
@@ -447,7 +447,7 @@ function handleVerifyOldPhoneOtp($pdo, $userId) {
     // Get user with pending phone change
     $stmt = $pdo->prepare("
         SELECT pending_phone, pending_phone_otp, pending_phone_expires, phone_change_step 
-        FROM users WHERE id = ?
+        FROM users WHERE user_id = ?
     ");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
@@ -476,7 +476,7 @@ function handleVerifyOldPhoneOtp($pdo, $userId) {
         UPDATE users 
         SET pending_phone_otp = ?, pending_phone_expires = ?,
             phone_change_step = 'verify_new'
-        WHERE id = ?
+        WHERE user_id = ?
     ");
     $stmt->execute([$newOtp, $newExpiresAt, $userId]);
     
@@ -505,7 +505,7 @@ function handleVerifyNewPhoneOtp($pdo, $userId) {
     // Get user with pending phone change
     $stmt = $pdo->prepare("
         SELECT email, first_name, phone, pending_phone, pending_phone_otp, pending_phone_expires, phone_change_step 
-        FROM users WHERE id = ?
+        FROM users WHERE user_id = ?
     ");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
@@ -534,7 +534,7 @@ function handleVerifyNewPhoneOtp($pdo, $userId) {
         SET phone = ?, phone_verified = TRUE,
             pending_phone = NULL, pending_phone_otp = NULL, pending_phone_expires = NULL,
             phone_change_step = NULL, phone_recovery_token = NULL
-        WHERE id = ?
+        WHERE user_id = ?
     ");
     $stmt->execute([$newPhone, $userId]);
     
@@ -557,7 +557,7 @@ function handlePhoneChangeEmailRecovery($pdo, $userId) {
     // Get user
     $stmt = $pdo->prepare("
         SELECT email, first_name, pending_phone, phone_change_step 
-        FROM users WHERE id = ?
+        FROM users WHERE user_id = ?
     ");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
@@ -576,7 +576,7 @@ function handlePhoneChangeEmailRecovery($pdo, $userId) {
         SET phone_change_step = 'email_recovery',
             phone_recovery_token = ?,
             pending_phone_expires = ?
-        WHERE id = ?
+        WHERE user_id = ?
     ");
     $stmt->execute([$recoveryToken, $expiresAt, $userId]);
     
@@ -604,7 +604,7 @@ function handleResendNewPhoneOtp($pdo, $userId) {
     // Get user
     $stmt = $pdo->prepare("
         SELECT pending_phone, phone_change_step 
-        FROM users WHERE id = ?
+        FROM users WHERE user_id = ?
     ");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
@@ -621,7 +621,7 @@ function handleResendNewPhoneOtp($pdo, $userId) {
     $stmt = $pdo->prepare("
         UPDATE users 
         SET pending_phone_otp = ?, pending_phone_expires = ?
-        WHERE id = ?
+        WHERE user_id = ?
     ");
     $stmt->execute([$newOtp, $newExpiresAt, $userId]);
     
@@ -643,7 +643,7 @@ function handleResendPhoneRecoveryEmail($pdo, $userId) {
     // Get user
     $stmt = $pdo->prepare("
         SELECT email, first_name, pending_phone, phone_change_step 
-        FROM users WHERE id = ?
+        FROM users WHERE user_id = ?
     ");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
@@ -661,7 +661,7 @@ function handleResendPhoneRecoveryEmail($pdo, $userId) {
         UPDATE users 
         SET phone_recovery_token = ?,
             pending_phone_expires = ?
-        WHERE id = ?
+        WHERE user_id = ?
     ");
     $stmt->execute([$recoveryToken, $expiresAt, $userId]);
     
@@ -697,7 +697,7 @@ function clearPendingPhoneChange($pdo, $userId) {
         UPDATE users 
         SET pending_phone = NULL, pending_phone_otp = NULL, pending_phone_expires = NULL,
             phone_change_step = NULL, phone_recovery_token = NULL
-        WHERE id = ?
+        WHERE user_id = ?
     ");
     $stmt->execute([$userId]);
 }
@@ -725,7 +725,7 @@ function handlePasswordChange($pdo, $userId) {
     }
     
     // Get current password
-    $stmt = $pdo->prepare("SELECT password FROM users WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT password FROM users WHERE user_id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
     
@@ -736,7 +736,7 @@ function handlePasswordChange($pdo, $userId) {
     
     // Update password
     $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-    $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE user_id = ?");
     $stmt->execute([$hashedPassword, $userId]);
     
     redirect('../index.php?page=profile', 'Password updated successfully!', 'success');
@@ -1012,7 +1012,7 @@ function getPhoneRecoveryEmailTemplate($firstName, $newPhone, $recoveryUrl) {
  */
 function handleSendPhoneVerificationOtp($pdo, $userId) {
     // Get user
-    $stmt = $pdo->prepare("SELECT phone, phone_verified FROM users WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT phone, phone_verified FROM users WHERE user_id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
     
@@ -1050,7 +1050,7 @@ function handleVerifyPhoneOtp($pdo, $userId) {
     }
     
     // Get user
-    $stmt = $pdo->prepare("SELECT phone, phone_verified FROM users WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT phone, phone_verified FROM users WHERE user_id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
     
@@ -1071,7 +1071,7 @@ function handleVerifyPhoneOtp($pdo, $userId) {
     
     if ($verifyResult['success']) {
         // Update user as phone verified
-        $stmt = $pdo->prepare("UPDATE users SET phone_verified = TRUE WHERE id = ?");
+        $stmt = $pdo->prepare("UPDATE users SET phone_verified = TRUE WHERE user_id = ?");
         $stmt->execute([$userId]);
         
         // Clear session variables
@@ -1089,7 +1089,7 @@ function handleVerifyPhoneOtp($pdo, $userId) {
  */
 function handleResendPhoneVerificationOtp($pdo, $userId) {
     // Get user
-    $stmt = $pdo->prepare("SELECT phone, phone_verified FROM users WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT phone, phone_verified FROM users WHERE user_id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
     
@@ -1128,7 +1128,7 @@ function handleCancelPhoneVerification($pdo, $userId) {
  */
 function handleSendEmailVerificationLink($pdo, $userId) {
     // Get user
-    $stmt = $pdo->prepare("SELECT email, email_verified, first_name FROM users WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT email, email_verified, first_name FROM users WHERE user_id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
     
@@ -1148,7 +1148,7 @@ function handleSendEmailVerificationLink($pdo, $userId) {
     $stmt = $pdo->prepare("
         UPDATE users 
         SET email_verify_token = ?, email_verify_expires = ?
-        WHERE id = ?
+        WHERE user_id = ?
     ");
     $stmt->execute([$verifyToken, $expiresAt, $userId]);
     
@@ -1175,7 +1175,7 @@ function handleSendEmailVerificationLink($pdo, $userId) {
  */
 function handleResendEmailVerificationLink($pdo, $userId) {
     // Get user
-    $stmt = $pdo->prepare("SELECT email, email_verified, first_name FROM users WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT email, email_verified, first_name FROM users WHERE user_id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
     
@@ -1197,7 +1197,7 @@ function handleResendEmailVerificationLink($pdo, $userId) {
     $stmt = $pdo->prepare("
         UPDATE users 
         SET email_verify_token = ?, email_verify_expires = ?
-        WHERE id = ?
+        WHERE user_id = ?
     ");
     $stmt->execute([$verifyToken, $expiresAt, $userId]);
     

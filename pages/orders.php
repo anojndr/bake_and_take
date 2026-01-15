@@ -13,10 +13,10 @@ if ($pdo) {
             SELECT o.*, 
                    GROUP_CONCAT(CONCAT(p.name, ' x', oi.quantity) SEPARATOR ', ') as items_summary
             FROM orders o
-            LEFT JOIN order_items oi ON o.id = oi.order_id
-            LEFT JOIN products p ON oi.product_id = p.id
+            LEFT JOIN order_items oi ON o.order_id = oi.order_id
+            LEFT JOIN products p ON oi.product_id = p.product_id
             WHERE o.user_id = ?
-            GROUP BY o.id
+            GROUP BY o.order_id
             ORDER BY o.created_at DESC
         ");
         $stmt->execute([$_SESSION['user_id']]);
@@ -64,7 +64,7 @@ if ($pdo) {
                 
                 <div class="orders-list">
                     <?php foreach ($orders as $order): ?>
-                        <div class="order-card" data-order-id="<?php echo $order['id']; ?>">
+                        <div class="order-card" data-order-id="<?php echo $order['order_id']; ?>">
                             <div class="order-card-header">
                                 <div class="order-info">
                                     <span class="order-number">#<?php echo htmlspecialchars($order['order_number']); ?></span>
@@ -112,11 +112,11 @@ if ($pdo) {
                                 </div>
                                 <div class="order-actions">
                                     <?php if (in_array($order['status'], ['pending', 'confirmed'])): ?>
-                                        <button class="btn btn-cancel-order" onclick="cancelOrder(<?php echo $order['id']; ?>, '<?php echo htmlspecialchars($order['order_number']); ?>')">
+                                        <button class="btn btn-cancel-order" onclick="cancelOrder(<?php echo $order['order_id']; ?>, '<?php echo htmlspecialchars($order['order_number']); ?>')">
                                             <i class="bi bi-x-circle"></i> Cancel
                                         </button>
                                     <?php endif; ?>
-                                    <button class="btn btn-view-details" onclick="viewOrderDetails(<?php echo $order['id']; ?>)">
+                                    <button class="btn btn-view-details" onclick="viewOrderDetails(<?php echo $order['order_id']; ?>)">
                                         View Details <i class="bi bi-chevron-right"></i>
                                     </button>
                                 </div>

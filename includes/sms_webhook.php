@@ -239,9 +239,9 @@ function handleConfirmReply($phoneNumber) {
                 SET status = 'confirmed', 
                     confirmed_at = NOW(),
                     updated_at = NOW()
-                WHERE id = ?
+                WHERE order_id = ?
             ");
-            $stmt->execute([$pendingOrder['id']]);
+            $stmt->execute([$pendingOrder['order_id']]);
             
             // Get site URL and send confirmation SMS with link
             require_once __DIR__ . '/functions.php';
@@ -251,7 +251,7 @@ function handleConfirmReply($phoneNumber) {
             sendOrderConfirmedSMS([
                 'phone' => $phoneNumber,
                 'order_number' => $pendingOrder['order_number'],
-                'order_id' => $pendingOrder['id'],
+                'order_id' => $pendingOrder['order_id'],
                 'user_id' => $pendingOrder['user_id'],
                 'confirmation_token' => $pendingOrder['confirmation_token'],
                 'site_url' => $siteUrl
@@ -268,7 +268,7 @@ function handleConfirmReply($phoneNumber) {
                     <p><strong>Confirmation Method:</strong> SMS</p>
                     <p><strong>Phone:</strong> {$pendingOrder['phone']}</p>
                     <p><strong>Total:</strong> ₱" . number_format($pendingOrder['total'], 2) . "</p>
-                    <a href='{$siteUrl}/admin/orders.php?id={$pendingOrder['id']}'>View Order</a>
+                    <a href='{$siteUrl}/admin/orders.php?id={$pendingOrder['order_id']}'>View Order</a>
                 ";
                 sendMail(SMTP_USER, $adminSubject, $adminBody);
             } catch (Exception $e) {
@@ -277,7 +277,7 @@ function handleConfirmReply($phoneNumber) {
             
             return [
                 'action' => 'order_confirmed',
-                'details' => ['order_id' => $pendingOrder['id'], 'order_number' => $pendingOrder['order_number']]
+                'details' => ['order_id' => $pendingOrder['order_id'], 'order_number' => $pendingOrder['order_number']]
             ];
         }
         
@@ -296,7 +296,7 @@ function handleConfirmReply($phoneNumber) {
             
             return [
                 'action' => 'order_already_confirmed',
-                'details' => ['order_id' => $order['id'], 'order_number' => $order['order_number']]
+                'details' => ['order_id' => $order['order_id'], 'order_number' => $order['order_number']]
             ];
         }
     } catch (PDOException $e) {
@@ -328,15 +328,15 @@ function handleCancelReply($phoneNumber) {
         
         if ($order) {
             // Cancel the order
-            $stmt = $pdo->prepare("UPDATE orders SET status = 'cancelled' WHERE id = ?");
-            $stmt->execute([$order['id']]);
+            $stmt = $pdo->prepare("UPDATE orders SET status = 'cancelled' WHERE order_id = ?");
+            $stmt->execute([$order['order_id']]);
             
             // Send cancellation SMS
             sendSMS($phoneNumber, SMS_SENDER_NAME . ": Your order #{$order['order_number']} has been cancelled.");
             
             return [
                 'action' => 'order_cancelled',
-                'details' => ['order_id' => $order['id'], 'order_number' => $order['order_number']]
+                'details' => ['order_id' => $order['order_id'], 'order_number' => $order['order_number']]
             ];
         }
     } catch (PDOException $e) {
@@ -387,7 +387,7 @@ function handleStatusRequest($phoneNumber) {
             
             return [
                 'action' => 'status_sent',
-                'details' => ['order_id' => $order['id'], 'status' => $order['status']]
+                'details' => ['order_id' => $order['order_id'], 'status' => $order['status']]
             ];
         }
     } catch (PDOException $e) {

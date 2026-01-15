@@ -318,8 +318,8 @@ function verifyOTP($phoneNumber, $otpCode) {
                 }
                 
                 // Increment attempts
-                $stmt = $pdo->prepare("UPDATE sms_otp SET attempts = attempts + 1 WHERE id = ?");
-                $stmt->execute([$lastOtp['id']]);
+                $stmt = $pdo->prepare("UPDATE sms_otp SET attempts = attempts + 1 WHERE otp_id = ?");
+                $stmt->execute([$lastOtp['otp_id']]);
             }
             
             return ['success' => false, 'message' => 'Invalid OTP'];
@@ -331,8 +331,8 @@ function verifyOTP($phoneNumber, $otpCode) {
         }
         
         // Mark as verified
-        $stmt = $pdo->prepare("UPDATE sms_otp SET verified_at = NOW() WHERE id = ?");
-        $stmt->execute([$otpRecord['id']]);
+        $stmt = $pdo->prepare("UPDATE sms_otp SET verified_at = NOW() WHERE otp_id = ?");
+        $stmt->execute([$otpRecord['otp_id']]);
         
         return [
             'success' => true,
@@ -624,7 +624,7 @@ function updateSMSLog($smsLogId, $status, $gatewayResponse = null) {
     try {
         $stmt = $pdo->prepare("
             UPDATE sms_log SET status = ?, gateway_response = ?, updated_at = NOW()
-            WHERE id = ?
+            WHERE sms_id = ?
         ");
         $stmt->execute([$status, $gatewayResponse, $smsLogId]);
         return true;

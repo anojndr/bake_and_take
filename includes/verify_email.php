@@ -21,7 +21,7 @@ if (!$pdo) {
 try {
     // Find user with this token
     $stmt = $pdo->prepare("
-        SELECT id, first_name, last_name, email, verification_token_expires_at, is_verified 
+        SELECT user_id, first_name, last_name, email, verification_token_expires_at, is_verified 
         FROM users 
         WHERE verification_token = ? AND verification_method = 'email'
     ");
@@ -49,12 +49,12 @@ try {
             email_verified = TRUE,
             verification_token = NULL, 
             verification_token_expires_at = NULL 
-        WHERE id = ?
+        WHERE user_id = ?
     ");
-    $stmt->execute([$user['id']]);
+    $stmt->execute([$user['user_id']]);
     
     // Automatically log the user in
-    $_SESSION['user_id'] = $user['id'];
+    $_SESSION['user_id'] = $user['user_id'];
     $_SESSION['user_email'] = $user['email'];
     $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
     

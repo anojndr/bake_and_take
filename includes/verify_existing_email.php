@@ -24,7 +24,7 @@ if (!$pdo) {
 try {
     // Find user with this token
     $stmt = $pdo->prepare("
-        SELECT id, email, first_name, email_verify_token, email_verify_expires, email_verified
+        SELECT user_id, email, first_name, email_verify_token, email_verify_expires, email_verified
         FROM users 
         WHERE email_verify_token = ?
     ");
@@ -40,8 +40,8 @@ try {
     // Check if already verified
     if ($user['email_verified']) {
         // Clear token
-        $stmt = $pdo->prepare("UPDATE users SET email_verify_token = NULL, email_verify_expires = NULL WHERE id = ?");
-        $stmt->execute([$user['id']]);
+        $stmt = $pdo->prepare("UPDATE users SET email_verify_token = NULL, email_verify_expires = NULL WHERE user_id = ?");
+        $stmt->execute([$user['user_id']]);
         
         setFlashMessage('Your email address is already verified.', 'info');
         header('Location: ../index.php?page=profile');
@@ -51,8 +51,8 @@ try {
     // Check if token expired
     if (!empty($user['email_verify_expires']) && strtotime($user['email_verify_expires']) < time()) {
         // Clear expired token
-        $stmt = $pdo->prepare("UPDATE users SET email_verify_token = NULL, email_verify_expires = NULL WHERE id = ?");
-        $stmt->execute([$user['id']]);
+        $stmt = $pdo->prepare("UPDATE users SET email_verify_token = NULL, email_verify_expires = NULL WHERE user_id = ?");
+        $stmt->execute([$user['user_id']]);
         
         setFlashMessage('Verification link has expired. Please request a new one.', 'error');
         header('Location: ../index.php?page=profile');
@@ -65,9 +65,9 @@ try {
         SET email_verified = TRUE, 
             email_verify_token = NULL, 
             email_verify_expires = NULL
-        WHERE id = ?
+        WHERE user_id = ?
     ");
-    $stmt->execute([$user['id']]);
+    $stmt->execute([$user['user_id']]);
     
     // Clear session step if exists
     if (isset($_SESSION['email_verify_step'])) {

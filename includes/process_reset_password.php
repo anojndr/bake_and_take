@@ -34,7 +34,7 @@ if (!$pdo) {
 try {
     $tokenHash = hash('sha256', $token);
 
-    $stmt = $pdo->prepare('SELECT id FROM users WHERE password_reset_token_hash = ? AND password_reset_expires_at IS NOT NULL AND password_reset_expires_at > NOW() LIMIT 1');
+    $stmt = $pdo->prepare('SELECT user_id FROM users WHERE password_reset_token_hash = ? AND password_reset_expires_at IS NOT NULL AND password_reset_expires_at > NOW() LIMIT 1');
     $stmt->execute([$tokenHash]);
     $user = $stmt->fetch();
 
@@ -44,8 +44,8 @@ try {
 
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-    $update = $pdo->prepare('UPDATE users SET password = ?, password_reset_token_hash = NULL, password_reset_expires_at = NULL WHERE id = ?');
-    $update->execute([$hashedPassword, $user['id']]);
+    $update = $pdo->prepare('UPDATE users SET password = ?, password_reset_token_hash = NULL, password_reset_expires_at = NULL WHERE user_id = ?');
+    $update->execute([$hashedPassword, $user['user_id']]);
 
     redirect('../index.php?page=login', 'Your password has been updated. You can now sign in.', 'success');
 

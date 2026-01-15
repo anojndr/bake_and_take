@@ -10,13 +10,13 @@ $user = null;
 if ($pdo) {
     try {
         $stmt = $pdo->prepare("
-            SELECT id, first_name, last_name, email, phone, is_verified, 
+            SELECT user_id, first_name, last_name, email, phone, is_verified, 
                    email_verified, phone_verified, created_at, updated_at,
                    pending_email, pending_phone, pending_email_token, pending_phone_otp,
                    pending_email_expires, pending_phone_expires,
                    email_change_step, phone_change_step, phone_recovery_token
             FROM users 
-            WHERE id = ?
+            WHERE user_id = ?
         ");
         $stmt->execute([$_SESSION['user_id']]);
         $user = $stmt->fetch();
@@ -35,13 +35,13 @@ $recentOrders = [];
 if ($pdo) {
     try {
         $stmt = $pdo->prepare("
-            SELECT o.id, o.order_number, o.created_at, o.total, o.status,
+            SELECT o.order_id, o.order_number, o.created_at, o.total, o.status,
                    GROUP_CONCAT(CONCAT(p.name, ' x', oi.quantity) SEPARATOR ', ') as items_summary
             FROM orders o
-            LEFT JOIN order_items oi ON o.id = oi.order_id
-            LEFT JOIN products p ON oi.product_id = p.id
+            LEFT JOIN order_items oi ON o.order_id = oi.order_id
+            LEFT JOIN products p ON oi.product_id = p.product_id
             WHERE o.user_id = ?
-            GROUP BY o.id
+            GROUP BY o.order_id
             ORDER BY o.created_at DESC
             LIMIT 3
         ");

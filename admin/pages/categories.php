@@ -34,13 +34,13 @@ $categories = getAllCategories();
                     <?php echo $productCount; ?> products
                 </p>
                 <div class="action-buttons justify-content-center">
-                    <button class="btn-action edit" title="Edit" data-bs-toggle="modal" data-bs-target="#editCategoryModal<?php echo $category['id'] ?? $slug; ?>">
+                    <button class="btn-action edit" title="Edit" data-bs-toggle="modal" data-bs-target="#editCategoryModal<?php echo $category['category_id'] ?? $slug; ?>">
                         <i class="bi bi-pencil"></i>
                     </button>
                     <form action="includes/manage_category.php" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this category?');">
                         <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                         <input type="hidden" name="action" value="delete">
-                        <input type="hidden" name="id" value="<?php echo $category['id'] ?? 0; ?>">
+                        <input type="hidden" name="id" value="<?php echo $category['category_id'] ?? 0; ?>">
                         <button type="submit" class="btn-action delete" title="Delete">
                             <i class="bi bi-trash"></i>
                         </button>
@@ -110,7 +110,7 @@ $categories = getAllCategories();
 
 <!-- Edit Category Modals -->
 <?php foreach ($categories as $slug => $category): ?>
-<div class="modal fade" id="editCategoryModal<?php echo $category['id'] ?? $slug; ?>" tabindex="-1">
+<div class="modal fade" id="editCategoryModal<?php echo $category['category_id'] ?? $slug; ?>" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content" style="background: var(--admin-dark-secondary); border: 1px solid var(--admin-dark-tertiary);">
             <div class="modal-header" style="border-color: var(--admin-dark-tertiary);">
@@ -119,7 +119,7 @@ $categories = getAllCategories();
             </div>
             <form action="includes/manage_category.php" method="POST">
                 <input type="hidden" name="action" value="edit">
-                <input type="hidden" name="id" value="<?php echo $category['id'] ?? 0; ?>">
+                <input type="hidden" name="id" value="<?php echo $category['category_id'] ?? 0; ?>">
                 <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                 
                 <div class="modal-body" style="color: var(--admin-text);">

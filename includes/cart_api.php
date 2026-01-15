@@ -23,12 +23,12 @@ function isLoggedIn() {
 // Get user's cart ID (creates one if doesn't exist)
 function getCartId($pdo, $userId) {
     // Check if cart exists
-    $stmt = $pdo->prepare("SELECT id FROM cart WHERE user_id = ?");
+    $stmt = $pdo->prepare("SELECT cart_id FROM cart WHERE user_id = ?");
     $stmt->execute([$userId]);
     $cart = $stmt->fetch();
     
     if ($cart) {
-        return $cart['id'];
+        return $cart['cart_id'];
     }
     
     // Create new cart
@@ -42,10 +42,10 @@ function getCartItems($pdo, $userId) {
     $cartId = getCartId($pdo, $userId);
     
     $stmt = $pdo->prepare("
-        SELECT ci.id, ci.product_id, ci.quantity,
+        SELECT ci.cart_item_id, ci.product_id, ci.quantity,
                p.price, p.name, p.image, p.slug, p.stock
         FROM cart_items ci
-        JOIN products p ON ci.product_id = p.id
+        JOIN products p ON ci.product_id = p.product_id
         WHERE ci.cart_id = ?
         ORDER BY ci.created_at DESC
     ");
@@ -55,7 +55,7 @@ function getCartItems($pdo, $userId) {
     while ($row = $stmt->fetch()) {
         $items[] = [
             'id' => (int)$row['product_id'],
-            'cartItemId' => (int)$row['id'],
+            'cartItemId' => (int)$row['cart_item_id'],
             'name' => $row['name'],
             'price' => (float)$row['price'],
             'quantity' => (int)$row['quantity'],
@@ -73,7 +73,7 @@ function addToCart($pdo, $userId, $productId, $quantity = 1) {
     $cartId = getCartId($pdo, $userId);
     
     // Get product info including stock
-    $stmt = $pdo->prepare("SELECT id, price, stock FROM products WHERE id = ? AND active = TRUE");
+    $stmt = $pdo->prepare("SELECT product_id, price, stock FROM products WHERE product_id = ? AND active = TRUE");
     $stmt->execute([$productId]);
     $product = $stmt->fetch();
     
@@ -84,7 +84,7 @@ function addToCart($pdo, $userId, $productId, $quantity = 1) {
     $stock = (int)$product['stock'];
     
     // Check if item already in cart
-    $stmt = $pdo->prepare("SELECT id, quantity FROM cart_items WHERE cart_id = ? AND product_id = ?");
+    $stmt = $pdo->prepare("SELECT cart_item_id, quantity FROM cart_items WHERE cart_id = ? AND product_id = ?");
     $stmt->execute([$cartId, $productId]);
     $existing = $stmt->fetch();
     
@@ -97,8 +97,8 @@ function addToCart($pdo, $userId, $productId, $quantity = 1) {
             return ['success' => false, 'message' => "Only $stock items available in stock", 'stock' => $stock];
         }
         
-        $stmt = $pdo->prepare("UPDATE cart_items SET quantity = ?, updated_at = NOW() WHERE id = ?");
-        $stmt->execute([$newQty, $existing['id']]);
+        $stmt = $pdo->prepare("UPDATE cart_items SET quantity = ?, updated_at = NOW() WHERE cart_item_id = ?");
+        $stmt->execute([$newQty, $existing['cart_item_id']]);
     } else {
         // Validate quantity against stock
         if ($quantity > $stock) {
@@ -125,7 +125,7 @@ function updateCartQuantity($pdo, $userId, $productId, $quantity) {
     }
     
     // Get product stock
-    $stmt = $pdo->prepare("SELECT stock FROM products WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT stock FROM products WHERE product_id = ?");
     $stmt->execute([$productId]);
     $product = $stmt->fetch();
     

@@ -52,7 +52,7 @@ try {
             $name = sanitize($_POST['name'] ?? '');
             $icon = sanitize($_POST['icon'] ?? 'bi-box');
             
-            $stmt = $pdo->prepare("UPDATE categories SET name = ?, icon = ? WHERE id = ?");
+            $stmt = $pdo->prepare("UPDATE categories SET name = ?, icon = ? WHERE category_id = ?");
             $stmt->execute([$name, $icon, $id]);
             
             setFlashMessage('success', 'Category updated successfully!');
@@ -66,7 +66,7 @@ try {
             $stmt->execute([$id]);
             
             // Delete category
-            $stmt = $pdo->prepare("DELETE FROM categories WHERE id = ?");
+            $stmt = $pdo->prepare("DELETE FROM categories WHERE category_id = ?");
             $stmt->execute([$id]);
             
             setFlashMessage('success', 'Category deleted successfully!');

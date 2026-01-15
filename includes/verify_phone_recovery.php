@@ -23,7 +23,7 @@ if (!$pdo) {
 try {
     // Find user with this recovery token
     $stmt = $pdo->prepare("
-        SELECT id, first_name, email, phone, pending_phone, phone_recovery_token, 
+        SELECT user_id, first_name, email, phone, pending_phone, phone_recovery_token, 
                pending_phone_expires, phone_change_step 
         FROM users 
         WHERE phone_recovery_token = ?
@@ -47,9 +47,9 @@ try {
             UPDATE users 
             SET pending_phone = NULL, pending_phone_otp = NULL, pending_phone_expires = NULL,
                 phone_change_step = NULL, phone_recovery_token = NULL
-            WHERE id = ?
+            WHERE user_id = ?
         ");
-        $stmt->execute([$user['id']]);
+        $stmt->execute([$user['user_id']]);
         
         redirect('../index.php?page=profile', 'Recovery link has expired. Please start the phone change process again.', 'error');
     }
@@ -63,17 +63,17 @@ try {
         UPDATE users 
         SET pending_phone_otp = ?, pending_phone_expires = ?,
             phone_change_step = 'verify_new', phone_recovery_token = NULL
-        WHERE id = ?
+        WHERE user_id = ?
     ");
-    $stmt->execute([$newOtp, $newExpiresAt, $user['id']]);
+    $stmt->execute([$newOtp, $newExpiresAt, $user['user_id']]);
     
     // Send OTP to NEW phone
     $message = "Your " . SMS_SENDER_NAME . " verification code is: " . $newOtp . ". Enter this to verify your new phone number. Valid for 10 minutes.";
-    $result = sendSMS($user['pending_phone'], $message, null, $user['id']);
+    $result = sendSMS($user['pending_phone'], $message, null, $user['user_id']);
     
     // Log the user in if not already
     if (!isset($_SESSION['user_id'])) {
-        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['user_id'] = $user['user_id'];
         $_SESSION['user_email'] = $user['email'];
         $_SESSION['user_name'] = $user['first_name'];
     }

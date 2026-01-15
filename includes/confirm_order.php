@@ -32,7 +32,7 @@ try {
     $stmt = $pdo->prepare("
         SELECT o.*, u.first_name, u.last_name, u.email, u.phone
         FROM orders o
-        JOIN users u ON o.user_id = u.id
+        JOIN users u ON o.user_id = u.user_id
         WHERE o.confirmation_token = ? 
         AND o.status = 'pending'
         AND o.confirmation_method = 'email'
@@ -63,9 +63,9 @@ try {
         SET status = 'confirmed', 
             confirmed_at = NOW(),
             updated_at = NOW()
-        WHERE id = ?
+        WHERE order_id = ?
     ");
-    $stmt->execute([$order['id']]);
+    $stmt->execute([$order['order_id']]);
     
     // Send confirmation SMS/email to customer
     require_once 'mailer.php';
@@ -90,7 +90,7 @@ try {
         'phone' => $order['phone'],
         'order_number' => $order['order_number'],
         'total' => $order['total'],
-        'order_id' => $order['id'],
+        'order_id' => $order['order_id'],
         'user_id' => $order['user_id']
     ];
     sendOrderStatusSMS($smsOrderData, 'confirmed');
@@ -103,7 +103,7 @@ try {
         <p><strong>Order #:</strong> {$order['order_number']}</p>
         <p><strong>Confirmation Method:</strong> Email</p>
         <p><strong>Total:</strong> ₱" . number_format($order['total'], 2) . "</p>
-        <a href='{$siteUrl}/admin/orders.php?id={$order['id']}'>View Order</a>
+        <a href='{$siteUrl}/admin/orders.php?id={$order['order_id']}'>View Order</a>
     ";
     sendMail(SMTP_USER, $adminSubject, $adminBody);
     

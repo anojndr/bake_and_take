@@ -42,7 +42,7 @@ try {
                 break;
             }
             
-            $stmt = $pdo->prepare("UPDATE users SET is_admin = NOT is_admin WHERE id = ?");
+            $stmt = $pdo->prepare("UPDATE users SET is_admin = NOT is_admin WHERE user_id = ?");
             $stmt->execute([$id]);
             
             setFlashMessage('success', 'User admin status updated!');
@@ -61,7 +61,7 @@ try {
             $stmt = $pdo->query("SELECT COUNT(*) as count FROM users WHERE is_admin = 1");
             $adminCount = $stmt->fetch()['count'];
             
-            $stmt = $pdo->prepare("SELECT is_admin FROM users WHERE id = ?");
+            $stmt = $pdo->prepare("SELECT is_admin FROM users WHERE user_id = ?");
             $stmt->execute([$id]);
             $user = $stmt->fetch();
             
@@ -70,7 +70,7 @@ try {
                 break;
             }
             
-            $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+            $stmt = $pdo->prepare("DELETE FROM users WHERE user_id = ?");
             $stmt->execute([$id]);
             
             setFlashMessage('success', 'User deleted successfully!');

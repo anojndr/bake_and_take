@@ -13,9 +13,9 @@ if ($pdo) {
             SELECT o.*, 
                    CONCAT(u.first_name, ' ', u.last_name) as customer_name,
                    u.email, u.phone,
-                   (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) as item_count
+                   (SELECT COUNT(*) FROM order_items WHERE order_id = o.order_id) as item_count
             FROM orders o
-            JOIN users u ON o.user_id = u.id
+            JOIN users u ON o.user_id = u.user_id
         ";
         
         if ($statusFilter) {
@@ -122,7 +122,7 @@ $statusLabels = [
                         <td><strong><?php echo formatPrice($order['total']); ?></strong></td>
                         <td>
                             <select class="form-select form-select-sm status-select" 
-                                    data-order-id="<?php echo $order['id']; ?>"
+                                    data-order-id="<?php echo $order['order_id']; ?>"
                                     style="background: var(--admin-dark); border-color: var(--admin-dark-tertiary); color: var(--admin-text); width: 130px;">
                                 <?php foreach ($statusOptions as $status): ?>
                                 <option value="<?php echo $status; ?>" <?php echo $order['status'] === $status ? 'selected' : ''; ?>>
@@ -139,14 +139,14 @@ $statusLabels = [
                         <td>
                             <div class="action-buttons">
                                 <?php if ($order['status'] === 'pending'): ?>
-                                <button class="btn-action btn-action-success" title="Confirm Order" onclick="confirmOrder(<?php echo $order['id']; ?>, '<?php echo sanitize($order['order_number']); ?>')">
+                                <button class="btn-action btn-action-success" title="Confirm Order" onclick="confirmOrder(<?php echo $order['order_id']; ?>, '<?php echo sanitize($order['order_number']); ?>')">
                                     <i class="bi bi-check-lg"></i>
                                 </button>
                                 <?php endif; ?>
-                                <button class="btn-action" title="View Details" data-bs-toggle="modal" data-bs-target="#orderModal<?php echo $order['id']; ?>">
+                                <button class="btn-action" title="View Details" data-bs-toggle="modal" data-bs-target="#orderModal<?php echo $order['order_id']; ?>">
                                     <i class="bi bi-eye"></i>
                                 </button>
-                                <button class="btn-action btn-action-danger" title="Delete Order" onclick="deleteOrder(<?php echo $order['id']; ?>, '<?php echo sanitize($order['order_number']); ?>')">
+                                <button class="btn-action btn-action-danger" title="Delete Order" onclick="deleteOrder(<?php echo $order['order_id']; ?>, '<?php echo sanitize($order['order_number']); ?>')">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </div>
@@ -169,15 +169,15 @@ $statusLabels = [
             $stmt = $pdo->prepare("
                 SELECT oi.*, COALESCE(p.name, 'Unknown Product') as product_name 
                 FROM order_items oi
-                LEFT JOIN products p ON oi.product_id = p.id
+                LEFT JOIN products p ON oi.product_id = p.product_id
                 WHERE oi.order_id = ?
             ");
-            $stmt->execute([$order['id']]);
+            $stmt->execute([$order['order_id']]);
             $orderItems = $stmt->fetchAll();
         } catch (PDOException $e) {}
     }
 ?>
-<div class="modal fade" id="orderModal<?php echo $order['id']; ?>" tabindex="-1">
+<div class="modal fade" id="orderModal<?php echo $order['order_id']; ?>" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content" style="background: var(--admin-dark-secondary); border: 1px solid var(--admin-dark-tertiary);">
             <div class="modal-header" style="border-color: var(--admin-dark-tertiary);">

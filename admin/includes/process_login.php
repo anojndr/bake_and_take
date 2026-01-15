@@ -36,7 +36,7 @@ if (!$pdo) {
 }
 
 try {
-    $stmt = $pdo->prepare("SELECT id, first_name, last_name, email, password, is_admin FROM users WHERE email = ? AND is_admin = 1");
+    $stmt = $pdo->prepare("SELECT user_id, first_name, last_name, email, password, is_admin FROM users WHERE email = ? AND is_admin = 1");
     $stmt->execute([$email]);
     $user = $stmt->fetch();
     
@@ -47,7 +47,7 @@ try {
     
     // Set admin session variables (separate from main site)
     $_SESSION['admin_logged_in'] = true;
-    $_SESSION['admin_id'] = $user['id'];
+    $_SESSION['admin_id'] = $user['user_id'];
     $_SESSION['admin_email'] = $user['email'];
     $_SESSION['admin_name'] = $user['first_name'] . ' ' . $user['last_name'];
     

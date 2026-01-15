@@ -77,7 +77,7 @@ try {
             
             $stmt = $pdo->prepare("
                 UPDATE products SET category_id = ?, name = ?, description = ?, price = ?, stock = ?, featured = ?
-                WHERE id = ?
+                WHERE product_id = ?
             ");
             $stmt->execute([$categoryId, $name, $description, $price, $stock, $featured, $id]);
             
@@ -86,7 +86,7 @@ try {
             
         case 'delete':
             $id = (int)($_POST['id'] ?? 0);
-            $stmt = $pdo->prepare("DELETE FROM products WHERE id = ?");
+            $stmt = $pdo->prepare("DELETE FROM products WHERE product_id = ?");
             $stmt->execute([$id]);
             
             setFlashMessage('success', 'Product deleted successfully!');
@@ -94,7 +94,7 @@ try {
             
         case 'toggle':
             $id = (int)($_POST['id'] ?? 0);
-            $stmt = $pdo->prepare("UPDATE products SET active = NOT active WHERE id = ?");
+            $stmt = $pdo->prepare("UPDATE products SET active = NOT active WHERE product_id = ?");
             $stmt->execute([$id]);
             
             setFlashMessage('success', 'Product status updated!');

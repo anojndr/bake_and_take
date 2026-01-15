@@ -9,8 +9,8 @@ if ($pdo) {
     try {
         $stmt = $pdo->query("
             SELECT u.*, 
-                   (SELECT COUNT(*) FROM orders WHERE user_id = u.id) as order_count,
-                   (SELECT COALESCE(SUM(total), 0) FROM orders WHERE user_id = u.id AND status != 'cancelled') as total_spent
+                   (SELECT COUNT(*) FROM orders WHERE user_id = u.user_id) as order_count,
+                   (SELECT COALESCE(SUM(total), 0) FROM orders WHERE user_id = u.user_id AND status != 'cancelled') as total_spent
             FROM users u 
             ORDER BY u.created_at DESC
         ");
@@ -68,7 +68,7 @@ if ($pdo) {
                 <tbody>
                     <?php foreach ($users as $user): ?>
                     <tr>
-                        <td>#<?php echo $user['id']; ?></td>
+                        <td>#<?php echo $user['user_id']; ?></td>
                         <td>
                             <div class="d-flex align-items-center gap-2">
                                 <div class="user-avatar" style="width: 36px; height: 36px; font-size: 0.875rem;">
@@ -98,14 +98,14 @@ if ($pdo) {
                         <td><?php echo date('M d, Y', strtotime($user['created_at'])); ?></td>
                         <td>
                             <div class="action-buttons">
-                                <button class="btn-action" title="View Details" data-bs-toggle="modal" data-bs-target="#userModal<?php echo $user['id']; ?>">
+                                <button class="btn-action" title="View Details" data-bs-toggle="modal" data-bs-target="#userModal<?php echo $user['user_id']; ?>">
                                     <i class="bi bi-eye"></i>
                                 </button>
-                                <?php if ($user['id'] != $_SESSION['admin_id']): ?>
+                                <?php if ($user['user_id'] != $_SESSION['admin_id']): ?>
                                 <form action="includes/manage_user.php" method="POST" style="display: inline;" onsubmit="return confirm('<?php echo $user['is_admin'] ? 'Remove admin privileges?' : 'Grant admin privileges?'; ?>')">
                                     <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                     <input type="hidden" name="action" value="toggle_admin">
-                                    <input type="hidden" name="id" value="<?php echo $user['id']; ?>">
+                                    <input type="hidden" name="id" value="<?php echo $user['user_id']; ?>">
                                     <button type="submit" class="btn-action edit" title="Toggle Admin">
                                         <i class="bi bi-shield<?php echo $user['is_admin'] ? '-x' : '-plus'; ?>"></i>
                                     </button>
@@ -113,7 +113,7 @@ if ($pdo) {
                                 <form action="includes/manage_user.php" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this user? This action cannot be undone.')">
                                     <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                     <input type="hidden" name="action" value="delete">
-                                    <input type="hidden" name="id" value="<?php echo $user['id']; ?>">
+                                    <input type="hidden" name="id" value="<?php echo $user['user_id']; ?>">
                                     <button type="submit" class="btn-action delete" title="Delete User">
                                         <i class="bi bi-trash"></i>
                                     </button>
@@ -132,7 +132,7 @@ if ($pdo) {
 
 <!-- User Detail Modals - Outside the table -->
 <?php foreach ($users as $user): ?>
-<div class="modal fade" id="userModal<?php echo $user['id']; ?>" tabindex="-1">
+<div class="modal fade" id="userModal<?php echo $user['user_id']; ?>" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="background: var(--admin-dark-secondary); border: 1px solid var(--admin-dark-tertiary);">
             <div class="modal-header" style="border-color: var(--admin-dark-tertiary);">
@@ -189,11 +189,11 @@ if ($pdo) {
             </div>
             <div class="modal-footer" style="border-color: var(--admin-dark-tertiary);">
                 <button type="button" class="btn-admin-secondary" data-bs-dismiss="modal">Close</button>
-                <?php if ($user['id'] != $_SESSION['admin_id']): ?>
+                <?php if ($user['user_id'] != $_SESSION['admin_id']): ?>
                 <form action="includes/manage_user.php" method="POST" style="display: inline;" onsubmit="return confirm('<?php echo $user['is_admin'] ? 'Remove admin privileges?' : 'Grant admin privileges?'; ?>')">
                     <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                     <input type="hidden" name="action" value="toggle_admin">
-                    <input type="hidden" name="id" value="<?php echo $user['id']; ?>">
+                    <input type="hidden" name="id" value="<?php echo $user['user_id']; ?>">
                     <button type="submit" class="btn-admin-primary">
                         <i class="bi bi-shield<?php echo $user['is_admin'] ? '-x' : '-plus'; ?> me-1"></i>
                         <?php echo $user['is_admin'] ? 'Remove Admin' : 'Make Admin'; ?>
@@ -202,7 +202,7 @@ if ($pdo) {
                 <form action="includes/manage_user.php" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this user? This action cannot be undone.')">
                     <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                     <input type="hidden" name="action" value="delete">
-                    <input type="hidden" name="id" value="<?php echo $user['id']; ?>">
+                    <input type="hidden" name="id" value="<?php echo $user['user_id']; ?>">
                     <button type="submit" class="btn-admin-danger" style="background: var(--admin-danger); color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;">
                         <i class="bi bi-trash me-1"></i>
                         Delete User

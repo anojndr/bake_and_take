@@ -36,8 +36,8 @@ try {
     // Check if there's actually a pending email change
     if (empty($user['pending_email'])) {
         // Clear the cancel token if it exists but no pending change
-        $stmt = $pdo->prepare("UPDATE users SET email_change_cancel_token = NULL WHERE id = ?");
-        $stmt->execute([$user['id']]);
+        $stmt = $pdo->prepare("UPDATE users SET email_change_cancel_token = NULL WHERE user_id = ?");
+        $stmt->execute([$user['user_id']]);
         
         redirect('../index.php?page=login', 'No pending email change to cancel. Your email address has not been changed.', 'info');
     }
@@ -54,9 +54,9 @@ try {
             pending_email_old_otp = NULL,
             email_change_step = NULL,
             email_change_cancel_token = NULL
-        WHERE id = ?
+        WHERE user_id = ?
     ");
-    $stmt->execute([$user['id']]);
+    $stmt->execute([$user['user_id']]);
     
     // Success message
     $message = 'Email change to "' . htmlspecialchars($pendingEmail) . '" has been cancelled successfully. ';
@@ -64,7 +64,7 @@ try {
     $message .= 'If you did not request this change, we recommend changing your password immediately.';
     
     // Redirect based on whether user is logged in
-    if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $user['id']) {
+    if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $user['user_id']) {
         redirect('../index.php?page=profile', $message, 'success');
     } else {
         redirect('../index.php?page=login', $message, 'success');

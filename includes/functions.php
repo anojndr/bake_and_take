@@ -23,7 +23,7 @@ function getAllProducts() {
             $stmt = $pdo->query("
                 SELECT p.*, c.slug as category 
                 FROM products p 
-                LEFT JOIN categories c ON p.category_id = c.id 
+                LEFT JOIN categories c ON p.category_id = c.category_id 
                 WHERE p.active = 1 
                 ORDER BY p.featured DESC, p.name ASC
             ");
@@ -59,7 +59,7 @@ function getProductsByCategory($category = null) {
             $stmt = $pdo->prepare("
                 SELECT p.*, c.slug as category 
                 FROM products p 
-                LEFT JOIN categories c ON p.category_id = c.id 
+                LEFT JOIN categories c ON p.category_id = c.category_id 
                 WHERE c.slug = ? AND p.active = 1 
                 ORDER BY p.featured DESC, p.name ASC
             ");
@@ -91,7 +91,7 @@ function getFeaturedProducts() {
             $stmt = $pdo->query("
                 SELECT p.*, c.slug as category 
                 FROM products p 
-                LEFT JOIN categories c ON p.category_id = c.id 
+                LEFT JOIN categories c ON p.category_id = c.category_id 
                 WHERE p.featured = 1 AND p.active = 1 
                 ORDER BY p.name ASC
             ");
@@ -121,8 +121,8 @@ function getProductById($id) {
             $stmt = $pdo->prepare("
                 SELECT p.*, c.slug as category 
                 FROM products p 
-                LEFT JOIN categories c ON p.category_id = c.id 
-                WHERE p.id = ?
+                LEFT JOIN categories c ON p.category_id = c.category_id 
+                WHERE p.product_id = ?
             ");
             $stmt->execute([$id]);
             $product = $stmt->fetch();
@@ -137,7 +137,7 @@ function getProductById($id) {
     }
     
     foreach ($PRODUCTS as $p) { 
-        if ($p['id'] == $id) return $p; 
+        if ($p['product_id'] == $id) return $p; 
     }
     return null;
 }
@@ -154,7 +154,7 @@ function getAllCategories() {
             $categories = [];
             while ($row = $stmt->fetch()) {
                 $categories[$row['slug']] = [
-                    'id' => $row['id'],
+                    'id' => $row['category_id'],
                     'name' => $row['name'],
                     'icon' => $row['icon']
                 ];
@@ -204,7 +204,7 @@ function getProductCountByCategory($categorySlug = null) {
                 $stmt = $pdo->prepare("
                     SELECT COUNT(*) as count 
                     FROM products p 
-                    JOIN categories c ON p.category_id = c.id 
+                    JOIN categories c ON p.category_id = c.category_id 
                     WHERE c.slug = ? AND p.active = 1
                 ");
                 $stmt->execute([$categorySlug]);
@@ -331,13 +331,13 @@ function getDatabaseCartCount($userId) {
     if (!$pdo) return 0;
     
     // Get cart ID
-    $stmt = $pdo->prepare("SELECT id FROM cart WHERE user_id = ?");
+    $stmt = $pdo->prepare("SELECT cart_id FROM cart WHERE user_id = ?");
     $stmt->execute([$userId]);
     $cart = $stmt->fetch();
     
     if (!$cart) return 0;
     
-    $cartId = $cart['id'];
+    $cartId = $cart['cart_id'];
     
     // Get count
     $stmt = $pdo->prepare("SELECT SUM(quantity) as count FROM cart_items WHERE cart_id = ?");
