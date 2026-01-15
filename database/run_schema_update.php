@@ -60,6 +60,10 @@ try {
     addColumn($pdo, 'users', 'verification_token_expires_at', "TIMESTAMP NULL");
     addIndex($pdo, 'users', 'idx_verification_token', '`verification_token`');
 
+    // USERS: email verification columns for existing users
+    addColumn($pdo, 'users', 'email_verify_token', "VARCHAR(255) NULL");
+    addColumn($pdo, 'users', 'email_verify_expires', "DATETIME NULL");
+
     // USERS: password reset columns
     addColumn($pdo, 'users', 'password_reset_token_hash', "CHAR(64) NULL");
     addColumn($pdo, 'users', 'password_reset_expires_at', "TIMESTAMP NULL");

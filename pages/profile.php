@@ -1,10 +1,5 @@
 <?php
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: index.php?page=login');
-    exit;
-}
-
+// User is already authenticated via index.php
 // Fetch user data from database
 $user = null;
 if ($pdo) {
@@ -26,8 +21,9 @@ if ($pdo) {
 }
 
 if (!$user) {
-    header('Location: index.php?page=login');
-    exit;
+    // User data not found - show error instead of redirect (can't redirect after HTML output)
+    echo '<div class="container py-5"><div class="alert alert-danger">Unable to load profile. Please <a href="index.php?page=login">log in again</a>.</div></div>';
+    return;
 }
 
 // Fetch recent orders (last 3)

@@ -1,10 +1,5 @@
 <?php
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: index.php?page=login');
-    exit;
-}
-
+// User is already authenticated via index.php
 // Fetch user's orders from database
 $orders = [];
 if ($pdo) {

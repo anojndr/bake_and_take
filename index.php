@@ -9,6 +9,13 @@ $allowedPages = ['home', 'menu', 'about', 'contact', 'cart', 'checkout', 'login'
 if (!in_array($page, $allowedPages)) {
     $page = 'home';
 }
+
+// Handle authentication checks before any HTML output
+$protectedPages = ['profile', 'orders', 'checkout'];
+if (in_array($page, $protectedPages) && !isset($_SESSION['user_id'])) {
+    header('Location: index.php?page=login');
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
