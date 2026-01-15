@@ -13,10 +13,12 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 
 require_once '../../includes/config.php';
 
+global $conn;
+
 // Backup directory
 $backupDir = dirname(__DIR__, 2) . '/backups';
 
-if (!$pdo) {
+if (!$conn) {
     echo json_encode(['success' => false, 'error' => 'Database connection failed']);
     exit;
 }
@@ -73,102 +75,87 @@ if (empty($sqlContent)) {
     exit;
 }
 
-try {
-    // Split SQL content into individual statements
-    // This handles multi-line statements and ignores comments
-    $statements = [];
-    $currentStatement = '';
-    $inString = false;
-    $stringChar = '';
-    $lines = explode("\n", $sqlContent);
+// Split SQL content into individual statements
+// This handles multi-line statements and ignores comments
+$statements = [];
+$currentStatement = '';
+$inString = false;
+$stringChar = '';
+$lines = explode("\n", $sqlContent);
+
+foreach ($lines as $line) {
+    $line = trim($line);
     
-    foreach ($lines as $line) {
-        $line = trim($line);
-        
-        // Skip empty lines and comments
-        if (empty($line) || strpos($line, '--') === 0 || strpos($line, '#') === 0) {
-            continue;
-        }
-        
-        $currentStatement .= $line . ' ';
-        
-        // Check if statement is complete (ends with semicolon, not inside a string)
-        if (preg_match('/;\s*$/', $line)) {
-            // Simple check - if the statement ends with a semicolon and we're not in a multiline string
-            $cleanStatement = trim($currentStatement);
-            if (!empty($cleanStatement) && $cleanStatement !== ';') {
-                $statements[] = $cleanStatement;
-            }
-            $currentStatement = '';
-        }
+    // Skip empty lines and comments
+    if (empty($line) || strpos($line, '--') === 0 || strpos($line, '#') === 0) {
+        continue;
     }
     
-    // Add any remaining statement
-    if (!empty(trim($currentStatement))) {
-        $statements[] = trim($currentStatement);
-    }
+    $currentStatement .= $line . ' ';
     
-    // Execute statements
-    $successCount = 0;
-    $errorCount = 0;
-    $errors = [];
-    
-    // Disable foreign key checks
-    $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
-    
-    foreach ($statements as $statement) {
-        try {
-            // Skip certain problematic statements
-            if (stripos($statement, 'CREATE DATABASE') === 0 || 
-                stripos($statement, 'USE ') === 0 ||
-                stripos($statement, 'SET SQL_MODE') === 0 ||
-                stripos($statement, 'SET AUTOCOMMIT') === 0 ||
-                stripos($statement, 'START TRANSACTION') === 0 ||
-                stripos($statement, 'COMMIT') === 0 ||
-                stripos($statement, 'SET FOREIGN_KEY_CHECKS') === 0) {
-                continue;
-            }
-            
-            $pdo->exec($statement);
-            $successCount++;
-            
-        } catch (PDOException $e) {
-            $errorCount++;
-            $errors[] = [
-                'statement' => substr($statement, 0, 100) . '...',
-                'error' => $e->getMessage()
-            ];
-            
-            // Continue with other statements even if one fails
+    // Check if statement is complete (ends with semicolon, not inside a string)
+    if (preg_match('/;\s*$/', $line)) {
+        // Simple check - if the statement ends with a semicolon and we're not in a multiline string
+        $cleanStatement = trim($currentStatement);
+        if (!empty($cleanStatement) && $cleanStatement !== ';') {
+            $statements[] = $cleanStatement;
         }
+        $currentStatement = '';
+    }
+}
+
+// Add any remaining statement
+if (!empty(trim($currentStatement))) {
+    $statements[] = trim($currentStatement);
+}
+
+// Execute statements
+$successCount = 0;
+$errorCount = 0;
+$errors = [];
+
+// Disable foreign key checks
+mysqli_query($conn, "SET FOREIGN_KEY_CHECKS = 0");
+
+foreach ($statements as $statement) {
+    // Skip certain problematic statements
+    if (stripos($statement, 'CREATE DATABASE') === 0 || 
+        stripos($statement, 'USE ') === 0 ||
+        stripos($statement, 'SET SQL_MODE') === 0 ||
+        stripos($statement, 'SET AUTOCOMMIT') === 0 ||
+        stripos($statement, 'START TRANSACTION') === 0 ||
+        stripos($statement, 'COMMIT') === 0 ||
+        stripos($statement, 'SET FOREIGN_KEY_CHECKS') === 0) {
+        continue;
     }
     
-    // Re-enable foreign key checks
-    $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
-    
-    if ($errorCount > 0 && $successCount === 0) {
-        echo json_encode([
-            'success' => false, 
-            'error' => 'Failed to restore database. All statements failed.',
-            'errors' => array_slice($errors, 0, 5)
-        ]);
+    if (mysqli_query($conn, $statement)) {
+        $successCount++;
     } else {
-        echo json_encode([
-            'success' => true,
-            'statements_executed' => $successCount,
-            'errors' => $errorCount,
-            'error_details' => array_slice($errors, 0, 5)
-        ]);
+        $errorCount++;
+        $errors[] = [
+            'statement' => substr($statement, 0, 100) . '...',
+            'error' => mysqli_error($conn)
+        ];
+        // Continue with other statements even if one fails
     }
-    
-} catch (Exception $e) {
-    // Re-enable foreign key checks on error
-    try {
-        $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
-    } catch (Exception $e2) {
-        // Ignore
-    }
-    
-    echo json_encode(['success' => false, 'error' => 'Restore failed: ' . $e->getMessage()]);
+}
+
+// Re-enable foreign key checks
+mysqli_query($conn, "SET FOREIGN_KEY_CHECKS = 1");
+
+if ($errorCount > 0 && $successCount === 0) {
+    echo json_encode([
+        'success' => false, 
+        'error' => 'Failed to restore database. All statements failed.',
+        'errors' => array_slice($errors, 0, 5)
+    ]);
+} else {
+    echo json_encode([
+        'success' => true,
+        'statements_executed' => $successCount,
+        'errors' => $errorCount,
+        'error_details' => array_slice($errors, 0, 5)
+    ]);
 }
 ?>

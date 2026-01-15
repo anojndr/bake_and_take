@@ -25,38 +25,41 @@ if (empty($orderNumber)) {
     exit;
 }
 
-if (!$pdo) {
+global $conn;
+if (!$conn) {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Database unavailable']);
     exit;
 }
 
-try {
-    $stmt = $pdo->prepare("
-        SELECT status, confirmation_token, order_number, total 
-        FROM orders 
-        WHERE order_number = ?
-    ");
-    $stmt->execute([$orderNumber]);
-    $order = $stmt->fetch();
-    
-    if (!$order) {
-        http_response_code(404);
-        echo json_encode(['success' => false, 'message' => 'Order not found']);
-        exit;
-    }
-    
-    echo json_encode([
-        'success' => true,
-        'status' => $order['status'],
-        'order_number' => $order['order_number'],
-        'total' => $order['total'],
-        'confirmation_token' => $order['confirmation_token']
-    ]);
-    
-} catch (PDOException $e) {
-    error_log("Check order status error: " . $e->getMessage());
+$stmt = mysqli_prepare($conn, "
+    SELECT status, confirmation_token, order_number, total 
+    FROM orders 
+    WHERE order_number = ?
+");
+if (!$stmt) {
+    error_log("Check order status error: " . mysqli_error($conn));
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Database error']);
+    exit;
 }
+mysqli_stmt_bind_param($stmt, "s", $orderNumber);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$order = mysqli_fetch_assoc($result);
+mysqli_stmt_close($stmt);
+
+if (!$order) {
+    http_response_code(404);
+    echo json_encode(['success' => false, 'message' => 'Order not found']);
+    exit;
+}
+
+echo json_encode([
+    'success' => true,
+    'status' => $order['status'],
+    'order_number' => $order['order_number'],
+    'total' => $order['total'],
+    'confirmation_token' => $order['confirmation_token']
+]);
 ?>

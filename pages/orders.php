@@ -2,22 +2,25 @@
 // User is already authenticated via index.php
 // Fetch user's orders from database
 $orders = [];
-if ($pdo) {
-    try {
-        $stmt = $pdo->prepare("
-            SELECT o.*, 
-                   GROUP_CONCAT(CONCAT(p.name, ' x', oi.quantity) SEPARATOR ', ') as items_summary
-            FROM orders o
-            LEFT JOIN order_items oi ON o.order_id = oi.order_id
-            LEFT JOIN products p ON oi.product_id = p.product_id
-            WHERE o.user_id = ?
-            GROUP BY o.order_id
-            ORDER BY o.created_at DESC
-        ");
-        $stmt->execute([$_SESSION['user_id']]);
-        $orders = $stmt->fetchAll();
-    } catch (PDOException $e) {
-        // Handle error silently
+if ($conn) {
+    $stmt = mysqli_prepare($conn, "
+        SELECT o.*, 
+               GROUP_CONCAT(CONCAT(p.name, ' x', oi.quantity) SEPARATOR ', ') as items_summary
+        FROM orders o
+        LEFT JOIN order_items oi ON o.order_id = oi.order_id
+        LEFT JOIN products p ON oi.product_id = p.product_id
+        WHERE o.user_id = ?
+        GROUP BY o.order_id
+        ORDER BY o.created_at DESC
+    ");
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $_SESSION['user_id']);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $orders[] = $row;
+        }
+        mysqli_stmt_close($stmt);
     }
 }
 ?>

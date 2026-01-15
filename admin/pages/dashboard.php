@@ -11,41 +11,53 @@ $totalProducts = 0;
 $recentOrders = [];
 $newOrders = 0;
 
-if ($pdo) {
-    try {
-        // Total orders
-        $stmt = $pdo->query("SELECT COUNT(*) as count FROM orders");
-        $totalOrders = $stmt->fetch()['count'];
-        
-        // Total revenue
-        $stmt = $pdo->query("SELECT COALESCE(SUM(total), 0) as revenue FROM orders WHERE status != 'cancelled'");
-        $totalRevenue = $stmt->fetch()['revenue'];
-        
-        // Total users
-        $stmt = $pdo->query("SELECT COUNT(*) as count FROM users WHERE is_admin = 0");
-        $totalUsers = $stmt->fetch()['count'];
-        
-        // Total products
-        $stmt = $pdo->query("SELECT COUNT(*) as count FROM products WHERE active = 1");
-        $totalProducts = $stmt->fetch()['count'];
-        
-        // New orders (confirmed but not yet preparing)
-        $stmt = $pdo->query("SELECT COUNT(*) as count FROM orders WHERE status = 'confirmed'");
-        $newOrders = $stmt->fetch()['count'];
-        
-        // Recent orders
-        $stmt = $pdo->query("
-            SELECT o.*, 
-                   CONCAT(o.first_name, ' ', o.last_name) as customer_name,
-                   (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) as item_count
-            FROM orders o 
-            ORDER BY o.created_at DESC 
-            LIMIT 5
-        ");
-        $recentOrders = $stmt->fetchAll();
-        
-    } catch (PDOException $e) {
-        // Handle error silently
+if ($conn) {
+    // Total orders
+    $result = mysqli_query($conn, "SELECT COUNT(*) as count FROM orders");
+    if ($result) {
+        $row = mysqli_fetch_assoc($result);
+        $totalOrders = $row['count'];
+    }
+    
+    // Total revenue
+    $result = mysqli_query($conn, "SELECT COALESCE(SUM(total), 0) as revenue FROM orders WHERE status != 'cancelled'");
+    if ($result) {
+        $row = mysqli_fetch_assoc($result);
+        $totalRevenue = $row['revenue'];
+    }
+    
+    // Total users
+    $result = mysqli_query($conn, "SELECT COUNT(*) as count FROM users WHERE is_admin = 0");
+    if ($result) {
+        $row = mysqli_fetch_assoc($result);
+        $totalUsers = $row['count'];
+    }
+    
+    // Total products
+    $result = mysqli_query($conn, "SELECT COUNT(*) as count FROM products WHERE active = 1");
+    if ($result) {
+        $row = mysqli_fetch_assoc($result);
+        $totalProducts = $row['count'];
+    }
+    
+    // New orders (confirmed but not yet preparing)
+    $result = mysqli_query($conn, "SELECT COUNT(*) as count FROM orders WHERE status = 'confirmed'");
+    if ($result) {
+        $row = mysqli_fetch_assoc($result);
+        $newOrders = $row['count'];
+    }
+    
+    // Recent orders
+    $result = mysqli_query($conn, "
+        SELECT o.*, 
+               CONCAT(o.first_name, ' ', o.last_name) as customer_name,
+               (SELECT COUNT(*) FROM order_items WHERE order_id = o.order_id) as item_count
+        FROM orders o 
+        ORDER BY o.created_at DESC 
+        LIMIT 5
+    ");
+    if ($result) {
+        $recentOrders = mysqli_fetch_all($result, MYSQLI_ASSOC);
     }
 }
 

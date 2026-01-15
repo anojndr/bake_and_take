@@ -7,30 +7,30 @@
 $statusFilter = isset($_GET['status']) ? $_GET['status'] : null;
 $orders = [];
 
-if ($pdo) {
-    try {
-        $sql = "
-            SELECT o.*, 
-                   CONCAT(u.first_name, ' ', u.last_name) as customer_name,
-                   u.email, u.phone,
-                   (SELECT COUNT(*) FROM order_items WHERE order_id = o.order_id) as item_count
-            FROM orders o
-            JOIN users u ON o.user_id = u.user_id
-        ";
-        
-        if ($statusFilter) {
-            $sql .= " WHERE o.status = ?";
-            $sql .= " ORDER BY o.created_at DESC";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([$statusFilter]);
-        } else {
-            $sql .= " ORDER BY o.created_at DESC";
-            $stmt = $pdo->query($sql);
-        }
-        
-        $orders = $stmt->fetchAll();
-    } catch (PDOException $e) {
-        // Handle error
+if ($conn) {
+    $sql = "
+        SELECT o.*, 
+               CONCAT(u.first_name, ' ', u.last_name) as customer_name,
+               u.email, u.phone,
+               (SELECT COUNT(*) FROM order_items WHERE order_id = o.order_id) as item_count
+        FROM orders o
+        JOIN users u ON o.user_id = u.user_id
+    ";
+    
+    if ($statusFilter) {
+        $sql .= " WHERE o.status = ?";
+        $sql .= " ORDER BY o.created_at DESC";
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param($stmt, "s", $statusFilter);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+    } else {
+        $sql .= " ORDER BY o.created_at DESC";
+        $result = mysqli_query($conn, $sql);
+    }
+    
+    if ($result) {
+        $orders = mysqli_fetch_all($result, MYSQLI_ASSOC);
     }
 }
 
@@ -164,17 +164,19 @@ $statusLabels = [
 <?php foreach ($orders as $order): 
     // Get order items
     $orderItems = [];
-    if ($pdo) {
-        try {
-            $stmt = $pdo->prepare("
-                SELECT oi.*, COALESCE(p.name, 'Unknown Product') as product_name 
-                FROM order_items oi
-                LEFT JOIN products p ON oi.product_id = p.product_id
-                WHERE oi.order_id = ?
-            ");
-            $stmt->execute([$order['order_id']]);
-            $orderItems = $stmt->fetchAll();
-        } catch (PDOException $e) {}
+    if ($conn) {
+        $stmt = mysqli_prepare($conn, "
+            SELECT oi.*, COALESCE(p.name, 'Unknown Product') as product_name 
+            FROM order_items oi
+            LEFT JOIN products p ON oi.product_id = p.product_id
+            WHERE oi.order_id = ?
+        ");
+        mysqli_stmt_bind_param($stmt, "i", $order['order_id']);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        if ($result) {
+            $orderItems = mysqli_fetch_all($result, MYSQLI_ASSOC);
+        }
     }
 ?>
 <div class="modal fade" id="orderModal<?php echo $order['order_id']; ?>" tabindex="-1">

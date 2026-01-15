@@ -25,7 +25,8 @@ if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
 
 $action = $_POST['action'] ?? '';
 
-if (!$pdo) {
+global $conn;
+if (!$conn) {
     setFlashMessage('error', 'Database connection error.');
     header('Location: ../index.php?page=users');
     exit;
@@ -42,8 +43,10 @@ try {
                 break;
             }
             
-            $stmt = $pdo->prepare("UPDATE users SET is_admin = NOT is_admin WHERE user_id = ?");
-            $stmt->execute([$id]);
+            $stmt = mysqli_prepare($conn, "UPDATE users SET is_admin = NOT is_admin WHERE user_id = ?");
+            mysqli_stmt_bind_param($stmt, "i", $id);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
             
             setFlashMessage('success', 'User admin status updated!');
             break;
@@ -58,20 +61,26 @@ try {
             }
             
             // Don't delete if it's the only admin
-            $stmt = $pdo->query("SELECT COUNT(*) as count FROM users WHERE is_admin = 1");
-            $adminCount = $stmt->fetch()['count'];
+            $result = mysqli_query($conn, "SELECT COUNT(*) as count FROM users WHERE is_admin = 1");
+            $adminCount = mysqli_fetch_assoc($result)['count'];
+            mysqli_free_result($result);
             
-            $stmt = $pdo->prepare("SELECT is_admin FROM users WHERE user_id = ?");
-            $stmt->execute([$id]);
-            $user = $stmt->fetch();
+            $stmt = mysqli_prepare($conn, "SELECT is_admin FROM users WHERE user_id = ?");
+            mysqli_stmt_bind_param($stmt, "i", $id);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            $user = mysqli_fetch_assoc($result);
+            mysqli_stmt_close($stmt);
             
             if ($user && $user['is_admin'] && $adminCount <= 1) {
                 setFlashMessage('error', 'Cannot delete the only admin account.');
                 break;
             }
             
-            $stmt = $pdo->prepare("DELETE FROM users WHERE user_id = ?");
-            $stmt->execute([$id]);
+            $stmt = mysqli_prepare($conn, "DELETE FROM users WHERE user_id = ?");
+            mysqli_stmt_bind_param($stmt, "i", $id);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
             
             setFlashMessage('success', 'User deleted successfully!');
             break;
@@ -79,8 +88,8 @@ try {
         default:
             setFlashMessage('error', 'Invalid action.');
     }
-} catch (PDOException $e) {
-    setFlashMessage('error', 'Operation failed: ' . $e->getMessage());
+} catch (Exception $e) {
+    setFlashMessage('error', 'Operation failed: ' . mysqli_error($conn));
 }
 
 header('Location: ../index.php?page=users');

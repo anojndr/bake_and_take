@@ -19,7 +19,7 @@ require_once __DIR__ . '/sms_config.php';
  * @return array ['success' => bool, 'message' => string, 'data' => mixed]
  */
 function sendSMS($phoneNumber, $message, $orderId = null, $userId = null) {
-    global $pdo;
+    global $conn;
     
     // Check if SMS is enabled
     if (!SMS_ENABLED) {
@@ -188,7 +188,7 @@ function sendSMS($phoneNumber, $message, $orderId = null, $userId = null) {
  * @return array ['success' => bool, 'message' => string, 'otp' => string|null]
  */
 function sendOTP($phoneNumber, $purpose = 'other', $referenceId = null) {
-    global $pdo;
+    global $conn;
     
     if (!SMS_OTP_ENABLED) {
         return [
@@ -207,27 +207,35 @@ function sendOTP($phoneNumber, $purpose = 'other', $referenceId = null) {
     $expiresAt = date('Y-m-d H:i:s', strtotime('+' . SMS_OTP_EXPIRY_MINUTES . ' minutes'));
     
     // Store OTP in database
-    if ($pdo) {
-        try {
-            // Invalidate any existing OTPs for this phone number
-            $stmt = $pdo->prepare("DELETE FROM sms_otp WHERE phone_number = ? AND verified_at IS NULL");
-            $stmt->execute([$phoneNumber]);
-            
-            // Insert new OTP
-            $stmt = $pdo->prepare("
-                INSERT INTO sms_otp (phone_number, otp_code, purpose, reference_id, expires_at, max_attempts)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ");
-            $stmt->execute([
-                $phoneNumber,
-                $otp,
-                $purpose,
-                $referenceId,
-                $expiresAt,
-                SMS_OTP_MAX_ATTEMPTS
-            ]);
-        } catch (PDOException $e) {
-            error_log("OTP storage error: " . $e->getMessage());
+    if ($conn) {
+        // Invalidate any existing OTPs for this phone number
+        $stmt = mysqli_prepare($conn, "DELETE FROM sms_otp WHERE phone_number = ? AND verified_at IS NULL");
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, "s", $phoneNumber);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
+        }
+        
+        // Insert new OTP
+        $stmt = mysqli_prepare($conn, "
+            INSERT INTO sms_otp (phone_number, otp_code, purpose, reference_id, expires_at, max_attempts)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ");
+        if ($stmt) {
+            $maxAttempts = SMS_OTP_MAX_ATTEMPTS;
+            mysqli_stmt_bind_param($stmt, "sssisi", $phoneNumber, $otp, $purpose, $referenceId, $expiresAt, $maxAttempts);
+            if (!mysqli_stmt_execute($stmt)) {
+                error_log("OTP storage error: " . mysqli_error($conn));
+                mysqli_stmt_close($stmt);
+                return [
+                    'success' => false,
+                    'message' => 'Failed to generate OTP',
+                    'otp' => null
+                ];
+            }
+            mysqli_stmt_close($stmt);
+        } else {
+            error_log("OTP storage error: " . mysqli_error($conn));
             return [
                 'success' => false,
                 'message' => 'Failed to generate OTP',
@@ -266,12 +274,12 @@ function sendOTP($phoneNumber, $purpose = 'other', $referenceId = null) {
  * 
  * @param string $phoneNumber Phone number
  * @param string $otpCode OTP code to verify
- * @return array ['success' => bool, 'message' => string]
+ * @return array ['success' => bool, 'message' => string, 'reference_id' => int|null]
  */
 function verifyOTP($phoneNumber, $otpCode) {
-    global $pdo;
+    global $conn;
     
-    if (!$pdo) {
+    if (!$conn) {
         return [
             'success' => false,
             'message' => 'Database connection required'
@@ -281,30 +289,40 @@ function verifyOTP($phoneNumber, $otpCode) {
     $phoneNumber = formatPhoneNumber($phoneNumber);
     $currentTime = date('Y-m-d H:i:s');
     
-    try {
-        // Find the OTP record - check expiry using PHP time for timezone consistency
-        $stmt = $pdo->prepare("
+    // Find the OTP record - check expiry using PHP time for timezone consistency
+    $stmt = mysqli_prepare($conn, "
+        SELECT * FROM sms_otp 
+        WHERE phone_number = ? 
+        AND otp_code = ?
+        AND verified_at IS NULL
+        AND expires_at > ?
+        ORDER BY created_at DESC
+        LIMIT 1
+    ");
+    if (!$stmt) {
+        error_log("OTP verification error: " . mysqli_error($conn));
+        return ['success' => false, 'message' => 'Verification failed'];
+    }
+    mysqli_stmt_bind_param($stmt, "sss", $phoneNumber, $otpCode, $currentTime);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $otpRecord = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
+    
+    if (!$otpRecord) {
+        // Check if there's an expired or used OTP
+        $stmt = mysqli_prepare($conn, "
             SELECT * FROM sms_otp 
             WHERE phone_number = ? 
-            AND otp_code = ?
-            AND verified_at IS NULL
-            AND expires_at > ?
             ORDER BY created_at DESC
             LIMIT 1
         ");
-        $stmt->execute([$phoneNumber, $otpCode, $currentTime]);
-        $otpRecord = $stmt->fetch();
-        
-        if (!$otpRecord) {
-            // Check if there's an expired or used OTP
-            $stmt = $pdo->prepare("
-                SELECT * FROM sms_otp 
-                WHERE phone_number = ? 
-                ORDER BY created_at DESC
-                LIMIT 1
-            ");
-            $stmt->execute([$phoneNumber]);
-            $lastOtp = $stmt->fetch();
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, "s", $phoneNumber);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            $lastOtp = mysqli_fetch_assoc($result);
+            mysqli_stmt_close($stmt);
             
             if ($lastOtp) {
                 if ($lastOtp['verified_at']) {
@@ -318,32 +336,36 @@ function verifyOTP($phoneNumber, $otpCode) {
                 }
                 
                 // Increment attempts
-                $stmt = $pdo->prepare("UPDATE sms_otp SET attempts = attempts + 1 WHERE otp_id = ?");
-                $stmt->execute([$lastOtp['otp_id']]);
+                $updateStmt = mysqli_prepare($conn, "UPDATE sms_otp SET attempts = attempts + 1 WHERE otp_id = ?");
+                if ($updateStmt) {
+                    mysqli_stmt_bind_param($updateStmt, "i", $lastOtp['otp_id']);
+                    mysqli_stmt_execute($updateStmt);
+                    mysqli_stmt_close($updateStmt);
+                }
             }
-            
-            return ['success' => false, 'message' => 'Invalid OTP'];
         }
         
-        // Check attempts
-        if ($otpRecord['attempts'] >= $otpRecord['max_attempts']) {
-            return ['success' => false, 'message' => 'Maximum attempts exceeded'];
-        }
-        
-        // Mark as verified
-        $stmt = $pdo->prepare("UPDATE sms_otp SET verified_at = NOW() WHERE otp_id = ?");
-        $stmt->execute([$otpRecord['otp_id']]);
-        
-        return [
-            'success' => true,
-            'message' => 'OTP verified successfully',
-            'reference_id' => $otpRecord['reference_id']
-        ];
-        
-    } catch (PDOException $e) {
-        error_log("OTP verification error: " . $e->getMessage());
-        return ['success' => false, 'message' => 'Verification failed'];
+        return ['success' => false, 'message' => 'Invalid OTP'];
     }
+    
+    // Check attempts
+    if ($otpRecord['attempts'] >= $otpRecord['max_attempts']) {
+        return ['success' => false, 'message' => 'Maximum attempts exceeded'];
+    }
+    
+    // Mark as verified
+    $stmt = mysqli_prepare($conn, "UPDATE sms_otp SET verified_at = NOW() WHERE otp_id = ?");
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $otpRecord['otp_id']);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+    }
+    
+    return [
+        'success' => true,
+        'message' => 'OTP verified successfully',
+        'reference_id' => $otpRecord['reference_id']
+    ];
 }
 
 /**
@@ -580,30 +602,29 @@ function generateOTP($length = 6) {
  * @return int|null SMS log ID
  */
 function logSMS($direction, $phoneNumber, $message, $status, $gatewayResponse = null, $orderId = null, $userId = null) {
-    global $pdo;
+    global $conn;
     
-    if (!$pdo) {
+    if (!$conn) {
         return null;
     }
     
-    try {
-        $stmt = $pdo->prepare("
-            INSERT INTO sms_log (direction, phone_number, message, status, gateway_response, order_id)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ");
-        $stmt->execute([
-            $direction,
-            $phoneNumber,
-            $message,
-            $status,
-            $gatewayResponse,
-            $orderId
-        ]);
-        return $pdo->lastInsertId();
-    } catch (PDOException $e) {
-        error_log("SMS log error: " . $e->getMessage());
+    $stmt = mysqli_prepare($conn, "
+        INSERT INTO sms_log (direction, phone_number, message, status, gateway_response, order_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ");
+    if (!$stmt) {
+        error_log("SMS log error: " . mysqli_error($conn));
         return null;
     }
+    mysqli_stmt_bind_param($stmt, "sssssi", $direction, $phoneNumber, $message, $status, $gatewayResponse, $orderId);
+    if (!mysqli_stmt_execute($stmt)) {
+        error_log("SMS log error: " . mysqli_error($conn));
+        mysqli_stmt_close($stmt);
+        return null;
+    }
+    $insertId = mysqli_insert_id($conn);
+    mysqli_stmt_close($stmt);
+    return $insertId;
 }
 
 /**
@@ -615,23 +636,24 @@ function logSMS($direction, $phoneNumber, $message, $status, $gatewayResponse = 
  * @return bool Success
  */
 function updateSMSLog($smsLogId, $status, $gatewayResponse = null) {
-    global $pdo;
+    global $conn;
     
-    if (!$pdo || !$smsLogId) {
+    if (!$conn || !$smsLogId) {
         return false;
     }
     
-    try {
-        $stmt = $pdo->prepare("
-            UPDATE sms_log SET status = ?, gateway_response = ?, updated_at = NOW()
-            WHERE sms_id = ?
-        ");
-        $stmt->execute([$status, $gatewayResponse, $smsLogId]);
-        return true;
-    } catch (PDOException $e) {
-        error_log("SMS log update error: " . $e->getMessage());
+    $stmt = mysqli_prepare($conn, "
+        UPDATE sms_log SET status = ?, gateway_response = ?, updated_at = NOW()
+        WHERE sms_id = ?
+    ");
+    if (!$stmt) {
+        error_log("SMS log update error: " . mysqli_error($conn));
         return false;
     }
+    mysqli_stmt_bind_param($stmt, "ssi", $status, $gatewayResponse, $smsLogId);
+    $success = mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+    return $success;
 }
 
 /**
@@ -640,22 +662,28 @@ function updateSMSLog($smsLogId, $status, $gatewayResponse = null) {
  * @param int $orderId Order ID
  * @return array SMS log entries
  */
-function getSMSLogByOrder($orderId) {
-    global $pdo;
+function getSMSLogForOrder($orderId) {
+    global $conn;
     
-    if (!$pdo) {
+    if (!$conn) {
         return [];
     }
     
-    try {
-        $stmt = $pdo->prepare("
-            SELECT * FROM sms_log WHERE order_id = ? ORDER BY created_at DESC
-        ");
-        $stmt->execute([$orderId]);
-        return $stmt->fetchAll();
-    } catch (PDOException $e) {
-        error_log("SMS log fetch error: " . $e->getMessage());
+    $stmt = mysqli_prepare($conn, "
+        SELECT * FROM sms_log WHERE order_id = ? ORDER BY created_at DESC
+    ");
+    if (!$stmt) {
+        error_log("SMS log fetch error: " . mysqli_error($conn));
         return [];
     }
+    mysqli_stmt_bind_param($stmt, "i", $orderId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $logs = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $logs[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+    return $logs;
 }
 ?>

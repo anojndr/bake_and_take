@@ -5,6 +5,7 @@
  */
 session_start();
 require_once 'config.php';
+require_once 'connect.php';
 require_once 'functions.php';
 require_once 'mailer.php';
 require_once 'sms_service.php';
@@ -30,103 +31,100 @@ $action = $_POST['action'] ?? '';
 // Get user ID
 $userId = $_SESSION['user_id'];
 
-try {
-    switch ($action) {
-        case 'update_name':
-            handleNameUpdate($pdo, $userId);
-            break;
+switch ($action) {
+    case 'update_name':
+        handleNameUpdate($userId);
+        break;
+    
+    case 'update_profile':
+        handleProfileUpdate($userId);
+        break;
         
-        case 'update_profile':
-            handleProfileUpdate($pdo, $userId);
-            break;
-            
-        case 'request_email_change':
-            handleEmailChangeRequest($pdo, $userId);
-            break;
+    case 'request_email_change':
+        handleEmailChangeRequest($userId);
+        break;
 
-        case 'verify_old_email_code':
-            handleVerifyOldEmailCode($pdo, $userId);
-            break;
-            
-        case 'request_phone_change':
-            handlePhoneChangeRequest($pdo, $userId);
-            break;
-            
-        case 'verify_old_phone_otp':
-            handleVerifyOldPhoneOtp($pdo, $userId);
-            break;
-            
-        case 'verify_new_phone_otp':
-            handleVerifyNewPhoneOtp($pdo, $userId);
-            break;
-            
-        case 'phone_change_email_recovery':
-            handlePhoneChangeEmailRecovery($pdo, $userId);
-            break;
-            
-        case 'resend_new_phone_otp':
-            handleResendNewPhoneOtp($pdo, $userId);
-            break;
-            
-        case 'resend_phone_recovery_email':
-            handleResendPhoneRecoveryEmail($pdo, $userId);
-            break;
-            
-        case 'cancel_phone_change':
-            handleCancelPhoneChange($pdo, $userId);
-            break;
-            
-        case 'cancel_email_change':
-            handleCancelEmailChange($pdo, $userId);
-            break;
-            
-        case 'change_password':
-            handlePasswordChange($pdo, $userId);
-            break;
+    case 'verify_old_email_code':
+        handleVerifyOldEmailCode($userId);
+        break;
         
-        // Phone verification for existing users
-        case 'send_phone_verification_otp':
-            handleSendPhoneVerificationOtp($pdo, $userId);
-            break;
-            
-        case 'verify_phone_otp':
-            handleVerifyPhoneOtp($pdo, $userId);
-            break;
-            
-        case 'resend_phone_verification_otp':
-            handleResendPhoneVerificationOtp($pdo, $userId);
-            break;
-            
-        case 'cancel_phone_verification':
-            handleCancelPhoneVerification($pdo, $userId);
-            break;
+    case 'request_phone_change':
+        handlePhoneChangeRequest($userId);
+        break;
         
-        // Email verification for existing users
-        case 'send_email_verification_link':
-            handleSendEmailVerificationLink($pdo, $userId);
-            break;
-            
-        case 'resend_email_verification_link':
-            handleResendEmailVerificationLink($pdo, $userId);
-            break;
-            
-        case 'cancel_email_verification':
-            handleCancelEmailVerification($pdo, $userId);
-            break;
-            
-        default:
-            redirect('../index.php?page=profile', 'Invalid action.', 'error');
-    }
-} catch (Exception $e) {
-    error_log("Profile update error: " . $e->getMessage());
-    redirect('../index.php?page=profile', 'An error occurred. Please try again.', 'error');
+    case 'verify_old_phone_otp':
+        handleVerifyOldPhoneOtp($userId);
+        break;
+        
+    case 'verify_new_phone_otp':
+        handleVerifyNewPhoneOtp($userId);
+        break;
+        
+    case 'phone_change_email_recovery':
+        handlePhoneChangeEmailRecovery($userId);
+        break;
+        
+    case 'resend_new_phone_otp':
+        handleResendNewPhoneOtp($userId);
+        break;
+        
+    case 'resend_phone_recovery_email':
+        handleResendPhoneRecoveryEmail($userId);
+        break;
+        
+    case 'cancel_phone_change':
+        handleCancelPhoneChange($userId);
+        break;
+        
+    case 'cancel_email_change':
+        handleCancelEmailChange($userId);
+        break;
+        
+    case 'change_password':
+        handlePasswordChange($userId);
+        break;
+    
+    // Phone verification for existing users
+    case 'send_phone_verification_otp':
+        handleSendPhoneVerificationOtp($userId);
+        break;
+        
+    case 'verify_phone_otp':
+        handleVerifyPhoneOtp($userId);
+        break;
+        
+    case 'resend_phone_verification_otp':
+        handleResendPhoneVerificationOtp($userId);
+        break;
+        
+    case 'cancel_phone_verification':
+        handleCancelPhoneVerification($userId);
+        break;
+    
+    // Email verification for existing users
+    case 'send_email_verification_link':
+        handleSendEmailVerificationLink($userId);
+        break;
+        
+    case 'resend_email_verification_link':
+        handleResendEmailVerificationLink($userId);
+        break;
+        
+    case 'cancel_email_verification':
+        handleCancelEmailVerification($userId);
+        break;
+        
+    default:
+        redirect('../index.php?page=profile', 'Invalid action.', 'error');
 }
 
 /**
  * Handle name update
  * Requires password verification for security
  */
-function handleNameUpdate($pdo, $userId) {
+function handleNameUpdate($userId) {
+    global $conn;
+    
     $firstName = trim($_POST['first_name'] ?? '');
     $lastName = trim($_POST['last_name'] ?? '');
     $currentPassword = $_POST['current_password'] ?? '';
@@ -140,17 +138,28 @@ function handleNameUpdate($pdo, $userId) {
     }
     
     // Get current user password
-    $stmt = $pdo->prepare("SELECT password FROM users WHERE user_id = ?");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch();
+    $stmt = mysqli_prepare($conn, "SELECT password FROM users WHERE user_id = ?");
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "i", $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $user = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
     
     // Verify password
     if (!password_verify($currentPassword, $user['password'])) {
         redirect('../index.php?page=profile', 'Incorrect password. Please try again.', 'error');
     }
     
-    $stmt = $pdo->prepare("UPDATE users SET first_name = ?, last_name = ? WHERE user_id = ?");
-    $stmt->execute([$firstName, $lastName, $userId]);
+    $stmt = mysqli_prepare($conn, "UPDATE users SET first_name = ?, last_name = ? WHERE user_id = ?");
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "ssi", $firstName, $lastName, $userId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
     
     // Update session
     $_SESSION['user_name'] = $firstName . ' ' . $lastName;
@@ -161,7 +170,9 @@ function handleNameUpdate($pdo, $userId) {
 /**
  * Handle profile update (full name only)
  */
-function handleProfileUpdate($pdo, $userId) {
+function handleProfileUpdate($userId) {
+    global $conn;
+    
     $fullName = trim($_POST['full_name'] ?? '');
     
     if (empty($fullName)) {
@@ -174,12 +185,17 @@ function handleProfileUpdate($pdo, $userId) {
     $lastName = isset($nameParts[1]) ? $nameParts[1] : '';
     
     // Update user profile
-    $stmt = $pdo->prepare("
+    $stmt = mysqli_prepare($conn, "
         UPDATE users 
         SET first_name = ?, last_name = ?
         WHERE user_id = ?
     ");
-    $stmt->execute([$firstName, $lastName, $userId]);
+    if (!$stmt) {
+        redirect('../index.php?page=profile&edit=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "ssi", $firstName, $lastName, $userId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
     
     // Update session
     $_SESSION['user_name'] = trim($firstName . ' ' . $lastName);
@@ -192,7 +208,9 @@ function handleProfileUpdate($pdo, $userId) {
  * Step 1: Requires password verification, sends OTP code to OLD email.
  * Step 2 (after OTP): sends verification link to NEW email.
  */
-function handleEmailChangeRequest($pdo, $userId) {
+function handleEmailChangeRequest($userId) {
+    global $conn;
+    
     $newEmail = trim($_POST['new_email'] ?? '');
     $currentPassword = $_POST['current_password'] ?? '';
     
@@ -207,9 +225,15 @@ function handleEmailChangeRequest($pdo, $userId) {
     }
     
     // Get current user with password
-    $stmt = $pdo->prepare("SELECT email, password, first_name FROM users WHERE user_id = ?");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch();
+    $stmt = mysqli_prepare($conn, "SELECT email, password, first_name FROM users WHERE user_id = ?");
+    if (!$stmt) {
+        redirect('../index.php?page=profile&edit=email', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "i", $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $user = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
     
     // Verify password
     if (!password_verify($currentPassword, $user['password'])) {
@@ -222,11 +246,18 @@ function handleEmailChangeRequest($pdo, $userId) {
     }
     
     // Check if email is already in use
-    $stmt = $pdo->prepare("SELECT user_id FROM users WHERE email = ? AND user_id != ?");
-    $stmt->execute([$newEmail, $userId]);
-    if ($stmt->fetch()) {
+    $stmt = mysqli_prepare($conn, "SELECT user_id FROM users WHERE email = ? AND user_id != ?");
+    if (!$stmt) {
+        redirect('../index.php?page=profile&edit=email', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "si", $newEmail, $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    if (mysqli_fetch_assoc($result)) {
+        mysqli_stmt_close($stmt);
         redirect('../index.php?page=profile&edit=email', 'This email address is already in use.', 'error');
     }
+    mysqli_stmt_close($stmt);
     
     // Generate OTP for OLD email
     $oldEmailOtp = generateOTP(6);
@@ -236,16 +267,22 @@ function handleEmailChangeRequest($pdo, $userId) {
     $cancelToken = bin2hex(random_bytes(32));
 
     // Store pending email change (step 1)
-    $stmt = $pdo->prepare("
+    $emailChangeStep = 'verify_old';
+    $stmt = mysqli_prepare($conn, "
         UPDATE users 
         SET pending_email = ?, pending_email_expires = ?,
             pending_email_old_otp = ?,
-            email_change_step = 'verify_old',
+            email_change_step = ?,
             pending_email_token = NULL,
             email_change_cancel_token = ?
         WHERE user_id = ?
     ");
-    $stmt->execute([$newEmail, $expiresAt, $oldEmailOtp, $cancelToken, $userId]);
+    if (!$stmt) {
+        redirect('../index.php?page=profile&edit=email', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "sssssi", $newEmail, $expiresAt, $oldEmailOtp, $emailChangeStep, $cancelToken, $userId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
     
     // Generate URLs
     $baseUrl = getCurrentSiteUrl();
@@ -258,7 +295,7 @@ function handleEmailChangeRequest($pdo, $userId) {
 
     if (!$notifyResult['success']) {
         // Clear pending email on failure
-        $stmt = $pdo->prepare("
+        $stmt = mysqli_prepare($conn, "
             UPDATE users 
             SET pending_email = NULL, pending_email_token = NULL, pending_email_expires = NULL,
                 pending_email_old_otp = NULL,
@@ -266,7 +303,11 @@ function handleEmailChangeRequest($pdo, $userId) {
                 email_change_cancel_token = NULL
             WHERE user_id = ?
         ");
-        $stmt->execute([$userId]);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, "i", $userId);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
+        }
 
         error_log("Email OTP send failed: " . $notifyResult['message']);
         redirect('../index.php?page=profile&edit=email', 'Failed to send authorization code to your current email. Please try again.', 'error');
@@ -278,7 +319,9 @@ function handleEmailChangeRequest($pdo, $userId) {
 /**
  * Step 2: Verify OTP from OLD email, then send verification link to NEW email
  */
-function handleVerifyOldEmailCode($pdo, $userId) {
+function handleVerifyOldEmailCode($userId) {
+    global $conn;
+    
     $otpCode = trim($_POST['otp_code'] ?? '');
 
     if (empty($otpCode) || !preg_match('/^[0-9]{6}$/', $otpCode)) {
@@ -286,9 +329,15 @@ function handleVerifyOldEmailCode($pdo, $userId) {
     }
 
     // Get user with pending email change
-    $stmt = $pdo->prepare("SELECT email, first_name, pending_email, pending_email_expires, pending_email_old_otp, email_change_step FROM users WHERE user_id = ?");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch();
+    $stmt = mysqli_prepare($conn, "SELECT email, first_name, pending_email, pending_email_expires, pending_email_old_otp, email_change_step FROM users WHERE user_id = ?");
+    if (!$stmt) {
+        redirect('../index.php?page=profile&edit=email', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "i", $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $user = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
 
     if (!$user || empty($user['pending_email']) || $user['email_change_step'] !== 'verify_old') {
         redirect('../index.php?page=profile&edit=email', 'No pending email authorization found.', 'error');
@@ -296,7 +345,7 @@ function handleVerifyOldEmailCode($pdo, $userId) {
 
     // Check expiry
     if (empty($user['pending_email_expires']) || strtotime($user['pending_email_expires']) < time()) {
-        clearPendingEmailChange($pdo, $userId);
+        clearPendingEmailChange($userId);
         redirect('../index.php?page=profile&edit=email', 'Authorization code has expired. Please start over.', 'error');
     }
 
@@ -308,16 +357,22 @@ function handleVerifyOldEmailCode($pdo, $userId) {
     // Old email authorized; now generate verification token for NEW email and send link
     $verifyToken = bin2hex(random_bytes(32));
     $expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
+    $emailChangeStep = 'verify_new';
 
-    $stmt = $pdo->prepare("
+    $stmt = mysqli_prepare($conn, "
         UPDATE users
         SET pending_email_token = ?,
             pending_email_expires = ?,
             pending_email_old_otp = NULL,
-            email_change_step = 'verify_new'
+            email_change_step = ?
         WHERE user_id = ?
     ");
-    $stmt->execute([$verifyToken, $expiresAt, $userId]);
+    if (!$stmt) {
+        redirect('../index.php?page=profile&edit=email', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "sssi", $verifyToken, $expiresAt, $emailChangeStep, $userId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
 
     $baseUrl = getCurrentSiteUrl();
     $verifyUrl = $baseUrl . '/includes/verify_email_change.php?token=' . $verifyToken;
@@ -329,7 +384,7 @@ function handleVerifyOldEmailCode($pdo, $userId) {
     if (!$verifyResult['success']) {
         error_log("Email verification send failed: " . $verifyResult['message']);
         // Keep pending change but require re-start for safety
-        clearPendingEmailChange($pdo, $userId);
+        clearPendingEmailChange($userId);
         redirect('../index.php?page=profile&edit=email', 'Failed to send verification email to your new address. Please start over.', 'error');
     }
 
@@ -339,8 +394,10 @@ function handleVerifyOldEmailCode($pdo, $userId) {
 /**
  * Helper: Clear pending email change data
  */
-function clearPendingEmailChange($pdo, $userId) {
-    $stmt = $pdo->prepare("
+function clearPendingEmailChange($userId) {
+    global $conn;
+    
+    $stmt = mysqli_prepare($conn, "
         UPDATE users
         SET pending_email = NULL,
             pending_email_token = NULL,
@@ -350,13 +407,19 @@ function clearPendingEmailChange($pdo, $userId) {
             email_change_cancel_token = NULL
         WHERE user_id = ?
     ");
-    $stmt->execute([$userId]);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $userId);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+    }
 }
 
 /**
  * Handle phone change request - Step 1: Password verification + send OTP to old phone
  */
-function handlePhoneChangeRequest($pdo, $userId) {
+function handlePhoneChangeRequest($userId) {
+    global $conn;
+    
     $newPhone = trim($_POST['new_phone'] ?? '');
     $currentPassword = $_POST['current_password'] ?? '';
     
@@ -374,9 +437,15 @@ function handlePhoneChangeRequest($pdo, $userId) {
     $formattedPhone = '+63' . $newPhone;
     
     // Get current user with password
-    $stmt = $pdo->prepare("SELECT phone, password FROM users WHERE user_id = ?");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch();
+    $stmt = mysqli_prepare($conn, "SELECT phone, password FROM users WHERE user_id = ?");
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "i", $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $user = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
 
     // Require an existing current phone so we can authorize via OTP to the old number
     if (empty($user['phone'])) {
@@ -394,24 +463,37 @@ function handlePhoneChangeRequest($pdo, $userId) {
     }
     
     // Check if phone is already in use
-    $stmt = $pdo->prepare("SELECT user_id FROM users WHERE phone = ? AND user_id != ?");
-    $stmt->execute([$formattedPhone, $userId]);
-    if ($stmt->fetch()) {
+    $stmt = mysqli_prepare($conn, "SELECT user_id FROM users WHERE phone = ? AND user_id != ?");
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "si", $formattedPhone, $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    if (mysqli_fetch_assoc($result)) {
+        mysqli_stmt_close($stmt);
         redirect('../index.php?page=profile', 'This phone number is already in use.', 'error');
     }
+    mysqli_stmt_close($stmt);
     
     // Generate OTP for old phone
     $otp = generateOTP(6);
     $expiresAt = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+    $phoneChangeStep = 'verify_old';
     
     // Store pending phone change with step indicator
-    $stmt = $pdo->prepare("
+    $stmt = mysqli_prepare($conn, "
         UPDATE users 
         SET pending_phone = ?, pending_phone_otp = ?, pending_phone_expires = ?,
-            phone_change_step = 'verify_old'
+            phone_change_step = ?
         WHERE user_id = ?
     ");
-    $stmt->execute([$formattedPhone, $otp, $expiresAt, $userId]);
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "ssssi", $formattedPhone, $otp, $expiresAt, $phoneChangeStep, $userId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
     
     // Send OTP to OLD phone
     $message = "Your " . SMS_SENDER_NAME . " authorization code is: " . $otp . ". Enter this to authorize changing your phone number. Valid for 10 minutes.";
@@ -421,13 +503,17 @@ function handlePhoneChangeRequest($pdo, $userId) {
         redirect('../index.php?page=profile', 'OTP sent to your current phone. Please enter the code to authorize the change.', 'success');
     } else {
         // Clear pending phone on failure
-        $stmt = $pdo->prepare("
+        $stmt = mysqli_prepare($conn, "
             UPDATE users 
             SET pending_phone = NULL, pending_phone_otp = NULL, pending_phone_expires = NULL,
                 phone_change_step = NULL
             WHERE user_id = ?
         ");
-        $stmt->execute([$userId]);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, "i", $userId);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
+        }
         
         error_log("SMS send failed: " . $result['message']);
         redirect('../index.php?page=profile', 'Failed to send OTP. Please try again.', 'error');
@@ -437,7 +523,9 @@ function handlePhoneChangeRequest($pdo, $userId) {
 /**
  * Step 2: Verify OTP from old phone, then send OTP to new phone
  */
-function handleVerifyOldPhoneOtp($pdo, $userId) {
+function handleVerifyOldPhoneOtp($userId) {
+    global $conn;
+    
     $otpCode = trim($_POST['otp_code'] ?? '');
     
     if (empty($otpCode) || !preg_match('/^[0-9]{6}$/', $otpCode)) {
@@ -445,12 +533,18 @@ function handleVerifyOldPhoneOtp($pdo, $userId) {
     }
     
     // Get user with pending phone change
-    $stmt = $pdo->prepare("
+    $stmt = mysqli_prepare($conn, "
         SELECT pending_phone, pending_phone_otp, pending_phone_expires, phone_change_step 
         FROM users WHERE user_id = ?
     ");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch();
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "i", $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $user = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
     
     if (!$user['pending_phone'] || $user['phone_change_step'] !== 'verify_old') {
         redirect('../index.php?page=profile', 'No pending phone authorization found.', 'error');
@@ -458,7 +552,7 @@ function handleVerifyOldPhoneOtp($pdo, $userId) {
     
     // Check if OTP expired
     if (strtotime($user['pending_phone_expires']) < time()) {
-        clearPendingPhoneChange($pdo, $userId);
+        clearPendingPhoneChange($userId);
         redirect('../index.php?page=profile', 'OTP has expired. Please start over.', 'error');
     }
     
@@ -470,24 +564,30 @@ function handleVerifyOldPhoneOtp($pdo, $userId) {
     // Old phone verified! Now send OTP to NEW phone
     $newOtp = generateOTP(6);
     $newExpiresAt = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+    $phoneChangeStep = 'verify_new';
     
     // Update to step 2
-    $stmt = $pdo->prepare("
+    $stmt = mysqli_prepare($conn, "
         UPDATE users 
         SET pending_phone_otp = ?, pending_phone_expires = ?,
-            phone_change_step = 'verify_new'
+            phone_change_step = ?
         WHERE user_id = ?
     ");
-    $stmt->execute([$newOtp, $newExpiresAt, $userId]);
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "sssi", $newOtp, $newExpiresAt, $phoneChangeStep, $userId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
     
     // Send OTP to NEW phone
     $message = "Your " . SMS_SENDER_NAME . " verification code is: " . $newOtp . ". Enter this to verify your new phone number. Valid for 10 minutes.";
-    $result = sendSMS($user['pending_phone'], $message, null, $userId);
+    $smsResult = sendSMS($user['pending_phone'], $message, null, $userId);
     
-    if ($result['success']) {
+    if ($smsResult['success']) {
         redirect('../index.php?page=profile', 'Identity confirmed! OTP sent to your new phone number. Enter the code to complete the change.', 'success');
     } else {
-        error_log("SMS to new phone failed: " . $result['message']);
+        error_log("SMS to new phone failed: " . $smsResult['message']);
         redirect('../index.php?page=profile', 'Failed to send OTP to new phone. Please try again.', 'error');
     }
 }
@@ -495,7 +595,9 @@ function handleVerifyOldPhoneOtp($pdo, $userId) {
 /**
  * Step 3: Verify OTP from new phone, complete the change, send notifications
  */
-function handleVerifyNewPhoneOtp($pdo, $userId) {
+function handleVerifyNewPhoneOtp($userId) {
+    global $conn;
+    
     $otpCode = trim($_POST['otp_code'] ?? '');
     
     if (empty($otpCode) || !preg_match('/^[0-9]{6}$/', $otpCode)) {
@@ -503,12 +605,18 @@ function handleVerifyNewPhoneOtp($pdo, $userId) {
     }
     
     // Get user with pending phone change
-    $stmt = $pdo->prepare("
+    $stmt = mysqli_prepare($conn, "
         SELECT email, first_name, phone, pending_phone, pending_phone_otp, pending_phone_expires, phone_change_step 
         FROM users WHERE user_id = ?
     ");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch();
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "i", $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $user = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
     
     if (!$user['pending_phone'] || $user['phone_change_step'] !== 'verify_new') {
         redirect('../index.php?page=profile', 'No pending phone verification found.', 'error');
@@ -516,7 +624,7 @@ function handleVerifyNewPhoneOtp($pdo, $userId) {
     
     // Check if OTP expired
     if (strtotime($user['pending_phone_expires']) < time()) {
-        clearPendingPhoneChange($pdo, $userId);
+        clearPendingPhoneChange($userId);
         redirect('../index.php?page=profile', 'OTP has expired. Please start over.', 'error');
     }
     
@@ -527,16 +635,22 @@ function handleVerifyNewPhoneOtp($pdo, $userId) {
     
     $oldPhone = $user['phone'];
     $newPhone = $user['pending_phone'];
+    $phoneVerified = 1;
     
     // Update phone number
-    $stmt = $pdo->prepare("
+    $stmt = mysqli_prepare($conn, "
         UPDATE users 
-        SET phone = ?, phone_verified = TRUE,
+        SET phone = ?, phone_verified = ?,
             pending_phone = NULL, pending_phone_otp = NULL, pending_phone_expires = NULL,
             phone_change_step = NULL, phone_recovery_token = NULL
         WHERE user_id = ?
     ");
-    $stmt->execute([$newPhone, $userId]);
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "sii", $newPhone, $phoneVerified, $userId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
     
     // Send notification to OLD phone
     $oldPhoneMsg = "Your " . SMS_SENDER_NAME . " phone number has been changed to " . $newPhone . ". If this wasn't you, contact support immediately.";
@@ -553,14 +667,22 @@ function handleVerifyNewPhoneOtp($pdo, $userId) {
 /**
  * Handle email recovery for phone change (when old phone is inaccessible)
  */
-function handlePhoneChangeEmailRecovery($pdo, $userId) {
+function handlePhoneChangeEmailRecovery($userId) {
+    global $conn;
+    
     // Get user
-    $stmt = $pdo->prepare("
+    $stmt = mysqli_prepare($conn, "
         SELECT email, first_name, pending_phone, phone_change_step 
         FROM users WHERE user_id = ?
     ");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch();
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "i", $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $user = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
     
     if (!$user['pending_phone'] || $user['phone_change_step'] !== 'verify_old') {
         redirect('../index.php?page=profile', 'No pending phone change to recover.', 'error');
@@ -569,16 +691,22 @@ function handlePhoneChangeEmailRecovery($pdo, $userId) {
     // Generate recovery token
     $recoveryToken = bin2hex(random_bytes(32));
     $expiresAt = date('Y-m-d H:i:s', strtotime('+1 hour'));
+    $phoneChangeStep = 'email_recovery';
     
     // Update to email recovery step
-    $stmt = $pdo->prepare("
+    $stmt = mysqli_prepare($conn, "
         UPDATE users 
-        SET phone_change_step = 'email_recovery',
+        SET phone_change_step = ?,
             phone_recovery_token = ?,
             pending_phone_expires = ?
         WHERE user_id = ?
     ");
-    $stmt->execute([$recoveryToken, $expiresAt, $userId]);
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "sssi", $phoneChangeStep, $recoveryToken, $expiresAt, $userId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
     
     // Generate recovery URL
     $baseUrl = getCurrentSiteUrl();
@@ -587,12 +715,12 @@ function handlePhoneChangeEmailRecovery($pdo, $userId) {
     // Send recovery email
     $subject = '🔐 Phone Change Recovery - ' . SITE_NAME;
     $body = getPhoneRecoveryEmailTemplate($user['first_name'], $user['pending_phone'], $recoveryUrl);
-    $result = sendMail($user['email'], $subject, $body);
+    $mailResult = sendMail($user['email'], $subject, $body);
     
-    if ($result['success']) {
+    if ($mailResult['success']) {
         redirect('../index.php?page=profile', 'Recovery email sent! Please check your inbox and click the link to proceed.', 'success');
     } else {
-        error_log("Recovery email failed: " . $result['message']);
+        error_log("Recovery email failed: " . $mailResult['message']);
         redirect('../index.php?page=profile', 'Failed to send recovery email. Please try again.', 'error');
     }
 }
@@ -600,14 +728,22 @@ function handlePhoneChangeEmailRecovery($pdo, $userId) {
 /**
  * Resend OTP to new phone
  */
-function handleResendNewPhoneOtp($pdo, $userId) {
+function handleResendNewPhoneOtp($userId) {
+    global $conn;
+    
     // Get user
-    $stmt = $pdo->prepare("
+    $stmt = mysqli_prepare($conn, "
         SELECT pending_phone, phone_change_step 
         FROM users WHERE user_id = ?
     ");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch();
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "i", $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $user = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
     
     if (!$user['pending_phone'] || $user['phone_change_step'] !== 'verify_new') {
         redirect('../index.php?page=profile', 'No pending phone verification found.', 'error');
@@ -618,18 +754,23 @@ function handleResendNewPhoneOtp($pdo, $userId) {
     $newExpiresAt = date('Y-m-d H:i:s', strtotime('+10 minutes'));
     
     // Update OTP
-    $stmt = $pdo->prepare("
+    $stmt = mysqli_prepare($conn, "
         UPDATE users 
         SET pending_phone_otp = ?, pending_phone_expires = ?
         WHERE user_id = ?
     ");
-    $stmt->execute([$newOtp, $newExpiresAt, $userId]);
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "ssi", $newOtp, $newExpiresAt, $userId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
     
     // Send OTP
     $message = "Your " . SMS_SENDER_NAME . " verification code is: " . $newOtp . ". Valid for 10 minutes.";
-    $result = sendSMS($user['pending_phone'], $message, null, $userId);
+    $smsResult = sendSMS($user['pending_phone'], $message, null, $userId);
     
-    if ($result['success']) {
+    if ($smsResult['success']) {
         redirect('../index.php?page=profile', 'New OTP sent to your new phone number.', 'success');
     } else {
         redirect('../index.php?page=profile', 'Failed to resend OTP. Please try again.', 'error');
@@ -639,14 +780,22 @@ function handleResendNewPhoneOtp($pdo, $userId) {
 /**
  * Resend phone recovery email
  */
-function handleResendPhoneRecoveryEmail($pdo, $userId) {
+function handleResendPhoneRecoveryEmail($userId) {
+    global $conn;
+    
     // Get user
-    $stmt = $pdo->prepare("
+    $stmt = mysqli_prepare($conn, "
         SELECT email, first_name, pending_phone, phone_change_step 
         FROM users WHERE user_id = ?
     ");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch();
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "i", $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $user = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
     
     if (!$user['pending_phone'] || $user['phone_change_step'] !== 'email_recovery') {
         redirect('../index.php?page=profile', 'No pending recovery found.', 'error');
@@ -657,13 +806,18 @@ function handleResendPhoneRecoveryEmail($pdo, $userId) {
     $expiresAt = date('Y-m-d H:i:s', strtotime('+1 hour'));
     
     // Update token
-    $stmt = $pdo->prepare("
+    $stmt = mysqli_prepare($conn, "
         UPDATE users 
         SET phone_recovery_token = ?,
             pending_phone_expires = ?
         WHERE user_id = ?
     ");
-    $stmt->execute([$recoveryToken, $expiresAt, $userId]);
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "ssi", $recoveryToken, $expiresAt, $userId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
     
     // Generate recovery URL
     $baseUrl = getCurrentSiteUrl();
@@ -672,9 +826,9 @@ function handleResendPhoneRecoveryEmail($pdo, $userId) {
     // Send recovery email
     $subject = '🔐 Phone Change Recovery - ' . SITE_NAME;
     $body = getPhoneRecoveryEmailTemplate($user['first_name'], $user['pending_phone'], $recoveryUrl);
-    $result = sendMail($user['email'], $subject, $body);
+    $mailResult = sendMail($user['email'], $subject, $body);
     
-    if ($result['success']) {
+    if ($mailResult['success']) {
         redirect('../index.php?page=profile', 'Recovery email resent! Please check your inbox.', 'success');
     } else {
         redirect('../index.php?page=profile', 'Failed to resend email. Please try again.', 'error');
@@ -684,29 +838,37 @@ function handleResendPhoneRecoveryEmail($pdo, $userId) {
 /**
  * Handle cancel phone change
  */
-function handleCancelPhoneChange($pdo, $userId) {
-    clearPendingPhoneChange($pdo, $userId);
+function handleCancelPhoneChange($userId) {
+    clearPendingPhoneChange($userId);
     redirect('../index.php?page=profile', 'Phone change cancelled.', 'info');
 }
 
 /**
  * Helper: Clear pending phone change data
  */
-function clearPendingPhoneChange($pdo, $userId) {
-    $stmt = $pdo->prepare("
+function clearPendingPhoneChange($userId) {
+    global $conn;
+    
+    $stmt = mysqli_prepare($conn, "
         UPDATE users 
         SET pending_phone = NULL, pending_phone_otp = NULL, pending_phone_expires = NULL,
             phone_change_step = NULL, phone_recovery_token = NULL
         WHERE user_id = ?
     ");
-    $stmt->execute([$userId]);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $userId);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+    }
 }
 
 
 /**
  * Handle password change
  */
-function handlePasswordChange($pdo, $userId) {
+function handlePasswordChange($userId) {
+    global $conn;
+    
     $currentPassword = $_POST['current_password'] ?? '';
     $newPassword = $_POST['new_password'] ?? '';
     $confirmPassword = $_POST['confirm_password'] ?? '';
@@ -725,9 +887,15 @@ function handlePasswordChange($pdo, $userId) {
     }
     
     // Get current password
-    $stmt = $pdo->prepare("SELECT password FROM users WHERE user_id = ?");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch();
+    $stmt = mysqli_prepare($conn, "SELECT password FROM users WHERE user_id = ?");
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "i", $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $user = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
     
     // Verify current password
     if (!password_verify($currentPassword, $user['password'])) {
@@ -736,8 +904,13 @@ function handlePasswordChange($pdo, $userId) {
     
     // Update password
     $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-    $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE user_id = ?");
-    $stmt->execute([$hashedPassword, $userId]);
+    $stmt = mysqli_prepare($conn, "UPDATE users SET password = ? WHERE user_id = ?");
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "si", $hashedPassword, $userId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
     
     redirect('../index.php?page=profile', 'Password updated successfully!', 'success');
 }
@@ -791,8 +964,8 @@ function getEmailChangeVerificationTemplate($oldEmail, $newEmail, $verifyUrl) {
 /**
  * Handle cancel email change (from profile page)
  */
-function handleCancelEmailChange($pdo, $userId) {
-    clearPendingEmailChange($pdo, $userId);
+function handleCancelEmailChange($userId) {
+    clearPendingEmailChange($userId);
     
     redirect('../index.php?page=profile&edit=email', 'Email change request cancelled.', 'info');
 }
@@ -1010,11 +1183,19 @@ function getPhoneRecoveryEmailTemplate($firstName, $newPhone, $recoveryUrl) {
 /**
  * Handle sending OTP for phone verification (verifying existing phone)
  */
-function handleSendPhoneVerificationOtp($pdo, $userId) {
+function handleSendPhoneVerificationOtp($userId) {
+    global $conn;
+    
     // Get user
-    $stmt = $pdo->prepare("SELECT phone, phone_verified FROM users WHERE user_id = ?");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch();
+    $stmt = mysqli_prepare($conn, "SELECT phone, phone_verified FROM users WHERE user_id = ?");
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "i", $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $user = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
     
     if (empty($user['phone'])) {
         redirect('../index.php?page=profile', 'No phone number found. Please add a phone number first.', 'error');
@@ -1042,7 +1223,9 @@ function handleSendPhoneVerificationOtp($pdo, $userId) {
 /**
  * Handle verifying OTP for phone verification
  */
-function handleVerifyPhoneOtp($pdo, $userId) {
+function handleVerifyPhoneOtp($userId) {
+    global $conn;
+    
     $otpCode = trim($_POST['otp_code'] ?? '');
     
     if (empty($otpCode) || !preg_match('/^[0-9]{6}$/', $otpCode)) {
@@ -1050,9 +1233,15 @@ function handleVerifyPhoneOtp($pdo, $userId) {
     }
     
     // Get user
-    $stmt = $pdo->prepare("SELECT phone, phone_verified FROM users WHERE user_id = ?");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch();
+    $stmt = mysqli_prepare($conn, "SELECT phone, phone_verified FROM users WHERE user_id = ?");
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "i", $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $user = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
     
     if (empty($user['phone'])) {
         unset($_SESSION['phone_verify_step']);
@@ -1071,8 +1260,13 @@ function handleVerifyPhoneOtp($pdo, $userId) {
     
     if ($verifyResult['success']) {
         // Update user as phone verified
-        $stmt = $pdo->prepare("UPDATE users SET phone_verified = TRUE WHERE user_id = ?");
-        $stmt->execute([$userId]);
+        $phoneVerified = 1;
+        $stmt = mysqli_prepare($conn, "UPDATE users SET phone_verified = ? WHERE user_id = ?");
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, "ii", $phoneVerified, $userId);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
+        }
         
         // Clear session variables
         unset($_SESSION['phone_verify_step']);
@@ -1087,11 +1281,19 @@ function handleVerifyPhoneOtp($pdo, $userId) {
 /**
  * Handle resending OTP for phone verification
  */
-function handleResendPhoneVerificationOtp($pdo, $userId) {
+function handleResendPhoneVerificationOtp($userId) {
+    global $conn;
+    
     // Get user
-    $stmt = $pdo->prepare("SELECT phone, phone_verified FROM users WHERE user_id = ?");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch();
+    $stmt = mysqli_prepare($conn, "SELECT phone, phone_verified FROM users WHERE user_id = ?");
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "i", $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $user = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
     
     if (empty($user['phone'])) {
         unset($_SESSION['phone_verify_step']);
@@ -1117,7 +1319,7 @@ function handleResendPhoneVerificationOtp($pdo, $userId) {
 /**
  * Handle canceling phone verification
  */
-function handleCancelPhoneVerification($pdo, $userId) {
+function handleCancelPhoneVerification($userId) {
     unset($_SESSION['phone_verify_step']);
     unset($_SESSION['phone_verify_phone']);
     redirect('../index.php?page=profile', 'Phone verification cancelled.', 'info');
@@ -1126,11 +1328,19 @@ function handleCancelPhoneVerification($pdo, $userId) {
 /**
  * Handle sending email verification link (verifying existing email)
  */
-function handleSendEmailVerificationLink($pdo, $userId) {
+function handleSendEmailVerificationLink($userId) {
+    global $conn;
+    
     // Get user
-    $stmt = $pdo->prepare("SELECT email, email_verified, first_name FROM users WHERE user_id = ?");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch();
+    $stmt = mysqli_prepare($conn, "SELECT email, email_verified, first_name FROM users WHERE user_id = ?");
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "i", $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $user = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
     
     if (empty($user['email'])) {
         redirect('../index.php?page=profile', 'No email address found.', 'error');
@@ -1145,12 +1355,17 @@ function handleSendEmailVerificationLink($pdo, $userId) {
     $expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
     
     // Store verification token
-    $stmt = $pdo->prepare("
+    $stmt = mysqli_prepare($conn, "
         UPDATE users 
         SET email_verify_token = ?, email_verify_expires = ?
         WHERE user_id = ?
     ");
-    $stmt->execute([$verifyToken, $expiresAt, $userId]);
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "ssi", $verifyToken, $expiresAt, $userId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
     
     // Generate verification URL
     $baseUrl = getCurrentSiteUrl();
@@ -1159,13 +1374,13 @@ function handleSendEmailVerificationLink($pdo, $userId) {
     // Send verification email
     $subject = '✉️ Verify Your Email Address - ' . SITE_NAME;
     $body = getEmailVerificationTemplate($user['first_name'], $user['email'], $verifyUrl);
-    $result = sendMail($user['email'], $subject, $body);
+    $mailResult = sendMail($user['email'], $subject, $body);
     
-    if ($result['success']) {
+    if ($mailResult['success']) {
         $_SESSION['email_verify_step'] = 'check_inbox';
         redirect('../index.php?page=profile&action=verify_email', 'Verification link sent to ' . $user['email'] . '. Please check your inbox.', 'success');
     } else {
-        error_log("Email verification send failed: " . $result['message']);
+        error_log("Email verification send failed: " . $mailResult['message']);
         redirect('../index.php?page=profile&action=verify_email', 'Failed to send verification email. Please try again.', 'error');
     }
 }
@@ -1173,11 +1388,19 @@ function handleSendEmailVerificationLink($pdo, $userId) {
 /**
  * Handle resending email verification link
  */
-function handleResendEmailVerificationLink($pdo, $userId) {
+function handleResendEmailVerificationLink($userId) {
+    global $conn;
+    
     // Get user
-    $stmt = $pdo->prepare("SELECT email, email_verified, first_name FROM users WHERE user_id = ?");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch();
+    $stmt = mysqli_prepare($conn, "SELECT email, email_verified, first_name FROM users WHERE user_id = ?");
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "i", $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $user = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
     
     if (empty($user['email'])) {
         unset($_SESSION['email_verify_step']);
@@ -1194,12 +1417,17 @@ function handleResendEmailVerificationLink($pdo, $userId) {
     $expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
     
     // Store verification token
-    $stmt = $pdo->prepare("
+    $stmt = mysqli_prepare($conn, "
         UPDATE users 
         SET email_verify_token = ?, email_verify_expires = ?
         WHERE user_id = ?
     ");
-    $stmt->execute([$verifyToken, $expiresAt, $userId]);
+    if (!$stmt) {
+        redirect('../index.php?page=profile', 'Database error. Please try again.', 'error');
+    }
+    mysqli_stmt_bind_param($stmt, "ssi", $verifyToken, $expiresAt, $userId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
     
     // Generate verification URL
     $baseUrl = getCurrentSiteUrl();
@@ -1208,9 +1436,9 @@ function handleResendEmailVerificationLink($pdo, $userId) {
     // Send verification email
     $subject = '✉️ Verify Your Email Address - ' . SITE_NAME;
     $body = getEmailVerificationTemplate($user['first_name'], $user['email'], $verifyUrl);
-    $result = sendMail($user['email'], $subject, $body);
+    $mailResult = sendMail($user['email'], $subject, $body);
     
-    if ($result['success']) {
+    if ($mailResult['success']) {
         $_SESSION['email_verify_step'] = 'check_inbox';
         redirect('../index.php?page=profile&action=verify_email', 'New verification link sent to ' . $user['email'] . '.', 'success');
     } else {
@@ -1221,7 +1449,7 @@ function handleResendEmailVerificationLink($pdo, $userId) {
 /**
  * Handle canceling email verification
  */
-function handleCancelEmailVerification($pdo, $userId) {
+function handleCancelEmailVerification($userId) {
     unset($_SESSION['email_verify_step']);
     redirect('../index.php?page=profile', 'Email verification cancelled.', 'info');
 }

@@ -5,18 +5,16 @@
 
 $users = [];
 
-if ($pdo) {
-    try {
-        $stmt = $pdo->query("
-            SELECT u.*, 
-                   (SELECT COUNT(*) FROM orders WHERE user_id = u.user_id) as order_count,
-                   (SELECT COALESCE(SUM(total), 0) FROM orders WHERE user_id = u.user_id AND status != 'cancelled') as total_spent
-            FROM users u 
-            ORDER BY u.created_at DESC
-        ");
-        $users = $stmt->fetchAll();
-    } catch (PDOException $e) {
-        // Handle error
+if ($conn) {
+    $result = mysqli_query($conn, "
+        SELECT u.*, 
+               (SELECT COUNT(*) FROM orders WHERE user_id = u.user_id) as order_count,
+               (SELECT COALESCE(SUM(total), 0) FROM orders WHERE user_id = u.user_id AND status != 'cancelled') as total_spent
+        FROM users u 
+        ORDER BY u.created_at DESC
+    ");
+    if ($result) {
+        $users = mysqli_fetch_all($result, MYSQLI_ASSOC);
     }
 }
 ?>

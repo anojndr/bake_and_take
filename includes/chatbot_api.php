@@ -60,7 +60,7 @@ if (empty($userMessage)) {
  * Build dynamic product information from database
  */
 function buildProductsInfo() {
-    global $pdo, $PRODUCTS, $CATEGORIES;
+    global $conn, $PRODUCTS, $CATEGORIES;
     
     $productsInfo = "";
     

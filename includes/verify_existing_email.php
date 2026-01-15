@@ -15,73 +15,87 @@ if (empty($token)) {
     exit;
 }
 
-if (!$pdo) {
+global $conn;
+if (!$conn) {
     setFlashMessage('Database connection error.', 'error');
     header('Location: ../index.php?page=profile');
     exit;
 }
 
-try {
-    // Find user with this token
-    $stmt = $pdo->prepare("
-        SELECT user_id, email, first_name, email_verify_token, email_verify_expires, email_verified
-        FROM users 
-        WHERE email_verify_token = ?
-    ");
-    $stmt->execute([$token]);
-    $user = $stmt->fetch();
-    
-    if (!$user) {
-        setFlashMessage('Invalid or expired verification link.', 'error');
-        header('Location: ../index.php?page=profile');
-        exit;
-    }
-    
-    // Check if already verified
-    if ($user['email_verified']) {
-        // Clear token
-        $stmt = $pdo->prepare("UPDATE users SET email_verify_token = NULL, email_verify_expires = NULL WHERE user_id = ?");
-        $stmt->execute([$user['user_id']]);
-        
-        setFlashMessage('Your email address is already verified.', 'info');
-        header('Location: ../index.php?page=profile');
-        exit;
-    }
-    
-    // Check if token expired
-    if (!empty($user['email_verify_expires']) && strtotime($user['email_verify_expires']) < time()) {
-        // Clear expired token
-        $stmt = $pdo->prepare("UPDATE users SET email_verify_token = NULL, email_verify_expires = NULL WHERE user_id = ?");
-        $stmt->execute([$user['user_id']]);
-        
-        setFlashMessage('Verification link has expired. Please request a new one.', 'error');
-        header('Location: ../index.php?page=profile');
-        exit;
-    }
-    
-    // Verify the email
-    $stmt = $pdo->prepare("
-        UPDATE users 
-        SET email_verified = TRUE, 
-            email_verify_token = NULL, 
-            email_verify_expires = NULL
-        WHERE user_id = ?
-    ");
-    $stmt->execute([$user['user_id']]);
-    
-    // Clear session step if exists
-    if (isset($_SESSION['email_verify_step'])) {
-        unset($_SESSION['email_verify_step']);
-    }
-    
-    setFlashMessage('Email verified successfully! Your account is now fully verified.', 'success');
-    header('Location: ../index.php?page=profile');
-    exit;
-    
-} catch (PDOException $e) {
-    error_log("Email verification error: " . $e->getMessage());
+// Find user with this token
+$stmt = mysqli_prepare($conn, "
+    SELECT user_id, email, first_name, email_verify_token, email_verify_expires, email_verified
+    FROM users 
+    WHERE email_verify_token = ?
+");
+if (!$stmt) {
+    error_log("Email verification error: " . mysqli_error($conn));
     setFlashMessage('An error occurred during verification. Please try again.', 'error');
     header('Location: ../index.php?page=profile');
     exit;
 }
+mysqli_stmt_bind_param($stmt, "s", $token);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$user = mysqli_fetch_assoc($result);
+mysqli_stmt_close($stmt);
+
+if (!$user) {
+    setFlashMessage('Invalid or expired verification link.', 'error');
+    header('Location: ../index.php?page=profile');
+    exit;
+}
+
+// Check if already verified
+if ($user['email_verified']) {
+    // Clear token
+    $stmt = mysqli_prepare($conn, "UPDATE users SET email_verify_token = NULL, email_verify_expires = NULL WHERE user_id = ?");
+    mysqli_stmt_bind_param($stmt, "i", $user['user_id']);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+    
+    setFlashMessage('Your email address is already verified.', 'info');
+    header('Location: ../index.php?page=profile');
+    exit;
+}
+
+// Check if token expired
+if (!empty($user['email_verify_expires']) && strtotime($user['email_verify_expires']) < time()) {
+    // Clear expired token
+    $stmt = mysqli_prepare($conn, "UPDATE users SET email_verify_token = NULL, email_verify_expires = NULL WHERE user_id = ?");
+    mysqli_stmt_bind_param($stmt, "i", $user['user_id']);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+    
+    setFlashMessage('Verification link has expired. Please request a new one.', 'error');
+    header('Location: ../index.php?page=profile');
+    exit;
+}
+
+// Verify the email
+$stmt = mysqli_prepare($conn, "
+    UPDATE users 
+    SET email_verified = TRUE, 
+        email_verify_token = NULL, 
+        email_verify_expires = NULL
+    WHERE user_id = ?
+");
+if (!$stmt) {
+    error_log("Email verification error: " . mysqli_error($conn));
+    setFlashMessage('An error occurred during verification. Please try again.', 'error');
+    header('Location: ../index.php?page=profile');
+    exit;
+}
+mysqli_stmt_bind_param($stmt, "i", $user['user_id']);
+mysqli_stmt_execute($stmt);
+mysqli_stmt_close($stmt);
+
+// Clear session step if exists
+if (isset($_SESSION['email_verify_step'])) {
+    unset($_SESSION['email_verify_step']);
+}
+
+setFlashMessage('Email verified successfully! Your account is now fully verified.', 'success');
+header('Location: ../index.php?page=profile');
+exit;
 ?>

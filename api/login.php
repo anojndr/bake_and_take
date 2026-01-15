@@ -35,7 +35,7 @@ require_once __DIR__ . '/../includes/config.php';
 ob_clean();
 
 // Check database connection
-if (!isset($pdo) || $pdo === null) {
+if (!isset($conn) || $conn === null) {
     http_response_code(500);
     echo json_encode(["status" => "error", "message" => "Database connection failed."]);
     exit();
@@ -54,35 +54,46 @@ if (!isset($data->email) || !isset($data->password)) {
 $email = trim($data->email);
 $password = $data->password;
 
-try {
-    // Prepare query to fetch user
-    $stmt = $pdo->prepare("SELECT user_id, first_name, last_name, email, password, phone, is_admin, created_at FROM users WHERE email = ? LIMIT 1");
-    $stmt->execute([$email]);
-    
-    if ($stmt->rowCount() > 0) {
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+// Prepare query to fetch user
+$stmt = mysqli_prepare($conn, "SELECT user_id, first_name, last_name, email, password, phone, is_admin, created_at FROM users WHERE email = ? LIMIT 1");
+
+if (!$stmt) {
+    http_response_code(500);
+    echo json_encode(["status" => "error", "message" => "Database error: " . mysqli_error($conn)]);
+    exit();
+}
+
+mysqli_stmt_bind_param($stmt, "s", $email);
+
+if (!mysqli_stmt_execute($stmt)) {
+    http_response_code(500);
+    echo json_encode(["status" => "error", "message" => "Database error: " . mysqli_stmt_error($stmt)]);
+    mysqli_stmt_close($stmt);
+    exit();
+}
+
+$result = mysqli_stmt_get_result($stmt);
+
+if ($user = mysqli_fetch_assoc($result)) {
+    // Verify password
+    if (password_verify($password, $user['password'])) {
+        // Remove sensitive password hash from response
+        unset($user['password']);
         
-        // Verify password
-        if (password_verify($password, $user['password'])) {
-            // Remove sensitive password hash from response
-            unset($user['password']);
-            
-            http_response_code(200);
-            echo json_encode([
-                "status" => "success",
-                "message" => "Login successful.",
-                "user" => $user
-            ]);
-        } else {
-            http_response_code(401); // Unauthorized
-            echo json_encode(["status" => "error", "message" => "Invalid email or password."]);
-        }
+        http_response_code(200);
+        echo json_encode([
+            "status" => "success",
+            "message" => "Login successful.",
+            "user" => $user
+        ]);
     } else {
         http_response_code(401); // Unauthorized
         echo json_encode(["status" => "error", "message" => "Invalid email or password."]);
     }
-} catch (PDOException $e) {
-    http_response_code(500);
-    echo json_encode(["status" => "error", "message" => "Database error: " . $e->getMessage()]);
+} else {
+    http_response_code(401); // Unauthorized
+    echo json_encode(["status" => "error", "message" => "Invalid email or password."]);
 }
+
+mysqli_stmt_close($stmt);
 ?>

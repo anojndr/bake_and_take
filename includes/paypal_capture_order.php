@@ -6,10 +6,26 @@
  * It also creates the order in the database and sends confirmation emails.
  */
 
+// Set up error handling for JSON API
+set_error_handler(function($severity, $message, $file, $line) {
+    throw new ErrorException($message, 0, $severity, $file, $line);
+});
+
+set_exception_handler(function($e) {
+    http_response_code(500);
+    error_log("PayPal Capture Error: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+    echo json_encode(['error' => 'Server error: ' . $e->getMessage()]);
+    exit;
+});
+
 header('Content-Type: application/json');
 session_start();
 
 require_once 'config.php';
+
+// Suppress HTML error output for JSON API (must be after config.php)
+ini_set('display_errors', 0);
+
 require_once 'functions.php';
 require_once 'secrets.php';
 require_once 'sms_service.php';
@@ -117,22 +133,61 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
     $orderId = null;
     
     // Save to database
-    if ($pdo) {
-        try {
-            $pdo->beginTransaction();
-            
-            // Insert order with PayPal details - status is 'pending' until confirmed
-            $stmt = $pdo->prepare("
+    global $conn;
+    if ($conn) {
+        mysqli_begin_transaction($conn);
+        
+        // Insert order with PayPal details - status is 'pending' until confirmed
+        $stmt = mysqli_prepare($conn, "
+            INSERT INTO orders (
+                user_id, first_name, last_name, email, phone, order_number,
+                subtotal, tax, total, status, confirmation_method, confirmation_token, payment_status,
+                created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, 'completed', NOW())
+        ");
+        
+        if (!$stmt) {
+            mysqli_rollback($conn);
+            error_log('Order creation error: ' . mysqli_error($conn));
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to create order in database']);
+            exit;
+        }
+        
+        $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
+        
+        // Handle nullable user_id properly
+        if ($userId === null) {
+            // Use a different query for guest orders
+            mysqli_stmt_close($stmt);
+            $stmt = mysqli_prepare($conn, "
                 INSERT INTO orders (
-                    user_id, first_name, last_name, email, phone, order_number,
+                    first_name, last_name, email, phone, order_number,
                     subtotal, tax, total, status, confirmation_method, confirmation_token, payment_status,
                     created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, 'completed', NOW())
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, 'completed', NOW())
             ");
-            
-            $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
-            
-            $stmt->execute([
+            if (!$stmt) {
+                mysqli_rollback($conn);
+                error_log('Order creation error (guest): ' . mysqli_error($conn));
+                http_response_code(500);
+                echo json_encode(['error' => 'Failed to create order in database']);
+                exit;
+            }
+            mysqli_stmt_bind_param($stmt, "sssssdddss",
+                $orderData['first_name'],
+                $orderData['last_name'],
+                $orderData['email'],
+                $orderData['phone'],
+                $orderNumber,
+                $subtotal,
+                $tax,
+                $total,
+                $confirmationMethod,
+                $confirmationToken
+            );
+        } else {
+            mysqli_stmt_bind_param($stmt, "isssssdddss",
                 $userId,
                 $orderData['first_name'],
                 $orderData['last_name'],
@@ -144,67 +199,79 @@ if ($httpCode >= 200 && $httpCode < 300 && isset($result['status']) && $result['
                 $total,
                 $confirmationMethod,
                 $confirmationToken
-            ]);
-            
-            $orderId = $pdo->lastInsertId();
-            
-            // Insert order items
-            $itemStmt = $pdo->prepare("
-                INSERT INTO order_items (order_id, product_id, quantity, price)
-                VALUES (?, ?, ?, ?)
-            ");
-            
+            );
+        }
+        
+        if (!mysqli_stmt_execute($stmt)) {
+            mysqli_rollback($conn);
+            error_log('Order creation error: ' . mysqli_error($conn));
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to create order in database']);
+            exit;
+        }
+        mysqli_stmt_close($stmt);
+        
+        $orderId = mysqli_insert_id($conn);
+        
+        // Insert order items
+        $itemStmt = mysqli_prepare($conn, "
+            INSERT INTO order_items (order_id, product_id, quantity, price)
+            VALUES (?, ?, ?, ?)
+        ");
+        
+        if ($itemStmt) {
             foreach ($cartData as $item) {
                 $itemTotal = floatval($item['price']) * intval($item['quantity']);
-                $itemStmt->execute([
-                    $orderId,
-                    isset($item['id']) ? intval($item['id']) : null,
-                    intval($item['quantity']),
-                    floatval($item['price'])
-                ]);
+                $productId = isset($item['id']) ? intval($item['id']) : null;
+                $quantity = intval($item['quantity']);
+                $price = floatval($item['price']);
+                
+                mysqli_stmt_bind_param($itemStmt, "iiid", $orderId, $productId, $quantity, $price);
+                mysqli_stmt_execute($itemStmt);
                 
                 // Decrease stock for the product
                 if (isset($item['id']) && $item['id']) {
-                    $stockStmt = $pdo->prepare("UPDATE products SET stock = stock - ? WHERE product_id = ? AND stock >= ?");
-                    $stockStmt->execute([
-                        intval($item['quantity']),
-                        intval($item['id']),
-                        intval($item['quantity'])
-                    ]);
+                    $stockStmt = mysqli_prepare($conn, "UPDATE products SET stock = stock - ? WHERE product_id = ? AND stock >= ?");
+                    if ($stockStmt) {
+                        $qty = intval($item['quantity']);
+                        $pid = intval($item['id']);
+                        mysqli_stmt_bind_param($stockStmt, "iii", $qty, $pid, $qty);
+                        mysqli_stmt_execute($stockStmt);
+                        mysqli_stmt_close($stockStmt);
+                    }
                 }
             }
-            
-            // Log PayPal transaction
-            try {
-                $logStmt = $pdo->prepare("
-                    INSERT INTO paypal_transactions (
-                        order_id, paypal_order_id, paypal_capture_id, paypal_payer_id,
-                        amount, currency, status, raw_response, created_at
-                    ) VALUES (?, ?, ?, ?, ?, 'USD', ?, ?, NOW())
-                ");
-                $logStmt->execute([
+            mysqli_stmt_close($itemStmt);
+        }
+        
+        // Log PayPal transaction (optional - don't fail order if this fails)
+        try {
+            $logStmt = mysqli_prepare($conn, "
+                INSERT INTO paypal_transactions (
+                    order_id, paypal_order_id, paypal_capture_id, paypal_payer_id,
+                    amount, currency, status, raw_response, created_at
+                ) VALUES (?, ?, ?, ?, ?, 'PHP', ?, ?, NOW())
+            ");
+            if ($logStmt) {
+                $rawResponse = json_encode($result);
+                mysqli_stmt_bind_param($logStmt, "isssdss",
                     $orderId,
                     $paypalOrderId,
                     $paypalCaptureId,
                     $paypalPayerId,
                     $total,
                     $paypalPaymentStatus,
-                    json_encode($result)
-                ]);
-            } catch (PDOException $e) {
-                // Table might not exist yet, log but don't fail
-                error_log('PayPal transaction logging failed: ' . $e->getMessage());
+                    $rawResponse
+                );
+                mysqli_stmt_execute($logStmt);
+                mysqli_stmt_close($logStmt);
             }
-            
-            $pdo->commit();
-            
-        } catch (PDOException $e) {
-            $pdo->rollBack();
-            error_log('Order creation error: ' . $e->getMessage());
-            http_response_code(500);
-            echo json_encode(['error' => 'Failed to create order in database']);
-            exit;
+        } catch (Exception $e) {
+            // Table might not exist or have different schema - log but don't fail
+            error_log('PayPal transaction logging failed: ' . $e->getMessage());
         }
+        
+        mysqli_commit($conn);
     }
     
     // Store order info in session for success page

@@ -32,11 +32,11 @@ $dbInfo = [];
 $totalSize = 0;
 $tableCount = 0;
 
-if ($pdo) {
-    try {
-        // Get table sizes using SHOW TABLE STATUS (more reliable than information_schema)
-        $stmt = $pdo->query("SHOW TABLE STATUS");
-        $tables = $stmt->fetchAll();
+if ($conn) {
+    // Get table sizes using SHOW TABLE STATUS (more reliable than information_schema)
+    $result = mysqli_query($conn, "SHOW TABLE STATUS");
+    if ($result) {
+        $tables = mysqli_fetch_all($result, MYSQLI_ASSOC);
         
         foreach ($tables as $table) {
             $size = ($table['Data_length'] + $table['Index_length']) / 1024; // KB
@@ -54,9 +54,6 @@ if ($pdo) {
         usort($dbInfo, function($a, $b) {
             return $b['size_kb'] <=> $a['size_kb'];
         });
-        
-    } catch (PDOException $e) {
-        // Ignore
     }
 }
 

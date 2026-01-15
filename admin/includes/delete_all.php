@@ -6,6 +6,8 @@ session_start();
 require_once '../../includes/config.php';
 require_once '../../includes/functions.php';
 
+global $conn;
+
 // Check admin auth
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     header('Location: ../login.php');
@@ -25,99 +27,145 @@ if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
 
 $type = $_POST['type'] ?? '';
 
-if (!$pdo) {
+if (!$conn) {
     setFlashMessage('error', 'Database connection error.');
     header('Location: ../index.php');
     exit;
 }
 
-try {
-    switch ($type) {
-        case 'users':
-            // Delete all users except the current admin
-            $pdo->beginTransaction();
-            
-            // Getting IDs of users to delete (everyone except current admin)
-            $stmt = $pdo->prepare("SELECT user_id FROM users WHERE user_id != ?");
-            $stmt->execute([$_SESSION['admin_id']]);
-            $userIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
-            
-            if (!empty($userIds)) {
-                $inQuery = implode(',', array_fill(0, count($userIds), '?'));
+$error = null;
 
-                // 1. Get order IDs for these users to clean up order_items first
-                $stmtOrders = $pdo->prepare("SELECT order_id FROM orders WHERE user_id IN ($inQuery)");
-                $stmtOrders->execute($userIds);
-                $orderIds = $stmtOrders->fetchAll(PDO::FETCH_COLUMN);
+switch ($type) {
+    case 'users':
+        // Delete all users except the current admin
+        mysqli_begin_transaction($conn);
+        
+        // Getting IDs of users to delete (everyone except current admin)
+        $stmt = mysqli_prepare($conn, "SELECT user_id FROM users WHERE user_id != ?");
+        mysqli_stmt_bind_param($stmt, "i", $_SESSION['admin_id']);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $userIds = [];
+        while ($row = mysqli_fetch_row($result)) {
+            $userIds[] = $row[0];
+        }
+        mysqli_stmt_close($stmt);
+        
+        if (!empty($userIds)) {
+            $inQuery = implode(',', array_fill(0, count($userIds), '?'));
+            $types = str_repeat('i', count($userIds));
+
+            // 1. Get order IDs for these users to clean up order_items first
+            $stmtOrders = mysqli_prepare($conn, "SELECT order_id FROM orders WHERE user_id IN ($inQuery)");
+            mysqli_stmt_bind_param($stmtOrders, $types, ...$userIds);
+            mysqli_stmt_execute($stmtOrders);
+            $resultOrders = mysqli_stmt_get_result($stmtOrders);
+            $orderIds = [];
+            while ($row = mysqli_fetch_row($resultOrders)) {
+                $orderIds[] = $row[0];
+            }
+            mysqli_stmt_close($stmtOrders);
+            
+            if (!empty($orderIds)) {
+                $inOrdersQuery = implode(',', array_fill(0, count($orderIds), '?'));
+                $orderTypes = str_repeat('i', count($orderIds));
                 
-                if (!empty($orderIds)) {
-                    $inOrdersQuery = implode(',', array_fill(0, count($orderIds), '?'));
-                    
-                    // 2. Delete order_items for these orders
-                    $deleteItems = $pdo->prepare("DELETE FROM order_items WHERE order_id IN ($inOrdersQuery)");
-                    $deleteItems->execute($orderIds);
-                    
-                    // 3. Delete orders for these users
-                    $deleteOrders = $pdo->prepare("DELETE FROM orders WHERE user_id IN ($inQuery)");
-                    $deleteOrders->execute($userIds);
+                // 2. Delete order_items for these orders
+                $deleteItems = mysqli_prepare($conn, "DELETE FROM order_items WHERE order_id IN ($inOrdersQuery)");
+                mysqli_stmt_bind_param($deleteItems, $orderTypes, ...$orderIds);
+                if (!mysqli_stmt_execute($deleteItems)) {
+                    $error = mysqli_stmt_error($deleteItems);
                 }
-
-                // 4. Delete users
-                $deleteUsers = $pdo->prepare("DELETE FROM users WHERE user_id IN ($inQuery)");
-                $deleteUsers->execute($userIds);
+                mysqli_stmt_close($deleteItems);
                 
-                setFlashMessage('success', 'All users (except you) and their data have been deleted.');
-            } else {
-                setFlashMessage('info', 'No other users to delete.');
+                if (!$error) {
+                    // 3. Delete orders for these users
+                    $deleteOrders = mysqli_prepare($conn, "DELETE FROM orders WHERE user_id IN ($inQuery)");
+                    mysqli_stmt_bind_param($deleteOrders, $types, ...$userIds);
+                    if (!mysqli_stmt_execute($deleteOrders)) {
+                        $error = mysqli_stmt_error($deleteOrders);
+                    }
+                    mysqli_stmt_close($deleteOrders);
+                }
+            }
+
+            if (!$error) {
+                // 4. Delete users
+                $deleteUsers = mysqli_prepare($conn, "DELETE FROM users WHERE user_id IN ($inQuery)");
+                mysqli_stmt_bind_param($deleteUsers, $types, ...$userIds);
+                if (!mysqli_stmt_execute($deleteUsers)) {
+                    $error = mysqli_stmt_error($deleteUsers);
+                }
+                mysqli_stmt_close($deleteUsers);
             }
             
-            $pdo->commit();
-            header('Location: ../index.php?page=users');
-            break;
+            if ($error) {
+                mysqli_rollback($conn);
+                setFlashMessage('error', 'Operation failed: ' . $error);
+            } else {
+                mysqli_commit($conn);
+                setFlashMessage('success', 'All users (except you) and their data have been deleted.');
+            }
+        } else {
+            mysqli_commit($conn);
+            setFlashMessage('info', 'No other users to delete.');
+        }
+        
+        header('Location: ../index.php?page=users');
+        break;
 
-        case 'orders':
-            $pdo->beginTransaction();
-            
-            // Delete all order items first
-            $pdo->exec("DELETE FROM order_items");
-            
-            // Delete all orders
-            $pdo->exec("DELETE FROM orders");
-            
-            $pdo->commit();
-            
+    case 'orders':
+        mysqli_begin_transaction($conn);
+        
+        // Delete all order items first
+        if (!mysqli_query($conn, "DELETE FROM order_items")) {
+            $error = mysqli_error($conn);
+        }
+        
+        // Delete all orders
+        if (!$error && !mysqli_query($conn, "DELETE FROM orders")) {
+            $error = mysqli_error($conn);
+        }
+        
+        if ($error) {
+            mysqli_rollback($conn);
+            setFlashMessage('error', 'Operation failed: ' . $error);
+        } else {
+            mysqli_commit($conn);
             setFlashMessage('success', 'All orders have been deleted.');
-            header('Location: ../index.php?page=orders');
-            break;
+        }
+        
+        header('Location: ../index.php?page=orders');
+        break;
 
-        case 'products':
-            $pdo->beginTransaction();
-            
-            // NB: This might fail if there are order_items referencing products
-            // Ideally should check if products are in any active orders or soft delete
-            // But requirement is "Delete All", so we will try to force it.
-            // If we have Foreign Key constraints preventing deletion of products in orders:
-            // We might need to delete order_items or set product_id to NULL.
-            
-            // For now, assuming standard delete. If it fails due to FK, we'll catch exception.
-            $pdo->exec("DELETE FROM products");
-            
-            $pdo->commit();
-            
+    case 'products':
+        mysqli_begin_transaction($conn);
+        
+        // NB: This might fail if there are order_items referencing products
+        // Ideally should check if products are in any active orders or soft delete
+        // But requirement is "Delete All", so we will try to force it.
+        // If we have Foreign Key constraints preventing deletion of products in orders:
+        // We might need to delete order_items or set product_id to NULL.
+        
+        // For now, assuming standard delete. If it fails due to FK, we'll catch exception.
+        if (!mysqli_query($conn, "DELETE FROM products")) {
+            $error = mysqli_error($conn);
+        }
+        
+        if ($error) {
+            mysqli_rollback($conn);
+            setFlashMessage('error', 'Operation failed: ' . $error);
+        } else {
+            mysqli_commit($conn);
             setFlashMessage('success', 'All products have been deleted.');
-            header('Location: ../index.php?page=products');
-            break;
+        }
+        
+        header('Location: ../index.php?page=products');
+        break;
 
-        default:
-            setFlashMessage('error', 'Invalid deletion type.');
-            header('Location: ../index.php');
-    }
-} catch (PDOException $e) {
-    if ($pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
-    setFlashMessage('error', 'Operation failed: ' . $e->getMessage());
-    header('Location: ../index.php?page=' . $type);
+    default:
+        setFlashMessage('error', 'Invalid deletion type.');
+        header('Location: ../index.php');
 }
 exit;
 ?>

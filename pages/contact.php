@@ -3,13 +3,14 @@ $flash = getFlashMessage();
 
 // Fetch user data if logged in for pre-filling the form
 $userData = null;
-if (isset($_SESSION['user_id'])) {
-    try {
-        $stmt = $pdo->prepare("SELECT first_name, last_name, email, phone FROM users WHERE user_id = ?");
-        $stmt->execute([$_SESSION['user_id']]);
-        $userData = $stmt->fetch();
-    } catch (PDOException $e) {
-        // Silently fail - form just won't be prefilled
+if (isset($_SESSION['user_id']) && $conn) {
+    $stmt = mysqli_prepare($conn, "SELECT first_name, last_name, email, phone FROM users WHERE user_id = ?");
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $_SESSION['user_id']);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $userData = mysqli_fetch_assoc($result);
+        mysqli_stmt_close($stmt);
     }
 }
 ?>

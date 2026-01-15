@@ -15,48 +15,54 @@ if (empty($token)) {
 }
 
 // Check if database connection exists
-if (!$pdo) {
+if (!$conn) {
     redirect('../index.php?page=login', 'Database connection error. Please try again later.', 'error');
 }
 
-try {
-    // Find user with this cancel token
-    $stmt = $pdo->prepare("
-        SELECT id, first_name, email, pending_email, pending_email_expires, email_change_cancel_token 
-        FROM users 
-        WHERE email_change_cancel_token = ?
-    ");
-    $stmt->execute([$token]);
-    $user = $stmt->fetch();
+// Find user with this cancel token
+$stmt = mysqli_prepare($conn, "
+    SELECT user_id, first_name, email, pending_email, pending_email_expires, email_change_cancel_token 
+    FROM users 
+    WHERE email_change_cancel_token = ?
+");
+mysqli_stmt_bind_param($stmt, "s", $token);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$user = mysqli_fetch_assoc($result);
+mysqli_stmt_close($stmt);
+
+if (!$user) {
+    redirect('../index.php?page=login', 'Invalid or expired cancellation link. The email change may have already been cancelled or completed.', 'error');
+}
+
+// Check if there's actually a pending email change
+if (empty($user['pending_email'])) {
+    // Clear the cancel token if it exists but no pending change
+    $stmt = mysqli_prepare($conn, "UPDATE users SET email_change_cancel_token = NULL WHERE user_id = ?");
+    mysqli_stmt_bind_param($stmt, "i", $user['user_id']);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
     
-    if (!$user) {
-        redirect('../index.php?page=login', 'Invalid or expired cancellation link. The email change may have already been cancelled or completed.', 'error');
-    }
-    
-    // Check if there's actually a pending email change
-    if (empty($user['pending_email'])) {
-        // Clear the cancel token if it exists but no pending change
-        $stmt = $pdo->prepare("UPDATE users SET email_change_cancel_token = NULL WHERE user_id = ?");
-        $stmt->execute([$user['user_id']]);
-        
-        redirect('../index.php?page=login', 'No pending email change to cancel. Your email address has not been changed.', 'info');
-    }
-    
-    // Store pending email info for the message
-    $pendingEmail = $user['pending_email'];
-    
-    // Cancel the email change by clearing all pending fields
-    $stmt = $pdo->prepare("
-        UPDATE users 
-        SET pending_email = NULL, 
-            pending_email_token = NULL, 
-            pending_email_expires = NULL,
-            pending_email_old_otp = NULL,
-            email_change_step = NULL,
-            email_change_cancel_token = NULL
-        WHERE user_id = ?
-    ");
-    $stmt->execute([$user['user_id']]);
+    redirect('../index.php?page=login', 'No pending email change to cancel. Your email address has not been changed.', 'info');
+}
+
+// Store pending email info for the message
+$pendingEmail = $user['pending_email'];
+
+// Cancel the email change by clearing all pending fields
+$stmt = mysqli_prepare($conn, "
+    UPDATE users 
+    SET pending_email = NULL, 
+        pending_email_token = NULL, 
+        pending_email_expires = NULL,
+        pending_email_old_otp = NULL,
+        email_change_step = NULL,
+        email_change_cancel_token = NULL
+    WHERE user_id = ?
+");
+mysqli_stmt_bind_param($stmt, "i", $user['user_id']);
+mysqli_stmt_execute($stmt);
+mysqli_stmt_close($stmt);
     
     // Success message
     $message = 'Email change to "' . htmlspecialchars($pendingEmail) . '" has been cancelled successfully. ';
@@ -69,9 +75,4 @@ try {
     } else {
         redirect('../index.php?page=login', $message, 'success');
     }
-    
-} catch (PDOException $e) {
-    error_log("Email change cancellation error: " . $e->getMessage());
-    redirect('../index.php?page=login', 'An error occurred while cancelling the email change. Please try again.', 'error');
-}
 ?>

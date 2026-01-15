@@ -5,6 +5,9 @@
 
 require_once __DIR__ . '/config.php';
 
+// Suppress HTML error output for JSON API (must be after config.php)
+ini_set('display_errors', 0);
+
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -21,27 +24,38 @@ function isLoggedIn() {
 }
 
 // Get user's cart ID (creates one if doesn't exist)
-function getCartId($pdo, $userId) {
+function getCartId($userId) {
+    global $conn;
+    
     // Check if cart exists
-    $stmt = $pdo->prepare("SELECT cart_id FROM cart WHERE user_id = ?");
-    $stmt->execute([$userId]);
-    $cart = $stmt->fetch();
+    $stmt = mysqli_prepare($conn, "SELECT cart_id FROM cart WHERE user_id = ?");
+    mysqli_stmt_bind_param($stmt, "i", $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $cart = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
     
     if ($cart) {
         return $cart['cart_id'];
     }
     
     // Create new cart
-    $stmt = $pdo->prepare("INSERT INTO cart (user_id) VALUES (?)");
-    $stmt->execute([$userId]);
-    return $pdo->lastInsertId();
+    $stmt = mysqli_prepare($conn, "INSERT INTO cart (user_id) VALUES (?)");
+    mysqli_stmt_bind_param($stmt, "i", $userId);
+    mysqli_stmt_execute($stmt);
+    $cartId = mysqli_insert_id($conn);
+    mysqli_stmt_close($stmt);
+    
+    return $cartId;
 }
 
 // Get all cart items for user
-function getCartItems($pdo, $userId) {
-    $cartId = getCartId($pdo, $userId);
+function getCartItems($userId) {
+    global $conn;
     
-    $stmt = $pdo->prepare("
+    $cartId = getCartId($userId);
+    
+    $stmt = mysqli_prepare($conn, "
         SELECT ci.cart_item_id, ci.product_id, ci.quantity,
                p.price, p.name, p.image, p.slug, p.stock
         FROM cart_items ci
@@ -49,10 +63,12 @@ function getCartItems($pdo, $userId) {
         WHERE ci.cart_id = ?
         ORDER BY ci.created_at DESC
     ");
-    $stmt->execute([$cartId]);
+    mysqli_stmt_bind_param($stmt, "i", $cartId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
     
     $items = [];
-    while ($row = $stmt->fetch()) {
+    while ($row = mysqli_fetch_assoc($result)) {
         $items[] = [
             'id' => (int)$row['product_id'],
             'cartItemId' => (int)$row['cart_item_id'],
@@ -64,18 +80,24 @@ function getCartItems($pdo, $userId) {
             'stock' => (int)$row['stock']
         ];
     }
+    mysqli_stmt_close($stmt);
     
     return $items;
 }
 
 // Add item to cart
-function addToCart($pdo, $userId, $productId, $quantity = 1) {
-    $cartId = getCartId($pdo, $userId);
+function addToCart($userId, $productId, $quantity = 1) {
+    global $conn;
+    
+    $cartId = getCartId($userId);
     
     // Get product info including stock
-    $stmt = $pdo->prepare("SELECT product_id, price, stock FROM products WHERE product_id = ? AND active = TRUE");
-    $stmt->execute([$productId]);
-    $product = $stmt->fetch();
+    $stmt = mysqli_prepare($conn, "SELECT product_id, price, stock FROM products WHERE product_id = ? AND active = TRUE");
+    mysqli_stmt_bind_param($stmt, "i", $productId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $product = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
     
     if (!$product) {
         return ['success' => false, 'message' => 'Product not found'];
@@ -84,9 +106,12 @@ function addToCart($pdo, $userId, $productId, $quantity = 1) {
     $stock = (int)$product['stock'];
     
     // Check if item already in cart
-    $stmt = $pdo->prepare("SELECT cart_item_id, quantity FROM cart_items WHERE cart_id = ? AND product_id = ?");
-    $stmt->execute([$cartId, $productId]);
-    $existing = $stmt->fetch();
+    $stmt = mysqli_prepare($conn, "SELECT cart_item_id, quantity FROM cart_items WHERE cart_id = ? AND product_id = ?");
+    mysqli_stmt_bind_param($stmt, "ii", $cartId, $productId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $existing = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
     
     if ($existing) {
         // Update quantity
@@ -97,8 +122,10 @@ function addToCart($pdo, $userId, $productId, $quantity = 1) {
             return ['success' => false, 'message' => "Only $stock items available in stock", 'stock' => $stock];
         }
         
-        $stmt = $pdo->prepare("UPDATE cart_items SET quantity = ?, updated_at = NOW() WHERE cart_item_id = ?");
-        $stmt->execute([$newQty, $existing['cart_item_id']]);
+        $stmt = mysqli_prepare($conn, "UPDATE cart_items SET quantity = ?, updated_at = NOW() WHERE cart_item_id = ?");
+        mysqli_stmt_bind_param($stmt, "ii", $newQty, $existing['cart_item_id']);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
     } else {
         // Validate quantity against stock
         if ($quantity > $stock) {
@@ -106,28 +133,37 @@ function addToCart($pdo, $userId, $productId, $quantity = 1) {
         }
         
         // Add new item
-        $stmt = $pdo->prepare("INSERT INTO cart_items (cart_id, product_id, quantity) VALUES (?, ?, ?)");
-        $stmt->execute([$cartId, $productId, $quantity]);
+        $stmt = mysqli_prepare($conn, "INSERT INTO cart_items (cart_id, product_id, quantity) VALUES (?, ?, ?)");
+        mysqli_stmt_bind_param($stmt, "iii", $cartId, $productId, $quantity);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
     }
     
     return ['success' => true, 'message' => 'Item added to cart'];
 }
 
 // Update cart item quantity
-function updateCartQuantity($pdo, $userId, $productId, $quantity) {
-    $cartId = getCartId($pdo, $userId);
+function updateCartQuantity($userId, $productId, $quantity) {
+    global $conn;
+    
+    $cartId = getCartId($userId);
     
     if ($quantity <= 0) {
         // Remove item
-        $stmt = $pdo->prepare("DELETE FROM cart_items WHERE cart_id = ? AND product_id = ?");
-        $stmt->execute([$cartId, $productId]);
+        $stmt = mysqli_prepare($conn, "DELETE FROM cart_items WHERE cart_id = ? AND product_id = ?");
+        mysqli_stmt_bind_param($stmt, "ii", $cartId, $productId);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
         return ['success' => true, 'message' => 'Item removed from cart'];
     }
     
     // Get product stock
-    $stmt = $pdo->prepare("SELECT stock FROM products WHERE product_id = ?");
-    $stmt->execute([$productId]);
-    $product = $stmt->fetch();
+    $stmt = mysqli_prepare($conn, "SELECT stock FROM products WHERE product_id = ?");
+    mysqli_stmt_bind_param($stmt, "i", $productId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $product = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
     
     if (!$product) {
         return ['success' => false, 'message' => 'Product not found'];
@@ -140,41 +176,56 @@ function updateCartQuantity($pdo, $userId, $productId, $quantity) {
         return ['success' => false, 'message' => "Only $stock items available in stock", 'stock' => $stock];
     }
     
-    $stmt = $pdo->prepare("UPDATE cart_items SET quantity = ?, updated_at = NOW() WHERE cart_id = ? AND product_id = ?");
-    $stmt->execute([$quantity, $cartId, $productId]);
+    $stmt = mysqli_prepare($conn, "UPDATE cart_items SET quantity = ?, updated_at = NOW() WHERE cart_id = ? AND product_id = ?");
+    mysqli_stmt_bind_param($stmt, "iii", $quantity, $cartId, $productId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
     
     return ['success' => true, 'message' => 'Quantity updated'];
 }
 
 // Remove item from cart
-function removeFromCartDb($pdo, $userId, $productId) {
-    $cartId = getCartId($pdo, $userId);
+function removeFromCartDb($userId, $productId) {
+    global $conn;
     
-    $stmt = $pdo->prepare("DELETE FROM cart_items WHERE cart_id = ? AND product_id = ?");
-    $stmt->execute([$cartId, $productId]);
+    $cartId = getCartId($userId);
+    
+    $stmt = mysqli_prepare($conn, "DELETE FROM cart_items WHERE cart_id = ? AND product_id = ?");
+    mysqli_stmt_bind_param($stmt, "ii", $cartId, $productId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
     
     return ['success' => true, 'message' => 'Item removed from cart'];
 }
 
 // Clear entire cart
-function clearCart($pdo, $userId) {
-    $cartId = getCartId($pdo, $userId);
+function clearCart($userId) {
+    global $conn;
     
-    $stmt = $pdo->prepare("DELETE FROM cart_items WHERE cart_id = ?");
-    $stmt->execute([$cartId]);
+    $cartId = getCartId($userId);
+    
+    $stmt = mysqli_prepare($conn, "DELETE FROM cart_items WHERE cart_id = ?");
+    mysqli_stmt_bind_param($stmt, "i", $cartId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
     
     return ['success' => true, 'message' => 'Cart cleared'];
 }
 
 // Get cart count
-function getCartCount($pdo, $userId) {
-    $cartId = getCartId($pdo, $userId);
+function getCartCount($userId) {
+    global $conn;
     
-    $stmt = $pdo->prepare("SELECT SUM(quantity) as count FROM cart_items WHERE cart_id = ?");
-    $stmt->execute([$cartId]);
-    $result = $stmt->fetch();
+    $cartId = getCartId($userId);
     
-    return (int)($result['count'] ?? 0);
+    $stmt = mysqli_prepare($conn, "SELECT SUM(quantity) as count FROM cart_items WHERE cart_id = ?");
+    mysqli_stmt_bind_param($stmt, "i", $cartId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
+    
+    return (int)($row['count'] ?? 0);
 }
 
 // Handle API requests
@@ -186,8 +237,8 @@ try {
             if (!isLoggedIn()) {
                 $response = ['success' => true, 'items' => [], 'count' => 0, 'loggedIn' => false];
             } else {
-                $items = getCartItems($pdo, $_SESSION['user_id']);
-                $count = getCartCount($pdo, $_SESSION['user_id']);
+                $items = getCartItems($_SESSION['user_id']);
+                $count = getCartCount($_SESSION['user_id']);
                 $response = ['success' => true, 'items' => $items, 'count' => $count, 'loggedIn' => true];
             }
             break;
@@ -199,8 +250,8 @@ try {
                 $productId = (int)($_POST['product_id'] ?? 0);
                 $quantity = (int)($_POST['quantity'] ?? 1);
                 if ($productId > 0) {
-                    $response = addToCart($pdo, $_SESSION['user_id'], $productId, $quantity);
-                    $response['count'] = getCartCount($pdo, $_SESSION['user_id']);
+                    $response = addToCart($_SESSION['user_id'], $productId, $quantity);
+                    $response['count'] = getCartCount($_SESSION['user_id']);
                 } else {
                     $response = ['success' => false, 'message' => 'Invalid product'];
                 }
@@ -214,8 +265,8 @@ try {
                 $productId = (int)($_POST['product_id'] ?? 0);
                 $quantity = (int)($_POST['quantity'] ?? 0);
                 if ($productId > 0) {
-                    $response = updateCartQuantity($pdo, $_SESSION['user_id'], $productId, $quantity);
-                    $response['count'] = getCartCount($pdo, $_SESSION['user_id']);
+                    $response = updateCartQuantity($_SESSION['user_id'], $productId, $quantity);
+                    $response['count'] = getCartCount($_SESSION['user_id']);
                 } else {
                     $response = ['success' => false, 'message' => 'Invalid product'];
                 }
@@ -228,8 +279,8 @@ try {
             } else {
                 $productId = (int)($_POST['product_id'] ?? 0);
                 if ($productId > 0) {
-                    $response = removeFromCartDb($pdo, $_SESSION['user_id'], $productId);
-                    $response['count'] = getCartCount($pdo, $_SESSION['user_id']);
+                    $response = removeFromCartDb($_SESSION['user_id'], $productId);
+                    $response['count'] = getCartCount($_SESSION['user_id']);
                 } else {
                     $response = ['success' => false, 'message' => 'Invalid product'];
                 }
@@ -240,7 +291,7 @@ try {
             if (!isLoggedIn()) {
                 $response = ['success' => false, 'message' => 'Please login first', 'requireLogin' => true];
             } else {
-                $response = clearCart($pdo, $_SESSION['user_id']);
+                $response = clearCart($_SESSION['user_id']);
                 $response['count'] = 0;
             }
             break;
@@ -249,7 +300,7 @@ try {
             if (!isLoggedIn()) {
                 $response = ['success' => true, 'count' => 0, 'loggedIn' => false];
             } else {
-                $count = getCartCount($pdo, $_SESSION['user_id']);
+                $count = getCartCount($_SESSION['user_id']);
                 $response = ['success' => true, 'count' => $count, 'loggedIn' => true];
             }
             break;

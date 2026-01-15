@@ -73,12 +73,12 @@ if ($confirmationMethod === 'email') {
 }
 
 // Save to database
-if ($pdo) {
+if ($conn) {
+    mysqli_begin_transaction($conn);
+    
     try {
-        $pdo->beginTransaction();
-        
         // Insert order with status 'pending' until confirmed
-        $stmt = $pdo->prepare("
+        $stmt = mysqli_prepare($conn, "
             INSERT INTO orders (
                 user_id, first_name, last_name, email, phone, order_number,
                 subtotal, tax, total, status, confirmation_method, confirmation_token, created_at
@@ -87,7 +87,7 @@ if ($pdo) {
         
         $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
         
-        $stmt->execute([
+        mysqli_stmt_bind_param($stmt, "isssssdddsss",
             $userId,
             $orderData['first_name'],
             $orderData['last_name'],
@@ -99,27 +99,41 @@ if ($pdo) {
             $total,
             $confirmationMethod,
             $confirmationToken
-        ]);
+        );
         
-        $orderId = $pdo->lastInsertId();
+        if (!mysqli_stmt_execute($stmt)) {
+            throw new Exception("Failed to insert order: " . mysqli_stmt_error($stmt));
+        }
+        mysqli_stmt_close($stmt);
+        
+        $orderId = mysqli_insert_id($conn);
         
         // Insert order items
-        $itemStmt = $pdo->prepare("
+        $itemStmt = mysqli_prepare($conn, "
             INSERT INTO order_items (order_id, product_id, quantity, price)
             VALUES (?, ?, ?, ?)
         ");
         
         foreach ($cartData as $item) {
             $itemTotal = floatval($item['price']) * intval($item['quantity']);
-            $itemStmt->execute([
+            $productId = isset($item['id']) ? intval($item['id']) : null;
+            $quantity = intval($item['quantity']);
+            $price = floatval($item['price']);
+            
+            mysqli_stmt_bind_param($itemStmt, "iiid",
                 $orderId,
-                isset($item['id']) ? intval($item['id']) : null,
-                intval($item['quantity']),
-                floatval($item['price'])
-            ]);
+                $productId,
+                $quantity,
+                $price
+            );
+            
+            if (!mysqli_stmt_execute($itemStmt)) {
+                throw new Exception("Failed to insert order item: " . mysqli_stmt_error($itemStmt));
+            }
         }
+        mysqli_stmt_close($itemStmt);
         
-        $pdo->commit();
+        mysqli_commit($conn);
         
         // Store order info in session for success page
         $_SESSION['last_order'] = [
@@ -224,8 +238,8 @@ if ($pdo) {
             sendSMS($orderData['phone'], $smsMessage, $orderId, $userId);
         }
         
-    } catch (PDOException $e) {
-        $pdo->rollBack();
+    } catch (Exception $e) {
+        mysqli_rollback($conn);
         error_log("Order processing error: " . $e->getMessage());
         redirect('../index.php?page=checkout', 'An error occurred while processing your order. Please try again.', 'error');
     }

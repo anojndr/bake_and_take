@@ -6,6 +6,8 @@ session_start();
 require_once '../../includes/config.php';
 require_once '../../includes/functions.php';
 
+global $conn;
+
 header('Content-Type: application/json');
 
 // Check admin auth
@@ -27,37 +29,36 @@ if ($orderId <= 0) {
     exit;
 }
 
-if (!$pdo) {
+if (!$conn) {
     echo json_encode(['success' => false, 'error' => 'Database connection error']);
     exit;
 }
 
-try {
-    // Start transaction
-    $pdo->beginTransaction();
-    
-    // First, delete order items
-    $stmt = $pdo->prepare("DELETE FROM order_items WHERE order_id = ?");
-    $stmt->execute([$orderId]);
-    
-    // Then, delete the order
-    $stmt = $pdo->prepare("DELETE FROM orders WHERE order_id = ?");
-    $stmt->execute([$orderId]);
-    
-    // Check if order was actually deleted
-    if ($stmt->rowCount() === 0) {
-        $pdo->rollBack();
-        echo json_encode(['success' => false, 'error' => 'Order not found']);
-        exit;
-    }
-    
-    // Commit transaction
-    $pdo->commit();
-    
-    echo json_encode(['success' => true, 'message' => 'Order deleted successfully']);
-    
-} catch (PDOException $e) {
-    $pdo->rollBack();
-    echo json_encode(['success' => false, 'error' => 'Failed to delete order: ' . $e->getMessage()]);
+// Start transaction
+mysqli_begin_transaction($conn);
+
+// First, delete order items
+$stmt = mysqli_prepare($conn, "DELETE FROM order_items WHERE order_id = ?");
+mysqli_stmt_bind_param($stmt, "i", $orderId);
+mysqli_stmt_execute($stmt);
+mysqli_stmt_close($stmt);
+
+// Then, delete the order
+$stmt = mysqli_prepare($conn, "DELETE FROM orders WHERE order_id = ?");
+mysqli_stmt_bind_param($stmt, "i", $orderId);
+mysqli_stmt_execute($stmt);
+$affectedRows = mysqli_stmt_affected_rows($stmt);
+mysqli_stmt_close($stmt);
+
+// Check if order was actually deleted
+if ($affectedRows === 0) {
+    mysqli_rollback($conn);
+    echo json_encode(['success' => false, 'error' => 'Order not found']);
+    exit;
 }
+
+// Commit transaction
+mysqli_commit($conn);
+
+echo json_encode(['success' => true, 'message' => 'Order deleted successfully']);
 ?>

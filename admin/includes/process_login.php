@@ -30,32 +30,35 @@ if (!isValidEmail($email)) {
     exit;
 }
 
-if (!$pdo) {
+global $conn;
+if (!$conn) {
     header('Location: ../login.php?error=' . urlencode('Database connection error.'));
     exit;
 }
 
-try {
-    $stmt = $pdo->prepare("SELECT user_id, first_name, last_name, email, password, is_admin FROM users WHERE email = ? AND is_admin = 1");
-    $stmt->execute([$email]);
-    $user = $stmt->fetch();
-    
-    if (!$user || !password_verify($password, $user['password'])) {
-        header('Location: ../login.php?error=' . urlencode('Invalid admin credentials.'));
-        exit;
-    }
-    
-    // Set admin session variables (separate from main site)
-    $_SESSION['admin_logged_in'] = true;
-    $_SESSION['admin_id'] = $user['user_id'];
-    $_SESSION['admin_email'] = $user['email'];
-    $_SESSION['admin_name'] = $user['first_name'] . ' ' . $user['last_name'];
-    
-    header('Location: ../index.php');
-    exit;
-    
-} catch (PDOException $e) {
+$stmt = mysqli_prepare($conn, "SELECT user_id, first_name, last_name, email, password, is_admin FROM users WHERE email = ? AND is_admin = 1");
+if (!$stmt) {
     header('Location: ../login.php?error=' . urlencode('Login failed. Please try again.'));
     exit;
 }
+
+mysqli_stmt_bind_param($stmt, "s", $email);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$user = mysqli_fetch_assoc($result);
+mysqli_stmt_close($stmt);
+
+if (!$user || !password_verify($password, $user['password'])) {
+    header('Location: ../login.php?error=' . urlencode('Invalid admin credentials.'));
+    exit;
+}
+
+// Set admin session variables (separate from main site)
+$_SESSION['admin_logged_in'] = true;
+$_SESSION['admin_id'] = $user['user_id'];
+$_SESSION['admin_email'] = $user['email'];
+$_SESSION['admin_name'] = $user['first_name'] . ' ' . $user['last_name'];
+
+header('Location: ../index.php');
+exit;
 ?>

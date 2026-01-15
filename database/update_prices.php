@@ -5,8 +5,9 @@
  */
 
 require_once __DIR__ . '/../includes/config.php';
+global $conn;
 
-if (!$pdo) {
+if (!$conn) {
     die("Error: Database connection not available.\n");
 }
 
@@ -30,14 +31,14 @@ $priceUpdates = [
     'oatmeal-raisin-cookies' => 75.00,
 ];
 
-$stmt = $pdo->prepare("UPDATE products SET price = ? WHERE slug = ?");
+$stmt = mysqli_prepare($conn, "UPDATE products SET price = ? WHERE slug = ?");
 $successCount = 0;
 $errorCount = 0;
 
 foreach ($priceUpdates as $slug => $price) {
-    try {
-        $stmt->execute([$price, $slug]);
-        $rowsAffected = $stmt->rowCount();
+    mysqli_stmt_bind_param($stmt, "ds", $price, $slug);
+    if (mysqli_stmt_execute($stmt)) {
+        $rowsAffected = mysqli_stmt_affected_rows($stmt);
         
         if ($rowsAffected > 0) {
             echo "✓ Updated '{$slug}' to ₱" . number_format($price, 2) . "\n";
@@ -45,11 +46,12 @@ foreach ($priceUpdates as $slug => $price) {
         } else {
             echo "⚠ Product '{$slug}' not found in database\n";
         }
-    } catch (PDOException $e) {
-        echo "✗ Error updating '{$slug}': " . $e->getMessage() . "\n";
+    } else {
+        echo "✗ Error updating '{$slug}': " . mysqli_stmt_error($stmt) . "\n";
         $errorCount++;
     }
 }
+mysqli_stmt_close($stmt);
 
 echo "\n===========================================\n";
 echo "  Summary\n";
@@ -61,10 +63,11 @@ echo "Errors: {$errorCount}\n\n";
 echo "Current Product Prices:\n";
 echo str_repeat("-", 50) . "\n";
 
-$products = $pdo->query("SELECT id, name, price FROM products ORDER BY id")->fetchAll();
-foreach ($products as $product) {
+$result = mysqli_query($conn, "SELECT id, name, price FROM products ORDER BY id");
+while ($product = mysqli_fetch_assoc($result)) {
     echo sprintf("%-30s ₱%s\n", $product['name'], number_format($product['price'], 2));
 }
+mysqli_free_result($result);
 
 echo "\n✅ Price update complete!\n";
 ?>

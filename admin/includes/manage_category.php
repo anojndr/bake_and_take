@@ -25,7 +25,8 @@ if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
 
 $action = $_POST['action'] ?? '';
 
-if (!$pdo) {
+global $conn;
+if (!$conn) {
     setFlashMessage('error', 'Database connection error.');
     header('Location: ../index.php?page=categories');
     exit;
@@ -41,8 +42,10 @@ try {
             // Clean slug
             $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $slug ?: $name));
             
-            $stmt = $pdo->prepare("INSERT INTO categories (name, slug, icon) VALUES (?, ?, ?)");
-            $stmt->execute([$name, $slug, $icon]);
+            $stmt = mysqli_prepare($conn, "INSERT INTO categories (name, slug, icon) VALUES (?, ?, ?)");
+            mysqli_stmt_bind_param($stmt, "sss", $name, $slug, $icon);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
             
             setFlashMessage('success', 'Category added successfully!');
             break;
@@ -52,8 +55,10 @@ try {
             $name = sanitize($_POST['name'] ?? '');
             $icon = sanitize($_POST['icon'] ?? 'bi-box');
             
-            $stmt = $pdo->prepare("UPDATE categories SET name = ?, icon = ? WHERE category_id = ?");
-            $stmt->execute([$name, $icon, $id]);
+            $stmt = mysqli_prepare($conn, "UPDATE categories SET name = ?, icon = ? WHERE category_id = ?");
+            mysqli_stmt_bind_param($stmt, "ssi", $name, $icon, $id);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
             
             setFlashMessage('success', 'Category updated successfully!');
             break;
@@ -62,12 +67,16 @@ try {
             $id = (int)($_POST['id'] ?? 0);
             
             // Update products to uncategorized
-            $stmt = $pdo->prepare("UPDATE products SET category_id = NULL WHERE category_id = ?");
-            $stmt->execute([$id]);
+            $stmt = mysqli_prepare($conn, "UPDATE products SET category_id = NULL WHERE category_id = ?");
+            mysqli_stmt_bind_param($stmt, "i", $id);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
             
             // Delete category
-            $stmt = $pdo->prepare("DELETE FROM categories WHERE category_id = ?");
-            $stmt->execute([$id]);
+            $stmt = mysqli_prepare($conn, "DELETE FROM categories WHERE category_id = ?");
+            mysqli_stmt_bind_param($stmt, "i", $id);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
             
             setFlashMessage('success', 'Category deleted successfully!');
             break;
@@ -75,8 +84,8 @@ try {
         default:
             setFlashMessage('error', 'Invalid action.');
     }
-} catch (PDOException $e) {
-    setFlashMessage('error', 'Operation failed: ' . $e->getMessage());
+} catch (Exception $e) {
+    setFlashMessage('error', 'Operation failed: ' . mysqli_error($conn));
 }
 
 header('Location: ../index.php?page=categories');

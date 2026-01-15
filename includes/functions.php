@@ -1,7 +1,7 @@
 <?php
 /**
  * Bake & Take - Helper Functions
- * Updated to fetch data from MySQL database
+ * Updated to fetch data from MySQL database using mysqli
  */
 
 function sanitize($input) {
@@ -16,28 +16,25 @@ function formatPrice($price) {
  * Get all products from database
  */
 function getAllProducts() {
-    global $pdo, $PRODUCTS;
+    global $conn, $PRODUCTS;
     
-    if ($pdo) {
-        try {
-            $stmt = $pdo->query("
-                SELECT p.*, c.slug as category 
-                FROM products p 
-                LEFT JOIN categories c ON p.category_id = c.category_id 
-                WHERE p.active = 1 
-                ORDER BY p.featured DESC, p.name ASC
-            ");
-            $products = $stmt->fetchAll();
-            
-            // Convert 'featured' to boolean for consistency
-            foreach ($products as &$product) {
-                $product['featured'] = (bool) $product['featured'];
+    if ($conn) {
+        $query = "
+            SELECT p.*, c.slug as category 
+            FROM products p 
+            LEFT JOIN categories c ON p.category_id = c.category_id 
+            WHERE p.active = 1 
+            ORDER BY p.featured DESC, p.name ASC
+        ";
+        $result = mysqli_query($conn, $query);
+        
+        if ($result) {
+            $products = [];
+            while ($row = mysqli_fetch_assoc($result)) {
+                $row['featured'] = (bool) $row['featured'];
+                $products[] = $row;
             }
-            
             return $products;
-        } catch (PDOException $e) {
-            // Fallback to static array if query fails
-            return $PRODUCTS;
         }
     }
     
@@ -48,32 +45,30 @@ function getAllProducts() {
  * Get products by category from database
  */
 function getProductsByCategory($category = null) {
-    global $pdo, $PRODUCTS;
+    global $conn, $PRODUCTS;
     
     if ($category === null) {
         return getAllProducts();
     }
     
-    if ($pdo) {
-        try {
-            $stmt = $pdo->prepare("
-                SELECT p.*, c.slug as category 
-                FROM products p 
-                LEFT JOIN categories c ON p.category_id = c.category_id 
-                WHERE c.slug = ? AND p.active = 1 
-                ORDER BY p.featured DESC, p.name ASC
-            ");
-            $stmt->execute([$category]);
-            $products = $stmt->fetchAll();
-            
-            foreach ($products as &$product) {
-                $product['featured'] = (bool) $product['featured'];
+    if ($conn) {
+        $category = mysqli_real_escape_string($conn, $category);
+        $query = "
+            SELECT p.*, c.slug as category 
+            FROM products p 
+            LEFT JOIN categories c ON p.category_id = c.category_id 
+            WHERE c.slug = '$category' AND p.active = 1 
+            ORDER BY p.featured DESC, p.name ASC
+        ";
+        $result = mysqli_query($conn, $query);
+        
+        if ($result) {
+            $products = [];
+            while ($row = mysqli_fetch_assoc($result)) {
+                $row['featured'] = (bool) $row['featured'];
+                $products[] = $row;
             }
-            
             return $products;
-        } catch (PDOException $e) {
-            // Fallback to static array
-            return array_filter($PRODUCTS, fn($p) => $p['category'] === $category);
         }
     }
     
@@ -84,26 +79,25 @@ function getProductsByCategory($category = null) {
  * Get featured products from database
  */
 function getFeaturedProducts() {
-    global $pdo, $PRODUCTS;
+    global $conn, $PRODUCTS;
     
-    if ($pdo) {
-        try {
-            $stmt = $pdo->query("
-                SELECT p.*, c.slug as category 
-                FROM products p 
-                LEFT JOIN categories c ON p.category_id = c.category_id 
-                WHERE p.featured = 1 AND p.active = 1 
-                ORDER BY p.name ASC
-            ");
-            $products = $stmt->fetchAll();
-            
-            foreach ($products as &$product) {
-                $product['featured'] = true;
+    if ($conn) {
+        $query = "
+            SELECT p.*, c.slug as category 
+            FROM products p 
+            LEFT JOIN categories c ON p.category_id = c.category_id 
+            WHERE p.featured = 1 AND p.active = 1 
+            ORDER BY p.name ASC
+        ";
+        $result = mysqli_query($conn, $query);
+        
+        if ($result) {
+            $products = [];
+            while ($row = mysqli_fetch_assoc($result)) {
+                $row['featured'] = true;
+                $products[] = $row;
             }
-            
             return $products;
-        } catch (PDOException $e) {
-            return array_filter($PRODUCTS, fn($p) => $p['featured'] === true);
         }
     }
     
@@ -114,25 +108,21 @@ function getFeaturedProducts() {
  * Get single product by ID from database
  */
 function getProductById($id) {
-    global $pdo, $PRODUCTS;
+    global $conn, $PRODUCTS;
     
-    if ($pdo) {
-        try {
-            $stmt = $pdo->prepare("
-                SELECT p.*, c.slug as category 
-                FROM products p 
-                LEFT JOIN categories c ON p.category_id = c.category_id 
-                WHERE p.product_id = ?
-            ");
-            $stmt->execute([$id]);
-            $product = $stmt->fetch();
-            
-            if ($product) {
-                $product['featured'] = (bool) $product['featured'];
-                return $product;
-            }
-        } catch (PDOException $e) {
-            // Fallback to static array
+    if ($conn) {
+        $id = (int)$id;
+        $query = "
+            SELECT p.*, c.slug as category 
+            FROM products p 
+            LEFT JOIN categories c ON p.category_id = c.category_id 
+            WHERE p.product_id = $id
+        ";
+        $result = mysqli_query($conn, $query);
+        
+        if ($result && $product = mysqli_fetch_assoc($result)) {
+            $product['featured'] = (bool) $product['featured'];
+            return $product;
         }
     }
     
@@ -146,13 +136,13 @@ function getProductById($id) {
  * Get all categories from database
  */
 function getAllCategories() {
-    global $pdo, $CATEGORIES;
+    global $conn, $CATEGORIES;
     
-    if ($pdo) {
-        try {
-            $stmt = $pdo->query("SELECT * FROM categories ORDER BY name ASC");
+    if ($conn) {
+        $result = mysqli_query($conn, "SELECT * FROM categories ORDER BY name ASC");
+        if ($result) {
             $categories = [];
-            while ($row = $stmt->fetch()) {
+            while ($row = mysqli_fetch_assoc($result)) {
                 $categories[$row['slug']] = [
                     'id' => $row['category_id'],
                     'name' => $row['name'],
@@ -160,8 +150,6 @@ function getAllCategories() {
                 ];
             }
             return $categories;
-        } catch (PDOException $e) {
-            return $CATEGORIES;
         }
     }
     
@@ -172,18 +160,13 @@ function getAllCategories() {
  * Get category name by slug
  */
 function getCategoryName($slug) {
-    global $pdo, $CATEGORIES;
+    global $conn, $CATEGORIES;
     
-    if ($pdo) {
-        try {
-            $stmt = $pdo->prepare("SELECT name FROM categories WHERE slug = ?");
-            $stmt->execute([$slug]);
-            $category = $stmt->fetch();
-            if ($category) {
-                return $category['name'];
-            }
-        } catch (PDOException $e) {
-            // Fallback to static array
+    if ($conn) {
+        $slug = mysqli_real_escape_string($conn, $slug);
+        $result = mysqli_query($conn, "SELECT name FROM categories WHERE slug = '$slug'");
+        if ($result && $category = mysqli_fetch_assoc($result)) {
+            return $category['name'];
         }
     }
     
@@ -194,25 +177,22 @@ function getCategoryName($slug) {
  * Get product count by category
  */
 function getProductCountByCategory($categorySlug = null) {
-    global $pdo, $PRODUCTS;
+    global $conn, $PRODUCTS;
     
-    if ($pdo) {
-        try {
-            if ($categorySlug === null) {
-                $stmt = $pdo->query("SELECT COUNT(*) as count FROM products WHERE active = 1");
-            } else {
-                $stmt = $pdo->prepare("
-                    SELECT COUNT(*) as count 
-                    FROM products p 
-                    JOIN categories c ON p.category_id = c.category_id 
-                    WHERE c.slug = ? AND p.active = 1
-                ");
-                $stmt->execute([$categorySlug]);
-            }
-            $result = $stmt->fetch();
-            return (int) $result['count'];
-        } catch (PDOException $e) {
-            // Fallback
+    if ($conn) {
+        if ($categorySlug === null) {
+            $result = mysqli_query($conn, "SELECT COUNT(*) as count FROM products WHERE active = 1");
+        } else {
+            $categorySlug = mysqli_real_escape_string($conn, $categorySlug);
+            $result = mysqli_query($conn, "
+                SELECT COUNT(*) as count 
+                FROM products p 
+                JOIN categories c ON p.category_id = c.category_id 
+                WHERE c.slug = '$categorySlug' AND p.active = 1
+            ");
+        }
+        if ($result && $row = mysqli_fetch_assoc($result)) {
+            return (int) $row['count'];
         }
     }
     
@@ -327,24 +307,24 @@ function getCartTotal() {
 }
 
 function getDatabaseCartCount($userId) {
-    global $pdo;
-    if (!$pdo) return 0;
+    global $conn;
+    if (!$conn) return 0;
+    
+    $userId = (int)$userId;
     
     // Get cart ID
-    $stmt = $pdo->prepare("SELECT cart_id FROM cart WHERE user_id = ?");
-    $stmt->execute([$userId]);
-    $cart = $stmt->fetch();
+    $result = mysqli_query($conn, "SELECT cart_id FROM cart WHERE user_id = $userId");
+    $cart = mysqli_fetch_assoc($result);
     
     if (!$cart) return 0;
     
-    $cartId = $cart['cart_id'];
+    $cartId = (int)$cart['cart_id'];
     
     // Get count
-    $stmt = $pdo->prepare("SELECT SUM(quantity) as count FROM cart_items WHERE cart_id = ?");
-    $stmt->execute([$cartId]);
-    $result = $stmt->fetch();
+    $result = mysqli_query($conn, "SELECT SUM(quantity) as count FROM cart_items WHERE cart_id = $cartId");
+    $row = mysqli_fetch_assoc($result);
     
-    return (int)($result['count'] ?? 0);
+    return (int)($row['count'] ?? 0);
 }
 
 function getCartItemCount() {

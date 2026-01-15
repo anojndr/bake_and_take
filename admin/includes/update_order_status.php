@@ -6,6 +6,8 @@ session_start();
 require_once '../../includes/config.php';
 require_once '../../includes/functions.php';
 
+global $conn;
+
 header('Content-Type: application/json');
 
 // Check if admin is logged in
@@ -29,37 +31,41 @@ if (!$orderId || !in_array($status, $validStatuses)) {
     exit;
 }
 
-if (!$pdo) {
+if (!$conn) {
     echo json_encode(['success' => false, 'message' => 'Database connection error']);
     exit;
 }
 
-try {
-    // Get current order data before update
-    $orderStmt = $pdo->prepare("SELECT * FROM orders WHERE order_id = ?");
-    $orderStmt->execute([$orderId]);
-    $order = $orderStmt->fetch();
+// Get current order data before update
+$orderStmt = mysqli_prepare($conn, "SELECT * FROM orders WHERE order_id = ?");
+mysqli_stmt_bind_param($orderStmt, "i", $orderId);
+mysqli_stmt_execute($orderStmt);
+$orderResult = mysqli_stmt_get_result($orderStmt);
+$order = mysqli_fetch_assoc($orderResult);
+mysqli_stmt_close($orderStmt);
+
+if (!$order) {
+    echo json_encode(['success' => false, 'message' => 'Order not found']);
+    exit;
+}
+
+$oldStatus = $order['status'];
+
+// Update the order status
+$updateFields = "status = ?, updated_at = NOW()";
+
+// If manually confirming a pending order, also set confirmed_at
+if ($status === 'confirmed' && $oldStatus === 'pending') {
+    $updateFields = "status = ?, confirmed_at = NOW(), updated_at = NOW()";
+}
+
+$stmt = mysqli_prepare($conn, "UPDATE orders SET $updateFields WHERE order_id = ?");
+mysqli_stmt_bind_param($stmt, "si", $status, $orderId);
+mysqli_stmt_execute($stmt);
+$affectedRows = mysqli_stmt_affected_rows($stmt);
+mysqli_stmt_close($stmt);
     
-    if (!$order) {
-        echo json_encode(['success' => false, 'message' => 'Order not found']);
-        exit;
-    }
-    
-    $oldStatus = $order['status'];
-    
-    // Update the order status
-    $updateFields = "status = ?, updated_at = NOW()";
-    $updateParams = [$status, $orderId];
-    
-    // If manually confirming a pending order, also set confirmed_at
-    if ($status === 'confirmed' && $oldStatus === 'pending') {
-        $updateFields = "status = ?, confirmed_at = NOW(), updated_at = NOW()";
-    }
-    
-    $stmt = $pdo->prepare("UPDATE orders SET $updateFields WHERE order_id = ?");
-    $stmt->execute($updateParams);
-    
-    if ($stmt->rowCount() > 0) {
+    if ($affectedRows > 0) {
         
         // Prepare order data for notifications
         $notifyData = [
@@ -154,8 +160,4 @@ try {
     } else {
         echo json_encode(['success' => false, 'message' => 'No changes made']);
     }
-} catch (PDOException $e) {
-    error_log("Order status update error: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Database error']);
-}
 ?>

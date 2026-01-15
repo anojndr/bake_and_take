@@ -32,24 +32,16 @@ date_default_timezone_set('Asia/Manila');
 
 // Error Reporting (disable in production)
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// Only display errors for non-API requests (APIs should return JSON errors)
+$isApiRequest = (
+    strpos($_SERVER['SCRIPT_NAME'] ?? '', '_api.php') !== false ||
+    strpos($_SERVER['SCRIPT_NAME'] ?? '', 'paypal_') !== false ||
+    (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)
+);
+ini_set('display_errors', $isApiRequest ? 0 : 1);
 
-// Database Connection
-try {
-    $pdo = new PDO(
-        "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
-        DB_USER,
-        DB_PASS,
-        [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES => false
-        ]
-    );
-} catch (PDOException $e) {
-    // For development, we'll continue without database
-    $pdo = null;
-}
+// Database Connection - mysqli (connect.php)
+require_once __DIR__ . '/connect.php';
 
 // Product Categories
 $CATEGORIES = [

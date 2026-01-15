@@ -124,9 +124,9 @@ function authenticateWithYMZM($email, $password) {
  * @return array|null Local user data on success, null on failure
  */
 function findOrCreateYMZMUser($ymzmUser) {
-    global $pdo;
+    global $conn;
     
-    if (!$pdo) {
+    if (!$conn) {
         throw new Exception('Database connection not available.');
     }
     
@@ -139,63 +139,75 @@ function findOrCreateYMZMUser($ymzmUser) {
     $firstName = $nameParts[0] ?? 'User';
     $lastName = $nameParts[1] ?? '';
     
-    try {
-        // First, try to find user by ymzm_user_id
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE ymzm_user_id = ?");
-        $stmt->execute([$ymzmUserId]);
-        $existingUser = $stmt->fetch();
+    // First, try to find user by ymzm_user_id
+    $stmt = mysqli_prepare($conn, "SELECT * FROM users WHERE ymzm_user_id = ?");
+    mysqli_stmt_bind_param($stmt, "s", $ymzmUserId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $existingUser = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
+    
+    if ($existingUser) {
+        // Update email and name if changed in YMZM
+        $stmt = mysqli_prepare($conn, "UPDATE users SET email = ?, first_name = ?, last_name = ? WHERE user_id = ?");
+        mysqli_stmt_bind_param($stmt, "sssi", $email, $firstName, $lastName, $existingUser['user_id']);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
         
-        if ($existingUser) {
-            // Update email and name if changed in YMZM
-            $stmt = $pdo->prepare("UPDATE users SET email = ?, first_name = ?, last_name = ? WHERE user_id = ?");
-            $stmt->execute([$email, $firstName, $lastName, $existingUser['user_id']]);
-            
-            // Return updated user data
-            $existingUser['email'] = $email;
-            $existingUser['first_name'] = $firstName;
-            $existingUser['last_name'] = $lastName;
-            return $existingUser;
-        }
+        // Return updated user data
+        $existingUser['email'] = $email;
+        $existingUser['first_name'] = $firstName;
+        $existingUser['last_name'] = $lastName;
+        return $existingUser;
+    }
+    
+    // Next, try to find user by email (might have registered locally first)
+    $stmt = mysqli_prepare($conn, "SELECT * FROM users WHERE email = ?");
+    mysqli_stmt_bind_param($stmt, "s", $email);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $existingUser = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
+    
+    if ($existingUser) {
+        // Link this existing account to YMZM
+        $stmt = mysqli_prepare($conn, "UPDATE users SET ymzm_user_id = ? WHERE user_id = ?");
+        mysqli_stmt_bind_param($stmt, "si", $ymzmUserId, $existingUser['user_id']);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
         
-        // Next, try to find user by email (might have registered locally first)
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
-        $stmt->execute([$email]);
-        $existingUser = $stmt->fetch();
-        
-        if ($existingUser) {
-            // Link this existing account to YMZM
-            $stmt = $pdo->prepare("UPDATE users SET ymzm_user_id = ? WHERE user_id = ?");
-            $stmt->execute([$ymzmUserId, $existingUser['user_id']]);
-            
-            $existingUser['ymzm_user_id'] = $ymzmUserId;
-            return $existingUser;
-        }
-        
-        // Create new user linked to YMZM account
-        // Generate a random password since the user authenticates via YMZM
-        $randomPassword = password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT);
-        
-        $stmt = $pdo->prepare("
-            INSERT INTO users (first_name, last_name, email, password, is_verified, ymzm_user_id, created_at) 
-            VALUES (?, ?, ?, ?, 1, ?, NOW())
-        ");
-        $stmt->execute([$firstName, $lastName, $email, $randomPassword, $ymzmUserId]);
-        
-        $newUserId = $pdo->lastInsertId();
-        
-        return [
-            'user_id' => $newUserId,
-            'first_name' => $firstName,
-            'last_name' => $lastName,
-            'email' => $email,
-            'is_admin' => 0,
-            'is_verified' => 1,
-            'ymzm_user_id' => $ymzmUserId
-        ];
-        
-    } catch (PDOException $e) {
-        error_log('YMZM User Creation Error: ' . $e->getMessage());
+        $existingUser['ymzm_user_id'] = $ymzmUserId;
+        return $existingUser;
+    }
+    
+    // Create new user linked to YMZM account
+    // Generate a random password since the user authenticates via YMZM
+    $randomPassword = password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT);
+    $isVerified = 1;
+    
+    $stmt = mysqli_prepare($conn, "
+        INSERT INTO users (first_name, last_name, email, password, is_verified, ymzm_user_id, created_at) 
+        VALUES (?, ?, ?, ?, ?, ?, NOW())
+    ");
+    mysqli_stmt_bind_param($stmt, "ssssss", $firstName, $lastName, $email, $randomPassword, $isVerified, $ymzmUserId);
+    
+    if (!mysqli_stmt_execute($stmt)) {
+        error_log('YMZM User Creation Error: ' . mysqli_stmt_error($stmt));
+        mysqli_stmt_close($stmt);
         throw new Exception('Failed to create or update user account.');
     }
+    
+    $newUserId = mysqli_insert_id($conn);
+    mysqli_stmt_close($stmt);
+    
+    return [
+        'user_id' => $newUserId,
+        'first_name' => $firstName,
+        'last_name' => $lastName,
+        'email' => $email,
+        'is_admin' => 0,
+        'is_verified' => 1,
+        'ymzm_user_id' => $ymzmUserId
+    ];
 }
 ?>

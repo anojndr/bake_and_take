@@ -152,7 +152,7 @@ echo json_encode([
  * @return array Processing result
  */
 function processInboundSMS($phoneNumber, $message) {
-    global $pdo;
+    global $conn;
     
     $result = [
         'action' => 'logged',
@@ -216,131 +216,152 @@ function processInboundSMS($phoneNumber, $message) {
  * Handle confirmation reply
  */
 function handleConfirmReply($phoneNumber) {
-    global $pdo;
+    global $conn;
     
-    if (!$pdo) {
+    if (!$conn) {
         return ['action' => 'logged', 'details' => 'No database'];
     }
     
     // First, check for pending orders that need confirmation via SMS
-    try {
-        $stmt = $pdo->prepare("
-            SELECT * FROM orders 
-            WHERE phone = ? AND status = 'pending' AND confirmation_method = 'sms'
-            ORDER BY created_at DESC LIMIT 1
+    $stmt = mysqli_prepare($conn, "
+        SELECT * FROM orders 
+        WHERE phone = ? AND status = 'pending' AND confirmation_method = 'sms'
+        ORDER BY created_at DESC LIMIT 1
+    ");
+    if (!$stmt) {
+        error_log("Confirm reply error: " . mysqli_error($conn));
+        return ['action' => 'no_order_found', 'details' => 'No recent order found'];
+    }
+    $formattedPhone = formatPhoneNumber($phoneNumber);
+    mysqli_stmt_bind_param($stmt, "s", $formattedPhone);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $pendingOrder = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
+    
+    if ($pendingOrder) {
+        // Confirm the pending order
+        $updateStmt = mysqli_prepare($conn, "
+            UPDATE orders 
+            SET status = 'confirmed', 
+                confirmed_at = NOW(),
+                updated_at = NOW()
+            WHERE order_id = ?
         ");
-        $stmt->execute([formatPhoneNumber($phoneNumber)]);
-        $pendingOrder = $stmt->fetch();
-        
-        if ($pendingOrder) {
-            // Confirm the pending order
-            $stmt = $pdo->prepare("
-                UPDATE orders 
-                SET status = 'confirmed', 
-                    confirmed_at = NOW(),
-                    updated_at = NOW()
-                WHERE order_id = ?
-            ");
-            $stmt->execute([$pendingOrder['order_id']]);
-            
-            // Get site URL and send confirmation SMS with link
-            require_once __DIR__ . '/functions.php';
-            $siteUrl = getSiteUrlForSMS();
-            
-            // Send confirmation SMS with link to order-confirmed page
-            sendOrderConfirmedSMS([
-                'phone' => $phoneNumber,
-                'order_number' => $pendingOrder['order_number'],
-                'order_id' => $pendingOrder['order_id'],
-                'user_id' => $pendingOrder['user_id'],
-                'confirmation_token' => $pendingOrder['confirmation_token'],
-                'site_url' => $siteUrl
-            ]);
-            
-            // Notify admin about the confirmation
-            try {
-                require_once __DIR__ . '/mailer.php';
-                $adminSubject = "Order #{$pendingOrder['order_number']} Confirmed by Customer";
-                $adminBody = "
-                    <h2>Order Confirmed</h2>
-                    <p>Customer {$pendingOrder['first_name']} {$pendingOrder['last_name']} has confirmed their order via SMS.</p>
-                    <p><strong>Order #:</strong> {$pendingOrder['order_number']}</p>
-                    <p><strong>Confirmation Method:</strong> SMS</p>
-                    <p><strong>Phone:</strong> {$pendingOrder['phone']}</p>
-                    <p><strong>Total:</strong> ₱" . number_format($pendingOrder['total'], 2) . "</p>
-                    <a href='{$siteUrl}/admin/orders.php?id={$pendingOrder['order_id']}'>View Order</a>
-                ";
-                sendMail(SMTP_USER, $adminSubject, $adminBody);
-            } catch (Exception $e) {
-                error_log("Admin notification email failed: " . $e->getMessage());
-            }
-            
-            return [
-                'action' => 'order_confirmed',
-                'details' => ['order_id' => $pendingOrder['order_id'], 'order_number' => $pendingOrder['order_number']]
-            ];
+        if ($updateStmt) {
+            mysqli_stmt_bind_param($updateStmt, "i", $pendingOrder['order_id']);
+            mysqli_stmt_execute($updateStmt);
+            mysqli_stmt_close($updateStmt);
         }
         
-        // If no pending order, check for already confirmed orders
-        $stmt = $pdo->prepare("
-            SELECT * FROM orders 
-            WHERE phone = ? AND status = 'confirmed'
-            ORDER BY created_at DESC LIMIT 1
-        ");
-        $stmt->execute([formatPhoneNumber($phoneNumber)]);
-        $order = $stmt->fetch();
+        // Get site URL and send confirmation SMS with link
+        require_once __DIR__ . '/functions.php';
+        $siteUrl = getSiteUrlForSMS();
+        
+        // Send confirmation SMS with link to order-confirmed page
+        sendOrderConfirmedSMS([
+            'phone' => $phoneNumber,
+            'order_number' => $pendingOrder['order_number'],
+            'order_id' => $pendingOrder['order_id'],
+            'user_id' => $pendingOrder['user_id'],
+            'confirmation_token' => $pendingOrder['confirmation_token'],
+            'site_url' => $siteUrl
+        ]);
+        
+        // Notify admin about the confirmation
+        try {
+            require_once __DIR__ . '/mailer.php';
+            $adminSubject = "Order #{$pendingOrder['order_number']} Confirmed by Customer";
+            $adminBody = "
+                <h2>Order Confirmed</h2>
+                <p>Customer {$pendingOrder['first_name']} {$pendingOrder['last_name']} has confirmed their order via SMS.</p>
+                <p><strong>Order #:</strong> {$pendingOrder['order_number']}</p>
+                <p><strong>Confirmation Method:</strong> SMS</p>
+                <p><strong>Phone:</strong> {$pendingOrder['phone']}</p>
+                <p><strong>Total:</strong> ₱" . number_format($pendingOrder['total'], 2) . "</p>
+                <a href='{$siteUrl}/admin/orders.php?id={$pendingOrder['order_id']}'>View Order</a>
+            ";
+            sendMail(SMTP_USER, $adminSubject, $adminBody);
+        } catch (Exception $e) {
+            error_log("Admin notification email failed: " . $e->getMessage());
+        }
+        
+        return [
+            'action' => 'order_confirmed',
+            'details' => ['order_id' => $pendingOrder['order_id'], 'order_number' => $pendingOrder['order_number']]
+        ];
+    }
+    
+    // If no pending order, check for already confirmed orders
+    $stmt = mysqli_prepare($conn, "
+        SELECT * FROM orders 
+        WHERE phone = ? AND status = 'confirmed'
+        ORDER BY created_at DESC LIMIT 1
+    ");
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "s", $formattedPhone);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $order = mysqli_fetch_assoc($result);
+        mysqli_stmt_close($stmt);
         
         if ($order) {
             // Order is already confirmed, send acknowledgement
             sendSMS($phoneNumber, SMS_SENDER_NAME . ": Your order #{$order['order_number']} is already confirmed!");
             
             return [
-                'action' => 'order_already_confirmed',
+                'action' => 'already_confirmed',
                 'details' => ['order_id' => $order['order_id'], 'order_number' => $order['order_number']]
             ];
         }
-    } catch (PDOException $e) {
-        error_log("Confirm reply error: " . $e->getMessage());
     }
     
-    return ['action' => 'no_order_found', 'details' => 'No recent order found'];
+    return ['action' => 'no_pending_order', 'details' => 'No order found to confirm'];
 }
 
 /**
- * Handle cancel reply
+ * Handle cancel reply (CANCEL)
  */
 function handleCancelReply($phoneNumber) {
-    global $pdo;
+    global $conn;
     
-    if (!$pdo) {
+    if (!$conn) {
         return ['action' => 'logged', 'details' => 'No database'];
     }
     
     // Find confirmed order for this phone number to cancel
-    try {
-        $stmt = $pdo->prepare("
-            SELECT * FROM orders 
-            WHERE phone = ? AND status = 'confirmed'
-            ORDER BY created_at DESC LIMIT 1
-        ");
-        $stmt->execute([formatPhoneNumber($phoneNumber)]);
-        $order = $stmt->fetch();
-        
-        if ($order) {
-            // Cancel the order
-            $stmt = $pdo->prepare("UPDATE orders SET status = 'cancelled' WHERE order_id = ?");
-            $stmt->execute([$order['order_id']]);
-            
-            // Send cancellation SMS
-            sendSMS($phoneNumber, SMS_SENDER_NAME . ": Your order #{$order['order_number']} has been cancelled.");
-            
-            return [
-                'action' => 'order_cancelled',
-                'details' => ['order_id' => $order['order_id'], 'order_number' => $order['order_number']]
-            ];
+    $stmt = mysqli_prepare($conn, "
+        SELECT * FROM orders 
+        WHERE phone = ? AND status = 'confirmed'
+        ORDER BY created_at DESC LIMIT 1
+    ");
+    if (!$stmt) {
+        error_log("Cancel reply error: " . mysqli_error($conn));
+        return ['action' => 'no_cancelable_order', 'details' => 'No order found to cancel'];
+    }
+    $formattedPhone = formatPhoneNumber($phoneNumber);
+    mysqli_stmt_bind_param($stmt, "s", $formattedPhone);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $order = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
+    
+    if ($order) {
+        // Cancel the order
+        $updateStmt = mysqli_prepare($conn, "UPDATE orders SET status = 'cancelled' WHERE order_id = ?");
+        if ($updateStmt) {
+            mysqli_stmt_bind_param($updateStmt, "i", $order['order_id']);
+            mysqli_stmt_execute($updateStmt);
+            mysqli_stmt_close($updateStmt);
         }
-    } catch (PDOException $e) {
-        error_log("Cancel reply error: " . $e->getMessage());
+        
+        // Send cancellation SMS
+        sendSMS($phoneNumber, SMS_SENDER_NAME . ": Your order #{$order['order_number']} has been cancelled.");
+        
+        return [
+            'action' => 'order_cancelled',
+            'details' => ['order_id' => $order['order_id'], 'order_number' => $order['order_number']]
+        ];
     }
     
     return ['action' => 'no_cancelable_order', 'details' => 'No order found to cancel'];
@@ -350,48 +371,53 @@ function handleCancelReply($phoneNumber) {
  * Handle status request
  */
 function handleStatusRequest($phoneNumber) {
-    global $pdo;
+    global $conn;
     
-    if (!$pdo) {
+    if (!$conn) {
         return ['action' => 'logged', 'details' => 'No database'];
     }
     
-    try {
-        $stmt = $pdo->prepare("
-            SELECT * FROM orders 
-            WHERE phone = ?
-            ORDER BY created_at DESC LIMIT 1
-        ");
-        $stmt->execute([formatPhoneNumber($phoneNumber)]);
-        $order = $stmt->fetch();
+    $stmt = mysqli_prepare($conn, "
+        SELECT * FROM orders 
+        WHERE phone = ?
+        ORDER BY created_at DESC LIMIT 1
+    ");
+    if (!$stmt) {
+        error_log("Status request error: " . mysqli_error($conn));
+        sendSMS($phoneNumber, SMS_SENDER_NAME . ": No orders found for your number.");
+        return ['action' => 'no_orders', 'details' => 'No orders found'];
+    }
+    $formattedPhone = formatPhoneNumber($phoneNumber);
+    mysqli_stmt_bind_param($stmt, "s", $formattedPhone);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $order = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
+    
+    if ($order) {
+        $statusLabels = [
+            'pending' => 'Awaiting Confirmation',
+            'confirmed' => 'Confirmed',
+            'preparing' => 'Being Prepared',
+            'ready' => 'Ready for Pickup',
+            'delivered' => 'Completed',
+            'cancelled' => 'Cancelled'
+        ];
         
-        if ($order) {
-            $statusLabels = [
-                'pending' => 'Awaiting Confirmation',
-                'confirmed' => 'Confirmed',
-                'preparing' => 'Being Prepared',
-                'ready' => 'Ready for Pickup',
-                'delivered' => 'Completed',
-                'cancelled' => 'Cancelled'
-            ];
-            
-            $statusText = $statusLabels[$order['status']] ?? $order['status'];
-            $message = SMS_SENDER_NAME . ": Your order #{$order['order_number']} is: {$statusText}";
-            
-            // If pending, remind them to confirm
-            if ($order['status'] === 'pending') {
-                $message .= ". Reply CONFIRM to confirm your order.";
-            }
-            
-            sendSMS($phoneNumber, $message);
-            
-            return [
-                'action' => 'status_sent',
-                'details' => ['order_id' => $order['order_id'], 'status' => $order['status']]
-            ];
+        $statusText = $statusLabels[$order['status']] ?? $order['status'];
+        $message = SMS_SENDER_NAME . ": Your order #{$order['order_number']} is: {$statusText}";
+        
+        // If pending, remind them to confirm
+        if ($order['status'] === 'pending') {
+            $message .= ". Reply CONFIRM to confirm your order.";
         }
-    } catch (PDOException $e) {
-        error_log("Status request error: " . $e->getMessage());
+        
+        sendSMS($phoneNumber, $message);
+        
+        return [
+            'action' => 'status_sent',
+            'details' => ['order_id' => $order['order_id'], 'status' => $order['status']]
+        ];
     }
     
     sendSMS($phoneNumber, SMS_SENDER_NAME . ": No orders found for your number.");

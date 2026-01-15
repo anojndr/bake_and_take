@@ -10,6 +10,10 @@ header('Content-Type: application/json');
 session_start();
 
 require_once 'config.php';
+
+// Suppress HTML error output for JSON API (must be after config.php)
+ini_set('display_errors', 0);
+
 require_once 'functions.php';
 require_once 'secrets.php';
 

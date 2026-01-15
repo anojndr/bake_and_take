@@ -10,16 +10,19 @@ $confirmedOrder = $_SESSION['email_order_confirmed'] ?? null;
 
 // Check if accessed via auto-redirect with token parameter (when user confirmed on phone)
 $token = $_GET['token'] ?? '';
-if (!$confirmedOrder && !empty($token) && $pdo) {
-    try {
-        // Find the order by confirmation token
-        $stmt = $pdo->prepare("
-            SELECT o.order_number, o.total, o.status, o.user_id
-            FROM orders o 
-            WHERE o.confirmation_token = ?
-        ");
-        $stmt->execute([$token]);
-        $order = $stmt->fetch();
+if (!$confirmedOrder && !empty($token) && $conn) {
+    // Find the order by confirmation token
+    $stmt = mysqli_prepare($conn, "
+        SELECT o.order_number, o.total, o.status, o.user_id
+        FROM orders o 
+        WHERE o.confirmation_token = ?
+    ");
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "s", $token);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $order = mysqli_fetch_assoc($result);
+        mysqli_stmt_close($stmt);
         
         if ($order && $order['status'] === 'confirmed') {
             $confirmedOrder = [
@@ -27,8 +30,6 @@ if (!$confirmedOrder && !empty($token) && $pdo) {
                 'total' => $order['total']
             ];
         }
-    } catch (PDOException $e) {
-        error_log("Email confirmation page error: " . $e->getMessage());
     }
 }
 
