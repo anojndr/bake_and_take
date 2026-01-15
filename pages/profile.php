@@ -62,6 +62,19 @@ $verifyEmailMode = isset($_GET['action']) && $_GET['action'] === 'verify_email';
 
 $flash = getFlashMessage();
 
+// For phone change page: suppress misleading "No pending phone verification" error 
+// when user navigates back after successful change or when there's no pending change
+if ($editPhoneMode && $flash && $flash['type'] === 'error' && 
+    strpos($flash['message'], 'No pending phone verification') !== false) {
+    // Only suppress if there's no actual pending phone change
+    $hasPendingPhoneChange = $user['pending_phone'] && 
+                             $user['pending_phone_expires'] && 
+                             strtotime($user['pending_phone_expires']) > time();
+    if (!$hasPendingPhoneChange) {
+        $flash = null; // Clear the misleading error message
+    }
+}
+
 // Helper function for email display (no masking - user's own data)
 function maskEmail($email) {
     return $email;
