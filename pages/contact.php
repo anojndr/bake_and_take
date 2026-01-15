@@ -1,5 +1,17 @@
 <?php
 $flash = getFlashMessage();
+
+// Fetch user data if logged in for pre-filling the form
+$userData = null;
+if (isset($_SESSION['user_id'])) {
+    try {
+        $stmt = $pdo->prepare("SELECT first_name, last_name, email, phone FROM users WHERE user_id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        $userData = $stmt->fetch();
+    } catch (PDOException $e) {
+        // Silently fail - form just won't be prefilled
+    }
+}
 ?>
 
 <!-- Page Header -->
@@ -82,19 +94,19 @@ $flash = getFlashMessage();
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label" for="firstName">First Name *</label>
-                                <input type="text" class="form-control form-control-custom" id="firstName" name="first_name" required>
+                                <input type="text" class="form-control form-control-custom" id="firstName" name="first_name" required value="<?php echo htmlspecialchars($userData['first_name'] ?? ''); ?>">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="lastName">Last Name *</label>
-                                <input type="text" class="form-control form-control-custom" id="lastName" name="last_name" required>
+                                <input type="text" class="form-control form-control-custom" id="lastName" name="last_name" required value="<?php echo htmlspecialchars($userData['last_name'] ?? ''); ?>">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="email">Email Address *</label>
-                                <input type="email" class="form-control form-control-custom" id="email" name="email" required>
+                                <input type="email" class="form-control form-control-custom" id="email" name="email" required value="<?php echo htmlspecialchars($userData['email'] ?? ''); ?>">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="phone">Phone Number</label>
-                                <input type="tel" class="form-control form-control-custom" id="phone" name="phone">
+                                <input type="tel" class="form-control form-control-custom" id="phone" name="phone" value="<?php echo htmlspecialchars($userData['phone'] ?? ''); ?>">
                             </div>
                             <div class="col-12">
                                 <label class="form-label" for="subject">Subject *</label>
