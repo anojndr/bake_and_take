@@ -45,6 +45,52 @@
             </button>
         </form>
         
+        <div class="divider">
+            <span>or continue with</span>
+        </div>
+        
+        <button type="button" class="btn btn-ymzm w-100 mb-3" onclick="showYMZMLogin()">
+            <i class="bi bi-box-arrow-in-right me-2"></i> Login with YMZM
+        </button>
+        
+        <!-- YMZM Login Modal -->
+        <div class="ymzm-login-overlay" id="ymzmLoginOverlay" onclick="hideYMZMLogin(event)">
+            <div class="ymzm-login-modal" onclick="event.stopPropagation()">
+                <div class="ymzm-modal-header">
+                    <h3><i class="bi bi-shield-lock me-2"></i>Login with YMZM</h3>
+                    <button type="button" class="btn-close-ymzm" onclick="hideYMZMLogin()">&times;</button>
+                </div>
+                <p class="ymzm-modal-subtitle">Use your YMZM account credentials</p>
+                
+                <form action="includes/process_ymzm_login.php" method="POST" id="ymzmLoginForm">
+                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">YMZM Email</label>
+                        <div class="input-icon-wrapper">
+                            <i class="bi bi-envelope input-icon"></i>
+                            <input type="email" class="form-control form-control-custom with-icon" name="email" placeholder="your@ymzm-email.com" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">YMZM Password</label>
+                        <div class="input-icon-wrapper">
+                            <i class="bi bi-lock input-icon"></i>
+                            <input type="password" class="form-control form-control-custom with-icon has-toggle" name="password" id="ymzmPassword" placeholder="••••••••" required>
+                            <button type="button" class="password-toggle" onclick="togglePassword('ymzmPassword')" aria-label="Show password">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-ymzm w-100">
+                        <i class="bi bi-box-arrow-in-right me-2"></i> Sign In with YMZM
+                    </button>
+                </form>
+            </div>
+        </div>
+        
         <div class="auth-footer">
             Don't have an account? <a href="index.php?page=register">Create one</a>
         </div>
@@ -224,4 +270,121 @@
     color: #2563eb;
     border: 1px solid #bfdbfe;
 }
+
+/* YMZM Button */
+.btn-ymzm {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-ymzm:hover {
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+/* YMZM Modal Overlay */
+.ymzm-login-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.ymzm-login-overlay.active {
+    display: flex;
+}
+
+.ymzm-login-modal {
+    background: var(--white);
+    padding: 2rem;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 400px;
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.ymzm-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.ymzm-modal-header h3 {
+    margin: 0;
+    color: #4f46e5;
+    font-size: 1.25rem;
+}
+
+.btn-close-ymzm {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-light);
+    padding: 0;
+    line-height: 1;
+}
+
+.btn-close-ymzm:hover {
+    color: var(--dark);
+}
+
+.ymzm-modal-subtitle {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
 </style>
+
+<script>
+function showYMZMLogin() {
+    document.getElementById('ymzmLoginOverlay').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function hideYMZMLogin(event) {
+    if (event && event.target !== document.getElementById('ymzmLoginOverlay')) {
+        return;
+    }
+    document.getElementById('ymzmLoginOverlay').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideYMZMLogin();
+    }
+});
+</script>
