@@ -226,3 +226,23 @@ CREATE TABLE IF NOT EXISTS sms_otp (
     INDEX idx_phone_otp (phone_number, otp_code),
     INDEX idx_expires (expires_at)
 );
+
+-- Email log table - tracks all emails sent
+CREATE TABLE IF NOT EXISTS email_log (
+    email_id INT AUTO_INCREMENT PRIMARY KEY,
+    recipient_email VARCHAR(255) NOT NULL,
+    subject VARCHAR(500) NOT NULL,
+    body TEXT NOT NULL,
+    is_html BOOLEAN DEFAULT TRUE,
+    status ENUM('pending', 'sent', 'failed') DEFAULT 'pending',
+    error_message TEXT NULL,
+    order_id INT NULL,
+    user_id INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE SET NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    INDEX idx_recipient (recipient_email),
+    INDEX idx_status (status),
+    INDEX idx_created_at (created_at)
+);

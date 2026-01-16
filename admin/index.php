@@ -10,7 +10,7 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 }
 
 $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
-$allowedPages = ['dashboard', 'orders', 'products', 'categories', 'users', 'backup'];
+$allowedPages = ['dashboard', 'orders', 'products', 'categories', 'users', 'messages', 'backup'];
 
 if (!in_array($page, $allowedPages)) {
     $page = 'dashboard';
@@ -74,6 +74,10 @@ if (!in_array($page, $allowedPages)) {
                 <a href="index.php?page=users" class="nav-link <?php echo $page === 'users' ? 'active' : ''; ?>">
                     <i class="bi bi-people"></i>
                     <span>Users</span>
+                </a>
+                <a href="index.php?page=messages" class="nav-link <?php echo $page === 'messages' ? 'active' : ''; ?>">
+                    <i class="bi bi-chat-dots"></i>
+                    <span>Messages</span>
                 </a>
             </div>
             
