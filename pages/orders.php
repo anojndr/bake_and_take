@@ -74,6 +74,7 @@ if ($conn) {
                                 <div class="order-status status-<?php echo strtolower($order['status']); ?>">
                                     <?php
                                     $statusIcons = [
+                                        'pending' => 'bi-hourglass-split',
                                         'confirmed' => 'bi-check-circle',
                                         'preparing' => 'bi-fire',
                                         'ready' => 'bi-box-seam',
@@ -81,6 +82,7 @@ if ($conn) {
                                         'cancelled' => 'bi-x-circle'
                                     ];
                                     $statusLabels = [
+                                        'pending' => 'Awaiting Confirmation',
                                         'confirmed' => 'Confirmed',
                                         'preparing' => 'Preparing',
                                         'ready' => 'Ready',
@@ -109,6 +111,11 @@ if ($conn) {
                                     <span class="total-amount">₱<?php echo number_format($order['total'], 2); ?></span>
                                 </div>
                                 <div class="order-actions">
+                                    <?php if ($order['status'] === 'pending'): ?>
+                                        <button class="btn btn-confirm-order" onclick="confirmPendingOrder(<?php echo $order['order_id']; ?>, '<?php echo htmlspecialchars($order['order_number']); ?>', '<?php echo htmlspecialchars($order['confirmation_method'] ?? 'sms'); ?>')">
+                                            <i class="bi bi-check-circle"></i> Confirm
+                                        </button>
+                                    <?php endif; ?>
                                     <?php if (in_array($order['status'], ['pending', 'confirmed'])): ?>
                                         <button class="btn btn-cancel-order" onclick="cancelOrder(<?php echo $order['order_id']; ?>, '<?php echo htmlspecialchars($order['order_number']); ?>')">
                                             <i class="bi bi-x-circle"></i> Cancel
@@ -388,6 +395,30 @@ if ($conn) {
     align-items: center;
 }
 
+.btn-confirm-order {
+    background: transparent;
+    border: 2px solid #198754;
+    color: #198754;
+    padding: 0.6rem 1.25rem;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-confirm-order:hover {
+    background: #198754;
+    color: var(--white);
+}
+
+.btn-confirm-order:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .btn-cancel-order {
     background: transparent;
     border: 2px solid #dc3545;
@@ -408,6 +439,44 @@ if ($conn) {
 }
 
 .btn-cancel-order:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Modal Confirm Section */
+.modal-confirm-section {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: rgba(25, 135, 84, 0.1);
+    border-radius: var(--radius-md);
+    text-align: center;
+}
+
+.pending-notice {
+    color: #0a3622;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+}
+
+.btn-confirm-order-modal {
+    background: #198754;
+    border: 2px solid #198754;
+    color: var(--white);
+    padding: 0.75rem 2rem;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+}
+
+.btn-confirm-order-modal:hover {
+    background: #157347;
+    border-color: #157347;
+}
+
+.btn-confirm-order-modal:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
@@ -605,7 +674,8 @@ if ($conn) {
     }
     
     .btn-view-details,
-    .btn-cancel-order {
+    .btn-cancel-order,
+    .btn-confirm-order {
         width: 100%;
         justify-content: center;
     }
@@ -618,6 +688,46 @@ if ($conn) {
 
 <script>
 const ordersData = <?php echo json_encode($orders); ?>;
+
+async function confirmPendingOrder(orderId, orderNumber, confirmationMethod) {
+    const methodText = confirmationMethod === 'sms' ? 'We will resend you an SMS. Reply CONFIRM to complete your order.' : 'We will resend you a confirmation email with a link to confirm your order.';
+    
+    if (!confirm(`Resend confirmation for order #${orderNumber}?\n\n${methodText}`)) {
+        return;
+    }
+    
+    const button = event.target.closest('.btn-confirm-order');
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Sending...';
+    
+    try {
+        const formData = new FormData();
+        formData.append('order_id', orderId);
+        
+        const response = await fetch('includes/resend_confirmation.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            button.disabled = false;
+            button.innerHTML = originalText;
+            showToast(result.message, 'success');
+        } else {
+            button.disabled = false;
+            button.innerHTML = originalText;
+            showToast(result.message || 'Failed to resend confirmation', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        button.disabled = false;
+        button.innerHTML = originalText;
+        showToast('An error occurred. Please try again.', 'error');
+    }
+}
 
 async function cancelOrder(orderId, orderNumber) {
     if (!confirm(`Are you sure you want to cancel order #${orderNumber}? This action cannot be undone.`)) {
@@ -731,6 +841,7 @@ async function viewOrderDetails(orderId) {
     // For simplicity, we'll display what we have
     const statusClass = 'status-' + order.status.toLowerCase();
     const statusIcons = {
+        'pending': 'bi-hourglass-split',
         'confirmed': 'bi-check-circle',
         'preparing': 'bi-fire',
         'ready': 'bi-box-seam',
@@ -738,6 +849,7 @@ async function viewOrderDetails(orderId) {
         'cancelled': 'bi-x-circle'
     };
     const statusLabels = {
+        'pending': 'Awaiting Confirmation',
         'confirmed': 'Confirmed',
         'preparing': 'Preparing',
         'ready': 'Ready',
@@ -787,14 +899,57 @@ async function viewOrderDetails(orderId) {
             </div>
         </div>
         
+        ${order.status === 'pending' ? `
+        <div class="modal-confirm-section">
+            <p class="pending-notice"><i class="bi bi-info-circle me-2"></i>This order is awaiting your confirmation. ${order.confirmation_method === 'sms' ? 'Reply CONFIRM to the SMS we sent you, or click below to resend.' : 'Click the link in your email, or click below to resend.'}</p>
+            <button class="btn btn-confirm-order-modal" onclick="confirmOrderFromModal(${order.order_id}, '${order.order_number}', '${order.confirmation_method || 'sms'}')">
+                <i class="bi bi-send me-2"></i>Resend Confirmation
+            </button>
+        </div>
+        ` : ''}
+        
         ${['pending', 'confirmed'].includes(order.status) ? `
         <div class="modal-cancel-section">
-            <button class="btn btn-cancel-order-modal" onclick="cancelOrderFromModal(${order.id}, '${order.order_number}')">
+            <button class="btn btn-cancel-order-modal" onclick="cancelOrderFromModal(${order.order_id}, '${order.order_number}')">
                 <i class="bi bi-x-circle me-2"></i>Cancel This Order
             </button>
         </div>
         ` : ''}
     `;
+}
+
+async function confirmOrderFromModal(orderId, orderNumber, confirmationMethod) {
+    const button = document.querySelector('.btn-confirm-order-modal');
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Sending...';
+    
+    try {
+        const formData = new FormData();
+        formData.append('order_id', orderId);
+        
+        const response = await fetch('includes/resend_confirmation.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            button.disabled = false;
+            button.innerHTML = originalText;
+            showToast(result.message, 'success');
+        } else {
+            button.disabled = false;
+            button.innerHTML = originalText;
+            showToast(result.message || 'Failed to resend confirmation', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        button.disabled = false;
+        button.innerHTML = originalText;
+        showToast('An error occurred. Please try again.', 'error');
+    }
 }
 
 async function cancelOrderFromModal(orderId, orderNumber) {
@@ -834,6 +989,10 @@ async function cancelOrderFromModal(orderId, orderNumber) {
                 // Remove cancel button from card
                 const cancelBtn = orderCard.querySelector('.btn-cancel-order');
                 if (cancelBtn) cancelBtn.remove();
+                
+                // Remove confirm button from card if exists
+                const confirmBtn = orderCard.querySelector('.btn-confirm-order');
+                if (confirmBtn) confirmBtn.remove();
             }
             
             // Update ordersData
