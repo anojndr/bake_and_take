@@ -410,7 +410,7 @@ function showNotification(message, type = 'info') {
         styles.textContent = `
             .notification {
                 position: fixed;
-                bottom: 2rem;
+                top: 5rem;
                 right: 2rem;
                 background: #2C1810;
                 color: white;

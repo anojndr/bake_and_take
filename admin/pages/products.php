@@ -230,7 +230,7 @@ $categories = getAllCategories();
                                     style="background: var(--admin-dark); border-color: var(--admin-dark-tertiary); color: var(--admin-text);" 
                                     required>
                                 <?php foreach ($categories as $slug => $cat): ?>
-                                <option value="<?php echo $cat['category_id'] ?? $slug; ?>" <?php echo $product['category'] === $slug ? 'selected' : ''; ?>>
+                                <option value="<?php echo $cat['id']; ?>" <?php echo $product['category_id'] == $cat['id'] ? 'selected' : ''; ?>>
                                     <?php echo $cat['name']; ?>
                                 </option>
                                 <?php endforeach; ?>

@@ -162,8 +162,8 @@ function getAllCategories() {
 function getCategoryName($slug) {
     global $conn, $CATEGORIES;
     
-    if ($conn) {
-        $slug = mysqli_real_escape_string($conn, $slug);
+    if ($conn && $slug !== null) {
+        $slug = mysqli_real_escape_string($conn, (string)$slug);
         $result = mysqli_query($conn, "SELECT name FROM categories WHERE slug = '$slug'");
         if ($result && $category = mysqli_fetch_assoc($result)) {
             return $category['name'];

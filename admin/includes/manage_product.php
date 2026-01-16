@@ -36,6 +36,8 @@ switch ($action) {
     case 'add':
         $name = sanitize($_POST['name'] ?? '');
         $categoryId = (int)($_POST['category_id'] ?? 0);
+        // Convert 0 to NULL for foreign key constraint (category_id can be NULL)
+        $categoryId = $categoryId > 0 ? $categoryId : null;
         $description = sanitize($_POST['description'] ?? '');
         $price = (float)($_POST['price'] ?? 0);
         $stock = (int)($_POST['stock'] ?? 0);
@@ -78,6 +80,8 @@ switch ($action) {
         $id = (int)($_POST['id'] ?? 0);
         $name = sanitize($_POST['name'] ?? '');
         $categoryId = (int)($_POST['category_id'] ?? 0);
+        // Convert 0 to NULL for foreign key constraint (category_id can be NULL)
+        $categoryId = $categoryId > 0 ? $categoryId : null;
         $description = sanitize($_POST['description'] ?? '');
         $price = (float)($_POST['price'] ?? 0);
         $stock = (int)($_POST['stock'] ?? 0);
